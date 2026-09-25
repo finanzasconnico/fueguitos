@@ -126,6 +126,63 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .music b{display:block;font-size:16px}
 .music .go{margin-left:auto;font-weight:800;color:var(--ok-ink);font-size:14px;flex:none}
 
+/* PIN y extras */
+.input.pin{letter-spacing:.5em;font-size:22px;font-weight:800;text-align:center;max-width:180px}
+details.more summary{cursor:pointer;font-weight:700;color:var(--ice-dark);font-size:15px;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more[open] summary{margin-bottom:8px}
+.nudge{border-color:var(--fire)}
+
+/* Subsecciones del grupo */
+.subtabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:16px;background:var(--line);margin:0 0 16px}
+.subtabs button{min-height:40px;border-radius:12px;font-weight:800;font-size:14px;color:var(--muted)}
+.subtabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* Compartido */
+.share{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:2px solid var(--line)}
+.share:last-child{border-bottom:0}
+.share .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:21px;flex:none;background:var(--fire-soft)}
+.share .stitle{display:block;font-weight:800;font-size:16px;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.share .react{flex:none}
+
+/* Torneos */
+.emojis button.on{border-color:var(--fire);background:var(--fire-soft)}
+.fmt{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px;border-radius:16px;border:2px solid var(--line);background:var(--card);min-height:84px}
+.fmt.on{border-color:var(--fire);background:var(--fire-soft)}
+.fmt .small{color:var(--muted);font-weight:600}
+.prow{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
+.prow .link{font-size:18px;padding:0 6px}
+.avbtn{border-radius:50%}
+.avpick{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-radius:16px;background:var(--card);border:2px solid var(--line)}
+.avpick button{font-size:22px;width:40px;height:40px;border-radius:12px}
+.pav{display:inline-grid;place-items:center;border-radius:50%;flex:none;object-fit:cover;color:#fff;font-weight:800;line-height:1}
+.tview .inner{max-width:760px}
+.champ{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:radial-gradient(circle at 20% 40%, #6B240B 0, var(--party) 80%);color:#fff;margin-bottom:16px;animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
+.champ .cname{font-size:26px;font-weight:800;color:var(--gold)}
+.stand{width:100%;border-collapse:collapse;margin-top:10px;font-variant-numeric:tabular-nums}
+.stand th{font-size:12px;color:var(--muted);font-weight:700;padding:4px 6px;text-align:center}
+.stand td{padding:6px;text-align:center;border-top:2px solid var(--line)}
+.stand td:nth-child(2){text-align:left}
+.stand tr.q td:first-child{color:var(--ok-ink);font-weight:800}
+.pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bracket{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 12px;scroll-snap-type:x proximity}
+.bcol{flex:0 0 220px;display:flex;flex-direction:column;justify-content:space-around;gap:10px;scroll-snap-align:start}
+.bhead{font-weight:800;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.bmatch{display:block;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:6px 10px}
+.bmatch.done{border-color:var(--ok-line)}
+.bmatch[disabled]{opacity:.75}
+.bp{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:5px 0;font-weight:700}
+.bp+.bp{border-top:2px solid var(--line)}
+.bp b{font-size:18px;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}
+.bp.win{color:var(--ok-ink)}
+.bp.lose{opacity:.55}
+.bplay{display:block;font-size:12px;font-weight:800;color:var(--fire);padding-top:2px}
+.tsheet{position:fixed}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.vsp{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;min-width:0}
+.vsp b{overflow-wrap:anywhere}
+.input.score{text-align:center;font-size:28px;font-weight:800;max-width:110px}
+
 /* Guía de instalación */
 .guide{position:fixed;inset:0;z-index:90;background:rgba(20,10,6,.82);display:flex;align-items:center;justify-content:center;padding:calc(var(--safe-t) + 70px) 18px calc(var(--safe-b) + 70px);animation:fade .2s}
 .gcard{background:var(--bg);border-radius:26px;padding:22px 20px 18px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
@@ -344,8 +401,12 @@ const ERRORS = {
   NO_PERMITIDO: 'No tenés acceso a eso.',
   HABITO_NO_EXISTE: 'Ese hábito ya no existe.',
   DATOS_INVALIDOS: 'Revisá los datos y probá de nuevo.',
-  APODO_EN_USO: 'Ese apodo ya lo usa otra persona. Probá con otro. Si es tuyo, tocá «Tengo cuenta o invitación».',
-  APODO_INVALIDO: 'Poné un apodo de hasta 30 letras.'
+  APODO_EN_USO: 'Ese apodo ya lo usa otra persona. Probá con otro. Si es tuyo, tocá «Ya tengo cuenta» y entrá con tu PIN.',
+  APODO_INVALIDO: 'Poné un apodo de hasta 30 letras.',
+  PIN_INVALIDO: 'El PIN son 4 números.',
+  EMPATE_KO: 'EMPATE_KO',
+  PARTIDO_INCOMPLETO: 'Todavía falta saber quién juega ese partido.',
+  YA_SE_JUGO_SIGUIENTE: 'Ese resultado ya definió el partido siguiente. Borrá primero el de la ronda siguiente.'
 };
 async function rpc(fn, args={}){
   let res;
@@ -376,7 +437,9 @@ const S = {
   sel: new Set(),
   pendingJoin: null, quick: null,
   onboarding: false,
-  lifts: null
+  lifts: null,
+  gsub: ['racha','compartido','torneos'].includes(LS.get('fueguitos_gsub')) ? LS.get('fueguitos_gsub') : 'racha',
+  shares: {}, tourns: {}
 };
 const P = () => ({ p_token: S.token });
 
@@ -414,6 +477,7 @@ async function boot(){
   }
   await afterLogin();
   maybeInstallGuide();
+  syncPush();
 }
 
 async function afterLogin(){
@@ -450,7 +514,8 @@ function maybeInstallGuide(){
   const inApp = inAppBrowser();
   const iosOther = isIOS && /CriOS|FxiOS|EdgiOS/i.test(UA);
   // En iPhone la app instalada no comparte datos con Safari: se lleva la invitación o la cuenta copiando un link.
-  const carry = S.token ? `${location.origin}${location.pathname}?k=${S.token}` : (S.pendingJoin ? inviteLink(S.pendingJoin) : '');
+  const hasPin = !!(S.me && S.me.user.has_pin);
+  const carry = S.token && !hasPin ? `${location.origin}${location.pathname}?k=${S.token}` : (!S.token && S.pendingJoin ? inviteLink(S.pendingJoin) : '');
   let arrow = 'tr', title, steps;
   if (inApp){
     title = 'Abrila en el navegador';
@@ -462,7 +527,7 @@ function maybeInstallGuide(){
       ...(carry ? [`Primero tocá <b>${S.token ? 'Copiar mi cuenta' : 'Copiar mi invitación'}</b> (acá abajo).`] : []),
       iosOther ? 'Tocá <b>Compartir</b> <span class="ios-share" aria-hidden="true"></span> arriba a la derecha.' : 'Tocá <b>···</b> abajo a la derecha y después <b>Compartir</b> <span class="ios-share" aria-hidden="true"></span> (en iPhone más viejos, Compartir está abajo al medio).',
       'Bajá y elegí <b>Agregar a pantalla de inicio</b>.',
-      carry ? 'Abrí Fueguitos desde el ícono nuevo, tocá <b>Tengo cuenta o invitación</b> y pegá el link.' : 'Abrí Fueguitos desde el ícono nuevo y creá tu cuenta ahí.'
+      S.token && hasPin ? 'Abrí Fueguitos desde el ícono nuevo y entrá con tu apodo y PIN.' : carry ? 'Abrí Fueguitos desde el ícono nuevo, tocá <b>Ya tengo cuenta</b> y pegá el link abajo de todo.' : 'Abrí Fueguitos desde el ícono nuevo y creá tu cuenta ahí.'
     ];
   } else {
     title = 'Instalá Fueguitos';
@@ -487,15 +552,38 @@ function maybeInstallGuide(){
   const i = $('#g-inst', g); if (i) i.onclick = async () => { deferredInstall.prompt(); const r = await deferredInstall.userChoice; deferredInstall = null; if (r.outcome === 'accepted') close(); };
 }
 
-// "Ya tengo cuenta": pegar el link de acceso (?k=) o una invitación (?g= o el código).
+const pinInput = (id, ph = '••••') => `<input class="input pin" id="${id}" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="${ph}">`;
+
+// Entrar desde otro dispositivo: apodo + PIN. También acepta el link de acceso o una invitación.
 function haveAccountSheet(){
-  const el = openSheet(`<h2>Tengo cuenta o invitación</h2>
-    <p class="muted">Pegá tu link de acceso (está en Perfil → Copiar mi link de acceso) o el link de invitación de tu grupo.</p>
-    <div class="stack section">
-      <input class="input" id="h-link" inputmode="url" autocomplete="off" placeholder="https://fueguitos.vercel.app/?k=…">
-      ${navigator.clipboard && navigator.clipboard.readText ? '<button class="btn ghost" id="h-paste">Pegar</button>' : ''}
-      <button class="btn" id="h-go">Entrar</button>
-    </div>`);
+  const el = openSheet(`<h2>Entrar a mi cuenta</h2>
+    <p class="muted">Con tu apodo y tu PIN entrás desde cualquier celu.</p>
+    <form class="stack section" id="lg">
+      <label class="field"><span>Apodo</span><input class="input" id="lg-n" maxlength="30" autocomplete="username" placeholder="Tu apodo"></label>
+      <label class="field"><span>PIN</span>${pinInput('lg-p')}</label>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+    <details class="section more"><summary>No tengo PIN / tengo un link o invitación</summary>
+      <p class="muted small">Pegá tu link de acceso (Perfil → Copiar mi link) o el link de invitación de tu grupo.</p>
+      <div class="stack">
+        <input class="input" id="h-link" inputmode="url" autocomplete="off" placeholder="https://fueguitos.vercel.app/?k=…">
+        <div class="grid2">${navigator.clipboard && navigator.clipboard.readText ? '<button class="btn ghost sm" style="width:100%" id="h-paste">Pegar</button>' : '<span></span>'}<button class="btn ice sm" style="width:100%" id="h-go">Usar link</button></div>
+      </div>
+    </details>`);
+  $('#lg', el).onsubmit = async (e) => {
+    e.preventDefault();
+    const n = $('#lg-n', el).value.trim(), pin = $('#lg-p', el).value;
+    if (!n || !/^\d{4}$/.test(pin)){ toast('Poné tu apodo y los 4 números del PIN'); return; }
+    const b = e.target.querySelector('button'); b.disabled = true;
+    try {
+      const r = await rpc('api_login', { p_nick: n, p_pin: pin });
+      if (r.ok){ LS.set('racha_token', r.token); location.replace(location.pathname + (S.pendingJoin ? `?g=${S.pendingJoin}` : '')); return; }
+      toast({ SIN_PIN: 'Esa cuenta todavía no tiene PIN. Entrá con tu link de acceso (abajo) y creá el PIN en Perfil.',
+              PIN_BLOQUEADO: `Demasiados intentos. Probá de nuevo en ${r.min || 15} min.`,
+              LOGIN_INVALIDO: r.quedan != null ? `Apodo o PIN incorrecto. Te quedan ${r.quedan} intentos.` : 'Apodo o PIN incorrecto.' }[r.error] || 'No se pudo entrar.', 4200);
+    } catch(err){ toast(err.message); }
+    b.disabled = false;
+  };
   const p = $('#h-paste', el); if (p) p.onclick = async () => { try { $('#h-link', el).value = (await navigator.clipboard.readText()).trim(); } catch(e){ toast('Mantené apretado el cuadro y tocá Pegar'); } };
   $('#h-go', el).onclick = () => {
     const raw = $('#h-link', el).value.trim(); let k = null, g = null;
@@ -507,6 +595,59 @@ function haveAccountSheet(){
     toast('Ese link no parece de Fueguitos. Revisalo.');
   };
 }
+
+// Crear o cambiar el PIN (para cuentas que ya existían antes del PIN).
+function pinSheet(){
+  const has = S.me.user.has_pin;
+  const el = openSheet(`<h2>${has ? 'Cambiar mi PIN' : 'Creá tu PIN'}</h2>
+    <p class="muted">Con tu apodo <b>${esc(S.me.user.nick)}</b> y este PIN entrás a tu cuenta desde cualquier celu o compu.</p>
+    <div class="stack section">
+      <label class="field"><span>PIN nuevo (4 números)</span>${pinInput('pn1')}</label>
+      <label class="field"><span>Repetilo</span>${pinInput('pn2')}</label>
+      <button class="btn" id="pn-save">Guardar PIN</button>
+    </div>`);
+  $('#pn-save', el).onclick = async (e) => {
+    const a = $('#pn1', el).value, b = $('#pn2', el).value;
+    if (!/^\d{4}$/.test(a)){ toast('El PIN son 4 números'); return; }
+    if (a !== b){ toast('Los dos PIN no coinciden'); return; }
+    e.target.disabled = true;
+    try { await rpc('api_set_pin', { ...P(), p_pin: a }); S.me.user.has_pin = true; closeSheet(); renderMain(); toast('PIN guardado 🔐'); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+
+/* ============ Notificaciones ============ */
+const VAPID = 'BNI5NZVkLJbDX8l1e32yE__SU_NzbJMWF0tBVc5eAoB7K0VU84HXuraEqiGI37FrwWz8tzD9_jNg1-YRJwjHeoE';
+const PUSH_FN = `${SB_URL}/functions/v1/push-recordatorios`;
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+// En iPhone solo funcionan con la app instalada en la pantalla de inicio.
+const pushNeedsInstall = () => isIOS && !isStandalone();
+const b64u = (s) => { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+async function pushSubscribe(){
+  const reg = await navigator.serviceWorker.ready;
+  const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID) });
+  const j = sub.toJSON();
+  await rpc('api_push_subscribe', { ...P(), p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+}
+async function enablePush(){
+  if (!pushSupported()){ toast('Este navegador no permite avisos'); return false; }
+  if (pushNeedsInstall()){ toast('En iPhone los avisos andan con la app instalada. Instalala primero.', 4000); return false; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted'){ toast('Sin permiso no te podemos avisar. Lo podés activar en los ajustes del celu.', 4200); return false; }
+  try {
+    await pushSubscribe();
+    if (S.me.user.remind_hour == null){ await rpc('api_set_reminder', { ...P(), p_hour: 22 }); S.me.user.remind_hour = 22; }
+    toast('¡Listo! Te avisamos si te falta anotar 🔔'); return true;
+  } catch(e){ toast('No se pudo activar: ' + e.message, 4000); return false; }
+}
+// Si ya dio permiso, se re-sincroniza la suscripción en cada arranque (cambia de cuenta, se renueva, etc.).
+function syncPush(){ if (pushSupported() && Notification.permission === 'granted' && S.token) pushSubscribe().catch(() => {}); }
+async function testPush(){
+  try { const r = await fetch(PUSH_FN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ test_token: S.token }) }).then(r => r.json());
+    toast(r.sent ? 'Aviso de prueba enviado 🔔' : 'No encontramos este celu. Tocá Activar avisos.', 3500);
+  } catch(e){ toast('No se pudo mandar la prueba'); }
+}
+const pushState = () => !pushSupported() ? 'no' : pushNeedsInstall() ? 'instalar' : Notification.permission;
 
 // Anotar o desanotar con un toque (desde accesos directos o el widget).
 async function quickToggle(h){
@@ -543,22 +684,28 @@ function renderWelcome(){
     ${S.pendingJoin ? `<div class="banner fire">Te invitaron a un grupo. Poné tu apodo y entrás directo.</div>` : ''}
     <form id="reg" class="stack">
       <label class="field"><span>¿Cómo te dicen?</span>
-        <input class="input" id="nick" maxlength="30" autocomplete="nickname" placeholder="Tu nombre o apodo" required>
+        <input class="input" id="nick" maxlength="30" autocomplete="username" placeholder="Tu nombre o apodo" required>
+      </label>
+      <label class="field"><span>Elegí un PIN de 4 números</span>
+        ${pinInput('pin')}
+        <div class="hint">Con tu apodo y este PIN entrás desde cualquier celu.</div>
       </label>
       <button class="btn" type="submit">Empezar</button>
     </form>
-    <p class="hint" style="text-align:center;margin-top:18px">No hace falta mail ni contraseña.</p>
-    <button class="link" id="have" style="margin:6px auto 0;display:block">Tengo cuenta o invitación</button>
+    <button class="link" id="have" style="margin:14px auto 0;display:block">Ya tengo cuenta: entrar con mi PIN</button>
   </div>`;
   $('#have').onclick = haveAccountSheet;
   $('#reg').onsubmit = async (e) => {
     e.preventDefault();
     const nick = $('#nick').value.trim(); if (!nick) return;
-    const b = e.target.querySelector('button'); b.disabled = true; b.textContent = 'Entrando…';
+    const pin = $('#pin').value;
+    if (!/^\d{4}$/.test(pin)){ toast('Elegí un PIN de 4 números'); $('#pin').focus(); return; }
+    const b = e.target.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Entrando…';
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
       const r = await rpc('api_register', { p_nick: nick, p_tz: tz });
       S.token = r.token; LS.set('racha_token', r.token);
+      await rpc('api_set_pin', { ...P(), p_pin: pin });
       await loadMe(); await afterLogin();
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = 'Empezar'; }
   };
@@ -732,7 +879,7 @@ function renderHoy(){
       <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
       <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
     </div>
-    ${showInstallCard() ? `<div class="card section" id="inst-card"><div class="row between"><h3>Instalá Fueguitos en tu celu</h3><button class="link small" id="inst-no" aria-label="No mostrar más">Ahora no</button></div><div class="small" style="margin-top:8px">${installHelp()}</div></div>` : ''}
+    ${hoyNudge()}
     ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Armá un grupo y compartí el link: van a ver sus rachas y las fotos del día.</p><button class="btn sm" id="to-group">Armar o unirme a un grupo</button></div>` : ''}
   `;
   document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
@@ -750,7 +897,10 @@ function renderHoy(){
   $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
   $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
   const tg = $('#to-group'); if (tg) tg.onclick = () => go('grupo');
-  const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); $('#inst-card').remove(); toast('Lo tenés en Perfil cuando quieras'); };
+  const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
+  const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
+  const npush = $('#n-push'); if (npush) npush.onclick = async () => { if (await enablePush()) renderHoy(); };
+  const nno = $('#n-push-no'); if (nno) nno.onclick = () => { LS.set('fueguitos_no_push', '1'); renderHoy(); };
 }
 /* ============ Motivación ============ */
 const FRASES = [
@@ -785,6 +935,14 @@ function hastaCorte(){
 }
 const HITOS = { 3: '¡Arrancó el fuego!', 7: '¡Una semana entera!', 14: '¡Dos semanas sin aflojar!', 21: '¡21 días: ya es costumbre!', 30: '¡Un mes completo!', 50: '¡50 días! Imparable', 100: '¡100 días! Leyenda del grupo', 150: '¡150! Esto ya es estilo de vida', 200: '¡200 días de fuego!', 365: '¡UN AÑO! Histórico' };
 const ANIMO = ['¡Bien ahí!', '¡Sumaste otro!', '¡Fuego!', '¡Así se hace!', '¡Uno más a la cuenta!', '¡Imparable!'];
+
+// Una sola sugerencia a la vez en Hoy: primero el PIN, después los avisos, después instalar.
+function hoyNudge(){
+  if (!S.me.user.has_pin) return `<div class="card section nudge"><h3>🔐 Creá tu PIN</h3><p class="small muted" style="margin:6px 0 12px">Con tu apodo y un PIN de 4 números entrás a tu cuenta desde cualquier celu. Si cambiás de teléfono no perdés la racha.</p><button class="btn sm" style="width:100%" id="n-pin">Crear mi PIN</button></div>`;
+  if (pushState() === 'default' && !LS.get('fueguitos_no_push')) return `<div class="card section nudge"><div class="row between"><h3>🔔 Que no se te apague</h3><button class="link small" id="n-push-no">Ahora no</button></div><p class="small muted" style="margin:6px 0 12px">Te avisamos a la noche si te falta anotar algo. Solo eso, nada de spam.</p><button class="btn sm" style="width:100%" id="n-push">Activar avisos</button></div>`;
+  if (showInstallCard()) return `<div class="card section" id="inst-card"><div class="row between"><h3>Instalá Fueguitos en tu celu</h3><button class="link small" id="inst-no" aria-label="No mostrar más">Ahora no</button></div><div class="small" style="margin-top:8px">${installHelp()}</div></div>`;
+  return '';
+}
 
 function habitCard(h){
   const sel = S.sel.has(h.id);
@@ -851,18 +1009,18 @@ function openCheckinSheet(){
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; }
   };
 }
-function compress(file){
+function compress(file, max = 1080, limit = 900000){
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      const max = 1080; let { width: w, height: h } = img;
+      let { width: w, height: h } = img;
       const k = Math.min(1, max / Math.max(w, h)); w = Math.round(w*k); h = Math.round(h*k);
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
       URL.revokeObjectURL(url);
       let q = 0.75, out = c.toDataURL('image/jpeg', q);
-      while (out.length > 900000 && q > 0.35){ q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      while (out.length > limit && q > 0.35){ q -= 0.1; out = c.toDataURL('image/jpeg', q); }
       resolve(out);
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); };
@@ -933,28 +1091,8 @@ function renderGrupo(){
       <button class="btn sm ice" id="invite">Invitar</button></div>
     ${gs.length > 1 ? chips : `<div class="chips"><button class="chip" id="g-new">+ Otro grupo</button></div>`}
 
-    <div class="board">${members.map(memberRow).join('')}</div>
-
-    <div class="section">
-      <div class="section-title"><h2>Fotos de hoy</h2><span class="small muted">Duran 24 h</span></div>
-      ${G.feed.length ? `<div class="stack">${G.feed.map(postCard).join('')}</div>` :
-        `<div class="empty">Todavía nadie subió foto. Anotá tu día con una foto y arrancás vos.</div>`}
-    </div>
-
-    <div class="section">
-      <div class="section-title"><h2>Récords</h2><button class="link" id="rec-add">Agregar</button></div>
-      <div class="card">${G.records.length ? G.records.map(r => `<div class="rec"><button style="text-align:left;flex:1" data-rec="${r.id}"><div style="font-weight:700">${esc(r.title)}</div></button><span class="v">${esc(r.value)}</span></div>`).join('') :
-        `<p class="muted" style="margin:0">Guardá los récords del grupo, como los cabezazos sin que se caiga la pelota.</p>`}</div>
-    </div>
-
-    ${G.group.is_admin ? `<div class="section">
-      <div class="section-title"><h2>Hábitos del grupo</h2><button class="link" id="hab-add">Crear hábito</button></div>
-      <div class="card">
-        ${G.habits.length ? G.habits.map(h => `<div class="hrow"><div><div style="font-weight:800">${esc(h.emoji)} ${esc(h.name)}</div><div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días · máx ${h.max_ice}</div></div><button class="link" data-hedit="${h.id}">Editar</button></div>`).join('') :
-        `<p class="muted" style="margin:0">Deporte, Lectura y Meditación ya vienen incluidos. Acá podés crear otros con sus propias reglas, como Tomar 2 L de agua o No redes antes de dormir. Cada miembro después elige si lo activa.</p>`}
-      </div></div>` : ''}
-
-    <div class="section" style="text-align:center"><button class="link danger" id="leave">Salir de ${esc(G.group.name)}</button></div>
+    <div class="subtabs" role="tablist">${[['racha','🔥 Racha'],['compartido','🎧 Compartido'],['torneos','🏆 Torneos']].map(([k,l]) => `<button role="tab" aria-selected="${S.gsub===k}" class="${S.gsub===k?'on':''}" data-gsub="${k}">${l}</button>`).join('')}</div>
+    ${S.gsub === 'racha' ? grupoRacha(G, members) : '<div id="gsub"></div>'}
   `;
   bindChips();
   $('#invite').onclick = () => shareInvite(G.group);
@@ -967,14 +1105,360 @@ function renderGrupo(){
   document.querySelectorAll('[data-kick]').forEach(b => b.onclick = () => confirmSheet(`¿Sacar a ${b.dataset.nick}?`, 'Deja de estar en el grupo y desaparece para todos. Su racha no se toca y puede volver con el código.', 'Sacar del grupo', async () => {
     await rpc('api_kick_member', { ...P(), p_group: G.group.id, p_user: b.dataset.kick }); await loadGroup(); renderGrupo(); toast(`${b.dataset.nick} ya no está en el grupo`);
   }));
-  $('#rec-add').onclick = () => recordSheet(null);
+  document.querySelectorAll('[data-gsub]').forEach(b => b.onclick = () => { S.gsub = b.dataset.gsub; LS.set('fueguitos_gsub', S.gsub); renderGrupo(); });
+  if (S.gsub === 'compartido') renderShared(G);
+  if (S.gsub === 'torneos') renderTorneos(G);
+  const ra = $('#rec-add'); if (ra) ra.onclick = () => recordSheet(null);
   document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
   const ha = $('#hab-add'); if (ha) ha.onclick = () => habitEditor(null);
   document.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => habitEditor(G.habits.find(h => h.id === b.dataset.hedit)));
-  $('#leave').onclick = () => confirmSheet(`¿Salir de ${G.group.name}?`, 'Tu racha no cambia. Podés volver con el código del grupo.', 'Salir del grupo', async () => {
+  const lv = $('#leave'); if (lv) lv.onclick = () => confirmSheet(`¿Salir de ${G.group.name}?`, 'Tu racha no cambia. Podés volver con el código del grupo.', 'Salir del grupo', async () => {
     await rpc('api_leave_group', { ...P(), p_group: G.group.id }); S.me = await rpc('api_me', P()); S.group = null; S.groupId = null; LS.del('racha_group'); refreshGroup(); toast('Saliste del grupo');
   });
 }
+function grupoRacha(G, members){
+  return `
+    <div class="board">${members.map(memberRow).join('')}</div>
+
+    <div class="section">
+      <div class="section-title"><h2>Fotos de hoy</h2><span class="small muted">Duran 24 h</span></div>
+      ${G.feed.length ? `<div class="stack">${G.feed.map(postCard).join('')}</div>` :
+        `<div class="empty">Todavía nadie subió foto. Anotá tu día con una foto y arrancás vos.</div>`}
+    </div>
+
+    ${G.group.is_admin ? `<div class="section">
+      <div class="section-title"><h2>Hábitos del grupo</h2><button class="link" id="hab-add">Crear hábito</button></div>
+      <div class="card">
+        ${G.habits.length ? G.habits.map(h => `<div class="hrow"><div><div style="font-weight:800">${esc(h.emoji)} ${esc(h.name)}</div><div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días · máx ${h.max_ice}</div></div><button class="link" data-hedit="${h.id}">Editar</button></div>`).join('') :
+        `<p class="muted" style="margin:0">Deporte, Lectura y Meditación ya vienen incluidos. Acá podés crear otros con sus propias reglas, como Tomar 2 L de agua o No redes antes de dormir. Cada miembro después elige si lo activa.</p>`}
+      </div></div>` : ''}
+
+    <div class="section" style="text-align:center"><button class="link danger" id="leave">Salir de ${esc(G.group.name)}</button></div>`;
+}
+function grupoRecords(G){
+  return `
+    <div class="section">
+      <div class="section-title"><h2>Récords</h2><button class="link" id="rec-add">Agregar</button></div>
+      <div class="card">${G.records.length ? G.records.map(r => `<div class="rec"><button style="text-align:left;flex:1" data-rec="${r.id}"><div style="font-weight:700">${esc(r.title)}</div></button><span class="v">${esc(r.value)}</span></div>`).join('') :
+        `<p class="muted" style="margin:0">Guardá los récords del grupo, como los cabezazos sin que se caiga la pelota.</p>`}</div>
+    </div>
+
+`;
+}
+/* ============ GRUPO · Compartido ============ */
+const KINDS = { musica: ['🎧', 'Música'], meditacion: ['🧘', 'Meditación'], libro: ['📚', 'Libros'], video: ['🎬', 'Videos'], otro: ['✨', 'Otros'] };
+let shareFilter = 'todo';
+async function renderShared(G){
+  const box = $('#gsub'); if (!box) return;
+  const gid = G.group.id, list = S.shares[gid];
+  const paint = () => {
+    const items = (S.shares[gid] || []).filter(x => shareFilter === 'todo' || x.kind === shareFilter);
+    box.innerHTML = `
+      <div class="section-title" style="margin-top:4px"><h2>Para el grupo</h2><button class="link" id="sh-add">+ Compartir</button></div>
+      <div class="chips">${[['todo', 'Todo'], ...Object.entries(KINDS).map(([k, v]) => [k, `${v[0]} ${v[1]}`])].map(([k, l]) => `<button class="chip ${shareFilter === k ? 'on' : ''}" data-sf="${k}">${l}</button>`).join('')}</div>
+      ${!S.shares[gid] ? '<div class="spinner"></div>' : items.length ? `<div class="card">${items.map(shareRow).join('')}</div>` :
+        `<div class="empty">Compartí la playlist con la que entrenás, la meditación que te sirve o el libro que estás leyendo. Todos lo ven acá.</div>`}
+      ${grupoRecords(G)}`;
+    box.querySelectorAll('[data-sf]').forEach(b => b.onclick = () => { shareFilter = b.dataset.sf; paint(); });
+    $('#sh-add', box).onclick = () => shareSheet(G);
+    box.querySelectorAll('[data-like]').forEach(b => b.onclick = async () => { try { await rpc('api_share_like', { ...P(), p_id: b.dataset.like }); await loadShares(gid); paint(); } catch(e){ toast(e.message); } });
+    box.querySelectorAll('[data-shdel]').forEach(b => b.onclick = () => confirmSheet('¿Borrar esto?', 'Deja de verse en el grupo.', 'Borrar', async () => { await rpc('api_share_delete', { ...P(), p_id: b.dataset.shdel }); await loadShares(gid); renderGrupo(); }));
+    const ra = $('#rec-add', box); if (ra) ra.onclick = () => recordSheet(null);
+    box.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
+  };
+  paint();
+  if (!list) { await loadShares(gid); if (S.gsub === 'compartido' && S.groupId === gid) paint(); }
+}
+async function loadShares(gid){ try { S.shares[gid] = await rpc('api_shares', { ...P(), p_group: gid }); } catch(e){ S.shares[gid] = S.shares[gid] || []; toast(e.message); } }
+function shareRow(x){
+  const [ic] = KINDS[x.kind] || KINDS.otro;
+  const canDel = x.mine || (S.group && S.group.group.is_admin);
+  const safeUrl = x.url && /^https?:\/\//.test(x.url) ? x.url : '';
+  return `<div class="share">
+    <span class="ic" aria-hidden="true">${ic}</span>
+    <div style="min-width:0;flex:1">
+      ${safeUrl ? `<a class="stitle" href="${esc(safeUrl)}" target="_blank" rel="noopener">${esc(x.title)} ↗</a>` : `<div class="stitle">${esc(x.title)}</div>`}
+      <div class="small muted">${esc(x.user.nick)} · ${ago(x.created_at).replace('hace ', '')}${x.note ? ` · ${esc(x.note)}` : ''}</div>
+      ${canDel ? `<button class="link small danger" data-shdel="${x.id}">Borrar</button>` : ''}
+    </div>
+    <button class="react ${x.liked ? 'mine' : ''}" data-like="${x.id}" aria-label="Me gusta">❤️${x.likes ? ' ' + x.likes : ''}</button>
+  </div>`;
+}
+function shareSheet(G){
+  let kind = shareFilter !== 'todo' ? shareFilter : 'musica';
+  const el = openSheet(`<h2>Compartir con ${esc(G.group.name)}</h2>
+    <div class="stack section">
+      <div class="chips" style="flex-wrap:wrap;margin:0">${Object.entries(KINDS).map(([k, v]) => `<button type="button" class="chip" data-k="${k}">${v[0]} ${v[1]}</button>`).join('')}</div>
+      <label class="field"><span>Qué es</span><input class="input" id="s-t" maxlength="80" placeholder="Ej: Mi playlist para correr"></label>
+      <label class="field"><span>Link (opcional)</span><input class="input" id="s-u" type="url" inputmode="url" placeholder="https://open.spotify.com/…"></label>
+      <label class="field"><span>Comentario (opcional)</span><input class="input" id="s-n" maxlength="200" placeholder="Ej: ideal para la rutina de 12 min"></label>
+      <button class="btn" id="s-save">Compartir</button>
+    </div>`);
+  const paintK = () => el.querySelectorAll('[data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
+  el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { kind = b.dataset.k; paintK(); });
+  paintK();
+  $('#s-save', el).onclick = async (e) => {
+    const t = $('#s-t', el).value.trim(); let u = $('#s-u', el).value.trim();
+    if (!t){ toast('Poné qué es'); return; }
+    if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
+    e.target.disabled = true;
+    try { await rpc('api_share_add', { ...P(), p_group: G.group.id, p_kind: kind, p_title: t, p_url: u || null, p_note: $('#s-n', el).value || null }); await loadShares(G.group.id); closeSheet(); renderGrupo(); toast('Compartido con el grupo 🙌'); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+
+/* ============ GRUPO · Torneos ============ */
+const T_EMOJI = ['🏆', '⚽', '🏀', '🎾', '🏓', '🍺', '🎯', '🏐', '🎮', '♟️', '🃏', '🥊'];
+const T_AV = ['🦁', '🐯', '🐻', '🐼', '🦊', '🐸', '🐵', '🦄', '🐲', '🦈', '👽', '🤖', '👻', '💀', '🤠', '🥷', '🧙', '🦸', '🐙', '🦅'];
+function pAv(p, size = 34){
+  if (!p) return `<span class="pav" style="width:${size}px;height:${size}px;background:var(--line)"></span>`;
+  if (p.photo && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.photo)) return `<img class="pav" src="${p.photo}" alt="" style="width:${size}px;height:${size}px">`;
+  return `<span class="pav" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.6)}px;background:${avColor(p.name)}">${esc(p.avatar || p.name.slice(0,1).toUpperCase())}</span>`;
+}
+async function renderTorneos(G){
+  const box = $('#gsub'); if (!box) return;
+  const gid = G.group.id;
+  const paint = () => {
+    const list = S.tourns[gid];
+    box.innerHTML = `
+      <div class="section-title" style="margin-top:4px"><h2>Torneos</h2></div>
+      <button class="btn" id="t-new" style="margin-bottom:14px">+ Armar torneo</button>
+      ${!list ? '<div class="spinner"></div>' : list.length ? `<div class="stack">${list.map(t => `<button class="card routine" data-t="${t.id}">
+          <div class="ic" style="background:var(--fire-soft)">${esc(t.emoji)}</div>
+          <div><h3>${esc(t.name)}</h3><div class="small muted">${t.format === 'ko' ? 'Eliminación directa' : 'Grupos + eliminación'} · ${t.players} participantes</div>
+          <div class="small" style="margin-top:4px;font-weight:700">${t.champion ? `🏆 Campeón: ${esc(t.champion.avatar || '')} ${esc(t.champion.name)}` : t.pending ? `⏳ ${t.pending} ${t.pending === 1 ? 'partido' : 'partidos'} por jugar` : 'En curso'}</div></div></button>`).join('')}</div>` :
+        `<div class="empty">Armá el fixture del fútbol del jueves, el beer pong o lo que quieran: eliminación directa o por grupos, con personajes o foto de cada uno.</div>`}`;
+    $('#t-new', box).onclick = () => tournamentCreator(G);
+    box.querySelectorAll('[data-t]').forEach(b => b.onclick = () => openTournament(b.dataset.t));
+  };
+  paint();
+  await loadTourns(gid);
+  if (S.gsub === 'torneos' && S.groupId === gid) paint();
+}
+async function loadTourns(gid){ try { S.tourns[gid] = await rpc('api_tournaments', { ...P(), p_group: gid }); } catch(e){ S.tourns[gid] = S.tourns[gid] || []; } }
+
+// Orden de siembra estándar: 1 contra el último, y los mejores se cruzan recién en la final.
+function seedOrder(n){ let a = [1, 2]; while (a.length < n){ const m = a.length * 2; a = a.flatMap(x => [x, m + 1 - x]); } return a; }
+function koMatches(entrants){
+  let size = 2; while (size < entrants.length) size *= 2;
+  const order = seedOrder(size), rounds = Math.log2(size), out = [];
+  for (let r = 1; r <= rounds; r++) for (let s = 0; s < size / 2 ** r; s++){
+    const m = { stage: 'ko', grp: null, round: r, slot: s, a: null, b: null };
+    if (r === 1){ const ea = entrants[order[2*s] - 1], eb = entrants[order[2*s + 1] - 1]; m.a = ea === undefined ? null : ea; m.b = eb === undefined ? null : eb; }
+    out.push(m);
+  }
+  return out;
+}
+function roundRobin(idxs, grp){
+  const l = [...idxs]; if (l.length % 2) l.push(null);
+  const n = l.length, out = [];
+  for (let r = 0; r < n - 1; r++){
+    let slot = 0;
+    for (let i = 0; i < n / 2; i++){ const a = l[i], b = l[n - 1 - i]; if (a !== null && b !== null) out.push({ stage: 'grupo', grp, round: r + 1, slot: slot++, a, b }); }
+    l.splice(1, 0, l.pop());
+  }
+  return out;
+}
+const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const roundName = (r, total) => ({ 0: 'Final', 1: 'Semifinal', 2: 'Cuartos', 3: 'Octavos', 4: '16avos' })[total - r] || `Ronda ${r}`;
+
+function tournamentCreator(G){
+  const T = { name: '', emoji: '🏆', format: 'ko', groups: 0, pass: 2, players: [] };
+  const addP = (name = '') => T.players.push({ name, avatar: T_AV[T.players.length % T_AV.length], photo: null, open: false });
+  addP(); addP();
+  const el = openSheet(`<h2>Armar torneo</h2><div id="tc"></div>`);
+  const box = $('#tc', el);
+  const autoGroups = () => Math.max(1, Math.round(T.players.filter(p => p.name.trim()).length / 4));
+  const paint = () => {
+    const nOk = T.players.filter(p => p.name.trim()).length;
+    box.innerHTML = `<div class="stack section">
+      <label class="field"><span>Nombre</span><input class="input" id="tc-name" maxlength="60" placeholder="Ej: Beer pong del viernes" value="${esc(T.name)}"></label>
+      <div class="field"><span>Juego</span><div class="emojis">${T_EMOJI.map(e => `<button type="button" class="${T.emoji === e ? 'on' : ''}" data-te="${e}">${e}</button>`).join('')}</div></div>
+      <div class="field"><span>Formato</span><div class="grid2">
+        <button type="button" class="fmt ${T.format === 'ko' ? 'on' : ''}" data-fmt="ko"><b>Eliminación directa</b><span class="small">El que pierde se va</span></button>
+        <button type="button" class="fmt ${T.format === 'grupos' ? 'on' : ''}" data-fmt="grupos"><b>Grupos + llaves</b><span class="small">Todos contra todos y después eliminación</span></button>
+      </div></div>
+      ${T.format === 'grupos' ? `<div class="grid2">
+        <div class="field"><span>Grupos</span>${stepper('tc-g', T.groups || autoGroups(), 1, 8)}</div>
+        <div class="field"><span>Pasan por grupo</span>${stepper('tc-p', T.pass, 1, 4)}</div></div>` : ''}
+      <div class="field"><span>Participantes (${nOk})</span>
+        <div class="stack" style="margin-top:0">${T.players.map((p, i) => `<div class="prow">
+          <button type="button" class="avbtn" data-avi="${i}" aria-label="Elegir personaje">${pAv(p, 40)}</button>
+          <input class="input" data-pn="${i}" maxlength="30" placeholder="Nombre ${i + 1}" value="${esc(p.name)}">
+          <button type="button" class="link danger" data-pdel="${i}" aria-label="Quitar">✕</button>
+          ${p.open ? `<div class="avpick">${T_AV.map(a => `<button type="button" data-ava="${i}" data-a="${a}">${a}</button>`).join('')}<label class="btn ghost sm" style="width:auto">📷 Foto<input type="file" accept="image/*" data-aph="${i}" hidden></label></div>` : ''}
+        </div>`).join('')}</div>
+        <div class="row" style="margin-top:10px;gap:14px;flex-wrap:wrap"><button type="button" class="link" id="tc-add">+ Agregar</button><button type="button" class="link" id="tc-grp">+ Sumar a los del grupo</button></div>
+      </div>
+      <p class="hint">El orden de los cruces se sortea al azar.</p>
+      <button class="btn" id="tc-go" ${nOk >= 2 ? '' : 'disabled'}>Crear torneo y sortear</button>
+    </div>`;
+    bindSteppers(box);
+    $('#tc-name', box).oninput = (e) => T.name = e.target.value;
+    box.querySelectorAll('[data-te]').forEach(b => b.onclick = () => { T.emoji = b.dataset.te; paint(); });
+    box.querySelectorAll('[data-fmt]').forEach(b => b.onclick = () => { T.format = b.dataset.fmt; paint(); });
+    box.querySelectorAll('[data-stepper]').forEach(s => s.addEventListener('click', () => setTimeout(() => { const g = $('#tc-g', box), p = $('#tc-p', box); if (g) T.groups = +g.textContent; if (p) T.pass = +p.textContent; })));
+    box.querySelectorAll('[data-pn]').forEach(inp => inp.oninput = () => { T.players[+inp.dataset.pn].name = inp.value; const n = T.players.filter(p => p.name.trim()).length; $('#tc-go', box).disabled = n < 2; });
+    box.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { T.players.splice(+b.dataset.pdel, 1); paint(); });
+    box.querySelectorAll('[data-avi]').forEach(b => b.onclick = () => { const p = T.players[+b.dataset.avi]; p.open = !p.open; paint(); });
+    box.querySelectorAll('[data-ava]').forEach(b => b.onclick = () => { const p = T.players[+b.dataset.ava]; p.avatar = b.dataset.a; p.photo = null; p.open = false; paint(); });
+    box.querySelectorAll('[data-aph]').forEach(inp => inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      try { const p = T.players[+inp.dataset.aph]; p.photo = await compress(f, 200, 60000); p.open = false; paint(); } catch(e){ toast('No se pudo leer esa foto'); }
+    });
+    $('#tc-add', box).onclick = () => { addP(); paint(); const last = box.querySelectorAll('[data-pn]'); last[last.length - 1].focus(); };
+    $('#tc-grp', box).onclick = () => {
+      const have = new Set(T.players.map(p => p.name.trim().toLowerCase()));
+      T.players = T.players.filter(p => p.name.trim());
+      (S.group ? S.group.members : []).forEach(m => { if (!have.has(m.nick.toLowerCase())) addP(m.nick); });
+      paint();
+    };
+    $('#tc-go', box).onclick = async (e) => {
+      const ps = shuffle(T.players.filter(p => p.name.trim()).map(p => ({ name: p.name.trim(), avatar: p.photo ? null : p.avatar, photo: p.photo })));
+      if (ps.length > 64){ toast('Máximo 64 participantes'); return; }
+      let matches;
+      if (T.format === 'ko') matches = koMatches(ps.map((_, i) => i));
+      else {
+        const g = Math.min(T.groups || autoGroups(), Math.floor(ps.length / 2));
+        const L = 'ABCDEFGH';
+        ps.forEach((p, i) => p.grp = L[i % g]);
+        matches = [];
+        for (let k = 0; k < g; k++) matches.push(...roundRobin(ps.map((p, i) => p.grp === L[k] ? i : null).filter(i => i !== null), L[k]));
+      }
+      e.target.disabled = true;
+      try {
+        const id = await rpc('api_tournament_create', { ...P(), p_group: G.group.id, p_name: T.name.trim() || `Torneo de ${G.group.name}`, p_emoji: T.emoji, p_format: T.format, p_players: ps, p_matches: matches });
+        LS.set('t_pass_' + id, String(T.pass));
+        closeSheet(); await loadTourns(G.group.id); renderGrupo(); openTournament(id);
+      } catch(err){ toast(err.message); e.target.disabled = false; }
+    };
+  };
+  paint();
+}
+
+let TV = null; // torneo abierto
+async function openTournament(id, view){
+  try { TV = await rpc('api_tournament', { ...P(), p_t: id }); } catch(e){ toast(e.message); return; }
+  TV.view = view || (TV.t.format === 'grupos' && TV.t.status === 'grupos' ? 'grupos' : 'llaves');
+  paintTournament();
+}
+function paintTournament(){
+  const { t, players, matches } = TV;
+  const P_ = Object.fromEntries(players.map(p => [p.id, p]));
+  const champ = t.champion && P_[t.champion];
+  const ko = matches.filter(m => m.stage === 'ko');
+  const tabs = t.format === 'grupos' ? `<div class="subtabs">${[['grupos', 'Grupos'], ['llaves', 'Llaves']].map(([k, l]) => `<button class="${TV.view === k ? 'on' : ''}" data-tv="${k}">${l}</button>`).join('')}</div>` : '';
+  let body = '';
+  if (TV.view === 'grupos'){
+    const grps = [...new Set(players.map(p => p.grp).filter(Boolean))].sort();
+    const allPlayed = matches.filter(m => m.stage === 'grupo').every(m => m.played);
+    body = grps.map(g => {
+      const st = standings(players.filter(p => p.grp === g), matches.filter(m => m.stage === 'grupo' && m.grp === g));
+      const gm = matches.filter(m => m.stage === 'grupo' && m.grp === g);
+      return `<div class="card section"><h3>Grupo ${g}</h3>
+        <table class="stand"><thead><tr><th></th><th style="text-align:left">Equipo</th><th>PJ</th><th>Dif</th><th>Pts</th></tr></thead><tbody>
+        ${st.map((r, i) => `<tr class="${i < passN() ? 'q' : ''}"><td>${i + 1}</td><td><span class="row" style="gap:8px">${pAv(r.p, 26)}<span class="pname">${esc(r.p.name)}</span></span></td><td>${r.pj}</td><td>${r.dif > 0 ? '+' : ''}${r.dif}</td><td><b>${r.pts}</b></td></tr>`).join('')}
+        </tbody></table>
+        <div class="stack" style="margin-top:12px">${gm.map(m => matchCard(m, P_)).join('')}</div></div>`;
+    }).join('') + (t.status === 'grupos' ? `<div class="section"><button class="btn" id="to-ko" ${allPlayed ? '' : 'disabled'}>Pasar a eliminatorias</button>${allPlayed ? '' : '<p class="hint" style="text-align:center">Cargá todos los partidos de grupo para armar las llaves.</p>'}</div>` : '');
+  } else if (!ko.length){
+    body = '<div class="empty section">Las llaves se arman cuando terminan los grupos.</div>';
+  } else {
+    const R = Math.max(...ko.map(m => m.round));
+    body = `<div class="bracket">${Array.from({ length: R }, (_, i) => i + 1).map(r => `<div class="bcol"><div class="bhead">${roundName(r, R)}</div>${ko.filter(m => m.round === r).map(m => matchCard(m, P_, true)).join('')}</div>`).join('')}</div>`;
+  }
+  $('#layer').innerHTML = `<div class="runner tview" role="dialog" aria-modal="true"><div class="inner">
+    <div class="row between" style="margin-bottom:14px"><h2>${esc(t.emoji)} ${esc(t.name)}</h2><button class="btn ghost sm" id="tv-x">Cerrar</button></div>
+    ${champ ? `<div class="champ">${pAv(champ, 64)}<div><div class="small" style="opacity:.8">🏆 Campeón</div><div class="cname">${esc(champ.name)}</div></div></div>` : ''}
+    ${tabs}${body}
+    <p class="hint" style="text-align:center;margin-top:18px">Tocá un partido para cargar el resultado. Cualquiera del grupo puede hacerlo.</p>
+    ${t.can_delete ? '<div class="section" style="text-align:center"><button class="link danger" id="tv-del">Borrar torneo</button></div>' : ''}
+  </div></div>`;
+  pushLayer();
+  const root = $('#layer .tview');
+  $('#tv-x', root).onclick = () => { closeSheet(); if (S.group) { loadTourns(S.group.group.id).then(() => { if (S.tab === 'grupo' && S.gsub === 'torneos') renderGrupo(); }); } };
+  root.querySelectorAll('[data-tv]').forEach(b => b.onclick = () => { TV.view = b.dataset.tv; paintTournament(); });
+  root.querySelectorAll('[data-m]').forEach(b => b.onclick = () => resultSheet(matches.find(m => m.id === b.dataset.m), P_));
+  const tk = $('#to-ko', root); if (tk) tk.onclick = () => toKnockout();
+  const d = $('#tv-del', root); if (d) d.onclick = () => tSheet(`<h2>¿Borrar ${esc(t.name)}?</h2><p class="muted">Se borra para todo el grupo, con todos los resultados.</p>
+    <div class="stack section"><button class="btn" id="ts-yes" style="background:var(--danger);box-shadow:0 4px 0 #A5243A">Borrar torneo</button><button class="btn ghost" data-tclose>Cancelar</button></div>`, (el) => {
+      $('#ts-yes', el).onclick = async () => { try { await rpc('api_tournament_delete', { ...P(), p_t: t.id }); closeSheet(); if (S.group){ await loadTourns(S.group.group.id); renderGrupo(); } toast('Torneo borrado'); } catch(e){ toast(e.message); } };
+    });
+}
+const passN = () => +(LS.get('t_pass_' + TV.t.id) || 2);
+function standings(ps, ms){
+  const t = Object.fromEntries(ps.map(p => [p.id, { p, pj: 0, pts: 0, gf: 0, gc: 0, dif: 0 }]));
+  ms.filter(m => m.played).forEach(m => {
+    const A = t[m.a], B = t[m.b]; if (!A || !B) return;
+    const sa = m.sa ?? (m.winner === m.a ? 1 : 0), sb = m.sb ?? (m.winner === m.b ? 1 : 0);
+    A.pj++; B.pj++; A.gf += sa; A.gc += sb; B.gf += sb; B.gc += sa;
+    if (m.winner === m.a) A.pts += 3; else if (m.winner === m.b) B.pts += 3; else { A.pts++; B.pts++; }
+  });
+  return Object.values(t).map(r => ({ ...r, dif: r.gf - r.gc })).sort((x, y) => y.pts - x.pts || y.dif - x.dif || y.gf - x.gf || x.p.seed - y.p.seed);
+}
+function matchCard(m, P_, bracket){
+  const A = P_[m.a], B = P_[m.b], can = A && B;
+  const side = (p, sc, won) => `<div class="bp ${won ? 'win' : ''} ${m.played && !won && m.winner ? 'lose' : ''}">${pAv(p, 26)}<span class="pname">${p ? esc(p.name) : (m.round === 1 && m.stage === 'ko' && m.played ? 'Pasa directo' : 'A definir')}</span><b>${sc ?? (m.played && won && m.sa == null ? '✓' : '')}</b></div>`;
+  return `<button class="bmatch ${m.played ? 'done' : ''}" ${can ? `data-m="${m.id}"` : 'disabled'}>
+    ${side(A, m.sa, m.played && m.winner && m.winner === m.a)}${side(B, m.sb, m.played && m.winner && m.winner === m.b)}
+    ${!m.played && can ? '<span class="bplay">Cargar resultado</span>' : ''}</button>`;
+}
+// Hoja sobre la vista del torneo (no reemplaza la capa).
+function tSheet(html, bind){
+  const root = $('#layer .tview'); if (!root) return;
+  const s = document.createElement('div'); s.className = 'scrim tsheet';
+  s.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  root.appendChild(s);
+  s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('[data-tclose]')) s.remove(); });
+  bind && bind(s);
+}
+function resultSheet(m, P_){
+  const A = P_[m.a], B = P_[m.b];
+  tSheet(`<h2>Resultado</h2>
+    <div class="vs section">
+      <div class="vsp">${pAv(A, 52)}<b>${esc(A.name)}</b><input class="input score" id="r-a" type="number" inputmode="numeric" min="0" max="999" value="${m.sa ?? ''}" placeholder="0"></div>
+      <span class="muted" style="font-weight:800">vs</span>
+      <div class="vsp">${pAv(B, 52)}<b>${esc(B.name)}</b><input class="input score" id="r-b" type="number" inputmode="numeric" min="0" max="999" value="${m.sb ?? ''}" placeholder="0"></div>
+    </div>
+    <div class="stack section">
+      <button class="btn" id="r-save">Guardar resultado</button>
+      <p class="hint" style="text-align:center;margin:0">¿Sin tanteador? Marcá quién ganó:</p>
+      <div class="grid2"><button class="btn ghost sm" style="width:100%" id="r-wa">Ganó ${esc(A.name)}</button><button class="btn ghost sm" style="width:100%" id="r-wb">Ganó ${esc(B.name)}</button></div>
+      ${m.played ? '<button class="link danger" id="r-clear">Borrar resultado</button>' : ''}
+    </div>`, (el) => {
+    const send = async (sa, sb, win) => {
+      try { await rpc('api_match_result', { ...P(), p_match: m.id, p_sa: sa, p_sb: sb, p_win: win }); el.remove(); await openTournament(TV.t.id, TV.view);
+        if (TV.t.status === 'terminado' && TV.t.champion){ vibrate([60, 60, 120]); beep(660, .12); setTimeout(() => beep(990, .2), 140); }
+      } catch(err){
+        if (err.message === 'EMPATE_KO'){
+          $('.stack', el).innerHTML = `<p style="font-weight:700;margin:0">Hubo empate. ¿Quién pasó (penales, desempate)?</p>
+            <div class="grid2"><button class="btn sm" style="width:100%" id="p-a">${esc(A.name)}</button><button class="btn sm" style="width:100%" id="p-b">${esc(B.name)}</button></div>`;
+          $('#p-a', el).onclick = () => send(sa, sb, 'a'); $('#p-b', el).onclick = () => send(sa, sb, 'b');
+        } else toast(err.message);
+      }
+    };
+    $('#r-save', el).onclick = () => {
+      const a = $('#r-a', el).value, b = $('#r-b', el).value;
+      if (a === '' || b === ''){ toast('Poné los dos números, o marcá quién ganó'); return; }
+      send(+a, +b, null);
+    };
+    $('#r-wa', el).onclick = () => send(null, null, 'a');
+    $('#r-wb', el).onclick = () => send(null, null, 'b');
+    const c = $('#r-clear', el); if (c) c.onclick = () => send(null, null, null);
+  });
+}
+async function toKnockout(){
+  const { players, matches } = TV;
+  const grps = [...new Set(players.map(p => p.grp).filter(Boolean))].sort();
+  const n = passN(), tables = grps.map(g => standings(players.filter(p => p.grp === g), matches.filter(m => m.stage === 'grupo' && m.grp === g)));
+  // Siembra: todos los primeros, después los segundos… así los de un mismo grupo se cruzan lo más tarde posible.
+  const seeds = [];
+  for (let k = 0; k < n; k++) seeds.push(...tables.map(t => t[k]).filter(Boolean).sort((x, y) => y.pts - x.pts || y.dif - x.dif).map(r => r.p.id));
+  if (seeds.length < 2){ toast('Hacen falta al menos 2 clasificados'); return; }
+  try { await rpc('api_tournament_to_ko', { ...P(), p_t: TV.t.id, p_matches: koMatches(seeds) }); await openTournament(TV.t.id, 'llaves'); toast('¡Llaves armadas! 🔥'); }
+  catch(e){ toast(e.message); }
+}
+
 const sumStreak = (m) => m.habits.reduce((a,h) => a + h.streak, 0);
 function memberRow(m){
   const canKick = S.group && S.group.group.is_admin && !m.is_me;
@@ -1368,10 +1852,19 @@ function renderPerfil(){
       </form>
     </div>
 
-    <div class="section"><div class="section-title"><h2>Tu llave</h2></div>
-      <div class="card"><p style="margin-top:0">Tu cuenta vive en este celu. Si lo cambiás o borrás la app, abrí este link y recuperás tu racha. Guardalo en un chat con vos mismo.</p>
-        <button class="btn ice sm" id="key" style="width:100%">Copiar mi link de acceso</button>
-        <p class="hint">No lo compartas: con ese link cualquiera entra como vos.</p></div>
+    <div class="section"><div class="section-title"><h2>Recordatorio</h2></div>
+      <div class="card">${remindBlock()}</div>
+    </div>
+
+    <div class="section"><div class="section-title"><h2>Entrar desde otro celu</h2></div>
+      <div class="card">
+        <p style="margin-top:0">${me.user.has_pin ? `✅ Entrás con tu apodo <b>${esc(me.user.nick)}</b> y tu PIN, desde cualquier celu o compu.` : 'Creá un PIN de 4 números: con tu apodo y el PIN entrás a tu cuenta desde cualquier dispositivo.'}</p>
+        <button class="btn ${me.user.has_pin ? 'ghost' : ''} sm" id="pin-set" style="width:100%">${me.user.has_pin ? 'Cambiar mi PIN' : 'Crear mi PIN'}</button>
+        <details class="more" style="margin-top:12px"><summary>Link de acceso (alternativa)</summary>
+          <p class="small muted">Abre tu cuenta sin PIN. No lo compartas: con ese link cualquiera entra como vos.</p>
+          <button class="btn ice sm" id="key" style="width:100%">Copiar mi link de acceso</button>
+        </details>
+      </div>
     </div>
 
     <div class="section"><div class="section-title"><h2>Instalar en el celu</h2></div>
@@ -1401,10 +1894,36 @@ function renderPerfil(){
     try { await rpc('api_update_profile', { ...P(), p_nick: $('#p-nick').value, p_email: $('#p-mail').value, p_tz: null }); S.me = await rpc('api_me', P()); renderPerfil(); toast('Datos guardados'); }
     catch(err){ toast(err.message); }
   };
+  $('#pin-set').onclick = pinSheet;
+  bindRemind();
   $('#wid').onclick = async () => { (await copy(widgetScript())) ? toast('Widget copiado. Pegalo en Scriptable 📲', 3200) : toast('No se pudo copiar'); };
   $('#key').onclick = async () => { const l = `${location.origin}${location.pathname}?k=${S.token}`; (await copy(l)) ? toast('Link copiado. Guardalo en un lugar seguro 🔑', 3200) : toast(l, 6000); };
   $('#logout').onclick = () => confirmSheet('¿Cerrar sesión?', 'Si no guardaste tu link de acceso, no vas a poder volver a esta cuenta.', 'Cerrar sesión', async () => { LS.del('racha_token'); LS.del('racha_group'); location.reload(); });
 }
+const HOURS = [19, 20, 21, 22, 23, 0, 1];
+function remindBlock(){
+  const st = pushState(), h = S.me.user.remind_hour;
+  if (st === 'no') return '<p style="margin:0">Este navegador no permite avisos. Probá con Chrome (Android) o con la app instalada (iPhone).</p>';
+  if (st === 'instalar') return '<p style="margin:0">En iPhone los avisos funcionan con la app instalada en la pantalla de inicio. Instalala y activalos desde acá.</p>';
+  if (st === 'denied') return '<p style="margin:0">Bloqueaste los avisos. Para activarlos, andá a los ajustes del celu → Notificaciones → Fueguitos (o el navegador).</p>';
+  if (st === 'default') return `<p style="margin-top:0">Te avisamos a la noche si te falta anotar algo, así no se te apaga el fueguito.</p><button class="btn sm" id="rm-on" style="width:100%">Activar avisos</button>`;
+  return `<div class="hrow" style="padding-top:0"><div><b>Avisarme si me falta anotar</b><div class="small muted">Solo si ese día te falta algo</div></div>
+      <button class="toggle ${h != null ? 'on' : ''}" role="switch" aria-checked="${h != null}" aria-label="Recordatorio" id="rm-tg"></button></div>
+    ${h != null ? `<div class="hrow"><span>A las</span><select class="input" id="rm-h" style="width:auto;min-height:44px">${HOURS.map(x => `<option value="${x}" ${x === h ? 'selected' : ''}>${String(x).padStart(2, '0')}:00</option>`).join('')}</select></div>` : ''}
+    <button class="link" id="rm-test" style="margin-top:10px">Mandarme un aviso de prueba</button>`;
+}
+function bindRemind(){
+  const on = $('#rm-on'); if (on) on.onclick = async () => { if (await enablePush()) renderPerfil(); };
+  const tg = $('#rm-tg'); if (tg) tg.onclick = async () => {
+    const h = S.me.user.remind_hour != null ? null : 22;
+    try { await rpc('api_set_reminder', { ...P(), p_hour: h }); S.me.user.remind_hour = h; renderPerfil(); } catch(e){ toast(e.message); }
+  };
+  const sel = $('#rm-h'); if (sel) sel.onchange = async () => {
+    try { await rpc('api_set_reminder', { ...P(), p_hour: +sel.value }); S.me.user.remind_hour = +sel.value; toast(`Te avisamos a las ${sel.options[sel.selectedIndex].text}`); } catch(e){ toast(e.message); }
+  };
+  const t = $('#rm-test'); if (t) t.onclick = testPush;
+}
+
 function heatmap(){
   const today = S.me.today, weeks = 18;
   const byDay = {};
