@@ -46,7 +46,8 @@
 ::selection{background:var(--fire);color:#fff}
 input{caret-color:var(--fire)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--ink)}
+html,body{margin:0;background:var(--bg);color:var(--ink);touch-action:manipulation;-webkit-text-size-adjust:100%}
+button,a,label,input,.habit{touch-action:manipulation}
 body{font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.4;min-height:100dvh;overscroll-behavior-y:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;padding:0}
@@ -124,6 +125,30 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .music .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;flex:none;background:var(--fire-soft)}
 .music b{display:block;font-size:16px}
 .music .go{margin-left:auto;font-weight:800;color:var(--ok-ink);font-size:14px;flex:none}
+
+/* Guía de instalación */
+.guide{position:fixed;inset:0;z-index:90;background:rgba(20,10,6,.82);display:flex;align-items:center;justify-content:center;padding:calc(var(--safe-t) + 70px) 18px calc(var(--safe-b) + 70px);animation:fade .2s}
+.gcard{background:var(--bg);border-radius:26px;padding:22px 20px 18px;width:100%;max-width:400px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.glogo{width:56px;height:70px;margin-bottom:8px}
+.gsteps{margin:0 0 16px;padding:0;list-style:none;counter-reset:s}
+.gsteps li{counter-increment:s;position:relative;padding:8px 0 8px 42px;font-size:17px;line-height:1.35}
+.gsteps li::before{content:counter(s);position:absolute;left:0;top:6px;width:30px;height:30px;border-radius:50%;background:var(--fire);color:#fff;font-weight:800;display:grid;place-items:center;font-size:16px}
+.gcard .btn+.btn{margin-top:12px}
+.ios-share{display:inline-block;width:16px;height:18px;vertical-align:-3px;border:2px solid currentColor;border-top:0;border-radius:0 0 4px 4px;position:relative;margin:0 2px}
+.ios-share::before{content:"↑";position:absolute;left:50%;top:-11px;transform:translateX(-50%);font-weight:800;font-size:14px;line-height:1}
+.garrow{position:fixed;color:var(--gold);width:40px;height:62px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.garrow svg{width:100%;height:100%}
+.garrow.tr{top:calc(var(--safe-t) + 6px);right:14px;animation:nudgeUp 1s ease-in-out infinite alternate}
+.garrow.br{bottom:calc(var(--safe-b) + 6px);right:18px;transform:rotate(180deg);animation:nudgeDown 1s ease-in-out infinite alternate}
+@keyframes nudgeUp{to{transform:translateY(-10px)}}
+@keyframes nudgeDown{from{transform:rotate(180deg)}to{transform:rotate(180deg) translateY(-10px)}}
+
+/* Anotado con un toque */
+.tickscreen{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 34%, #6B240B 0, var(--party) 62%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px calc(24px + var(--safe-b));text-align:center;animation:fade .2s}
+.bigtick{width:120px;height:120px;border-radius:50%;background:var(--ok);display:grid;place-items:center;font-size:70px;font-weight:800;margin-bottom:18px;animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
+.tickscreen .lbl{font-size:20px;font-weight:700;margin:6px 0 0;color:var(--gold)}
+.tickscreen .btns{width:100%;max-width:340px;margin-top:28px;display:grid;gap:14px}
+.tickscreen .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);box-shadow:0 4px 0 rgba(255,255,255,.12)}
 
 /* Barra de acción */
 .actionbar{position:fixed;left:0;right:0;bottom:calc(74px + var(--safe-b));padding:0 16px;z-index:20;pointer-events:none}
@@ -222,6 +247,8 @@ nav.tabs button.on{color:var(--fire)}
 .stepper button{width:46px;height:46px;font-size:22px;font-weight:800}
 .stepper output{min-width:48px;text-align:center;font-weight:800;font-size:19px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.calc{min-height:50px;display:flex;flex-direction:column;justify-content:center;font-size:15px}
+.calc b{font-size:22px;font-weight:800}
 
 /* Bienvenida */
 .welcome{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;max-width:420px;margin:0 auto;padding:24px 20px calc(24px + var(--safe-b))}
@@ -316,7 +343,9 @@ const ERRORS = {
   SOLO_ADMIN: 'Solo quien administra el grupo puede hacer esto.',
   NO_PERMITIDO: 'No tenés acceso a eso.',
   HABITO_NO_EXISTE: 'Ese hábito ya no existe.',
-  DATOS_INVALIDOS: 'Revisá los datos y probá de nuevo.'
+  DATOS_INVALIDOS: 'Revisá los datos y probá de nuevo.',
+  APODO_EN_USO: 'Ese apodo ya lo usa otra persona. Probá con otro. Si es tuyo, tocá «Tengo cuenta o invitación».',
+  APODO_INVALIDO: 'Poné un apodo de hasta 30 letras.'
 };
 async function rpc(fn, args={}){
   let res;
@@ -371,10 +400,12 @@ async function boot(){
   if (q.get('k')) { S.token = q.get('k'); LS.set('racha_token', S.token); }
   if (q.get('g')) S.pendingJoin = q.get('g').toUpperCase();
   if (q.get('anotar')) S.quick = q.get('anotar');
+  S.rapido = q.get('rapido') === '1';
   if (['hoy','grupo','rutinas','perfil'].includes(q.get('tab'))) S.tab = q.get('tab');
-  if (q.toString()) history.replaceState(null, '', location.pathname);
+  // Dentro de WhatsApp/Instagram se deja el link intacto, para que "Abrir en el navegador" conserve la invitación.
+  if (q.toString() && !inAppBrowser()) history.replaceState(null, '', location.pathname);
 
-  if (!S.token){ renderWelcome(); return; }
+  if (!S.token){ renderWelcome(); maybeInstallGuide(); return; }
   try {
     await loadMe();
   } catch(e){
@@ -382,6 +413,7 @@ async function boot(){
     renderOffline(e.message); return;
   }
   await afterLogin();
+  maybeInstallGuide();
 }
 
 async function afterLogin(){
@@ -399,8 +431,101 @@ async function afterLogin(){
   if (S.quick){
     const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
     S.quick = null;
-    if (h && !h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); }
+    if (h && S.rapido) quickToggle(h);
+    else if (h && !h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); }
   }
+}
+
+/* ============ Plataforma e instalación ============ */
+const UA = navigator.userAgent;
+const isIOS = /iphone|ipad|ipod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = /android/i.test(UA);
+// Navegadores metidos adentro de otras apps (WhatsApp, Instagram…): no dejan instalar.
+const inAppBrowser = () => /FBAN|FBAV|Instagram|WhatsApp|Line\/|; wv\)/i.test(UA);
+
+// Cartel grande la primera vez que se entra desde el navegador del celu.
+function maybeInstallGuide(){
+  if (isStandalone() || !(isIOS || isAndroid)) return;
+  if (LS.get('fueguitos_guia') && !inAppBrowser()) return;
+  const inApp = inAppBrowser();
+  const iosOther = isIOS && /CriOS|FxiOS|EdgiOS/i.test(UA);
+  // En iPhone la app instalada no comparte datos con Safari: se lleva la invitación o la cuenta copiando un link.
+  const carry = S.token ? `${location.origin}${location.pathname}?k=${S.token}` : (S.pendingJoin ? inviteLink(S.pendingJoin) : '');
+  let arrow = 'tr', title, steps;
+  if (inApp){
+    title = 'Abrila en el navegador';
+    steps = [`Tocá el menú <b>⋮</b> o <b>···</b> ${isIOS ? '(arriba o abajo a la derecha)' : 'arriba a la derecha'}.`, `Elegí <b>Abrir en ${isIOS ? 'Safari' : 'Chrome'}</b> (o "Abrir en el navegador").`, 'Ahí te mostramos cómo instalarla.'];
+  } else if (isIOS){
+    arrow = iosOther ? 'tr' : 'br';
+    title = 'Instalá Fueguitos';
+    steps = [
+      ...(carry ? [`Primero tocá <b>${S.token ? 'Copiar mi cuenta' : 'Copiar mi invitación'}</b> (acá abajo).`] : []),
+      iosOther ? 'Tocá <b>Compartir</b> <span class="ios-share" aria-hidden="true"></span> arriba a la derecha.' : 'Tocá <b>···</b> abajo a la derecha y después <b>Compartir</b> <span class="ios-share" aria-hidden="true"></span> (en iPhone más viejos, Compartir está abajo al medio).',
+      'Bajá y elegí <b>Agregar a pantalla de inicio</b>.',
+      carry ? 'Abrí Fueguitos desde el ícono nuevo, tocá <b>Tengo cuenta o invitación</b> y pegá el link.' : 'Abrí Fueguitos desde el ícono nuevo y creá tu cuenta ahí.'
+    ];
+  } else {
+    title = 'Instalá Fueguitos';
+    steps = deferredInstall ? ['Tocá el botón naranja. Listo, queda en tu pantalla como cualquier app.'] : ['Tocá el menú <b>⋮</b> arriba a la derecha.', 'Elegí <b>Instalar app</b> (o "Agregar a pantalla principal").', 'Abrí Fueguitos desde el ícono nuevo.'];
+  }
+  const g = document.createElement('div');
+  g.className = 'guide'; g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-label', title);
+  g.innerHTML = `${(inApp || !deferredInstall || isIOS) ? `<div class="garrow ${arrow}" aria-hidden="true"><svg viewBox="0 0 48 72"><path d="M24 70V8M8 24 24 6l16 18" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>` : ''}
+    <div class="gcard">
+      <div class="glogo">${flameSVG(true)}</div>
+      <h2>${title}</h2>
+      <p class="muted" style="margin:6px 0 14px">Queda con su ícono en tu pantalla, a pantalla completa, como cualquier app.</p>
+      <ol class="gsteps">${steps.map(x => `<li>${x}</li>`).join('')}</ol>
+      ${!inApp && carry ? `<button class="btn ice" id="g-copy">${S.token ? 'Copiar mi cuenta' : 'Copiar mi invitación'}</button>` : ''}
+      ${!inApp && !isIOS && deferredInstall ? '<button class="btn" id="g-inst">Instalar Fueguitos</button>' : ''}
+      <button class="link" id="g-skip" style="display:block;margin:14px auto 0">${inApp ? 'Seguir acá igual' : 'Ahora no, seguir en el navegador'}</button>
+    </div>`;
+  document.body.appendChild(g);
+  const close = () => { LS.set('fueguitos_guia', '1'); g.remove(); };
+  $('#g-skip', g).onclick = close;
+  const c = $('#g-copy', g); if (c) c.onclick = async () => { (await copy(carry)) ? toast('Copiado. Ahora instalala 👇', 3000) : toast(carry, 6000); };
+  const i = $('#g-inst', g); if (i) i.onclick = async () => { deferredInstall.prompt(); const r = await deferredInstall.userChoice; deferredInstall = null; if (r.outcome === 'accepted') close(); };
+}
+
+// "Ya tengo cuenta": pegar el link de acceso (?k=) o una invitación (?g= o el código).
+function haveAccountSheet(){
+  const el = openSheet(`<h2>Tengo cuenta o invitación</h2>
+    <p class="muted">Pegá tu link de acceso (está en Perfil → Copiar mi link de acceso) o el link de invitación de tu grupo.</p>
+    <div class="stack section">
+      <input class="input" id="h-link" inputmode="url" autocomplete="off" placeholder="https://fueguitos.vercel.app/?k=…">
+      ${navigator.clipboard && navigator.clipboard.readText ? '<button class="btn ghost" id="h-paste">Pegar</button>' : ''}
+      <button class="btn" id="h-go">Entrar</button>
+    </div>`);
+  const p = $('#h-paste', el); if (p) p.onclick = async () => { try { $('#h-link', el).value = (await navigator.clipboard.readText()).trim(); } catch(e){ toast('Mantené apretado el cuadro y tocá Pegar'); } };
+  $('#h-go', el).onclick = () => {
+    const raw = $('#h-link', el).value.trim(); let k = null, g = null;
+    try { const u = new URL(raw); k = u.searchParams.get('k'); g = u.searchParams.get('g'); } catch(e){}
+    if (!k && /^[0-9a-f-]{36}$/i.test(raw)) k = raw;
+    if (!g && /^[a-z]{6}$/i.test(raw)) g = raw;
+    if (k){ LS.set('racha_token', k); location.replace(location.pathname); return; }
+    if (g){ S.pendingJoin = g.toUpperCase(); closeSheet(); renderWelcome(); toast('Invitación lista. Poné tu apodo 🔥'); return; }
+    toast('Ese link no parece de Fueguitos. Revisalo.');
+  };
+}
+
+// Anotar o desanotar con un toque (desde accesos directos o el widget).
+async function quickToggle(h){
+  const show = (html) => { $('#layer').innerHTML = `<div class="tickscreen" role="dialog" aria-modal="true">${html}</div>`; pushLayer(); };
+  try {
+    if (!h.done_today){
+      const r = await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: null });
+      S.me.habits = r.habits; renderMain();
+      const x = (r.results || [])[0] || {}, hh = S.me.habits.find(y => y.id === h.id) || h;
+      vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120);
+      show(`<div class="bigtick">✓</div><h2>${esc(h.name)} anotado</h2><p class="lbl">Día ${hh.streak} 🔥${x.earned_ice ? ' · ¡ganaste un hielito! 🧊' : ''}</p>
+        <div class="btns"><button class="btn" id="t-ok">Listo</button><button class="btn ghost" id="t-undo">Me equivoqué, desanotar</button></div>`);
+    } else {
+      show(`<div class="bigtick">✓</div><h2>${esc(h.name)} ya está anotado hoy</h2><p class="lbl">Día ${h.streak} 🔥</p>
+        <div class="btns"><button class="btn" id="t-ok">Listo</button><button class="btn ghost" id="t-undo">Desanotar</button></div>`);
+    }
+    $('#t-ok').onclick = closeSheet;
+    $('#t-undo').onclick = async () => { try { S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); closeSheet(); renderMain(); toast(`${h.name} desanotado`); } catch(err){ toast(err.message); } };
+  } catch(err){ toast(err.message, 3500); }
 }
 
 function renderOffline(msg){
@@ -423,8 +548,9 @@ function renderWelcome(){
       <button class="btn" type="submit">Empezar</button>
     </form>
     <p class="hint" style="text-align:center;margin-top:18px">No hace falta mail ni contraseña.</p>
+    <button class="link" id="have" style="margin:6px auto 0;display:block">Tengo cuenta o invitación</button>
   </div>`;
-  $('#nick').focus();
+  $('#have').onclick = haveAccountSheet;
   $('#reg').onsubmit = async (e) => {
     e.preventDefault();
     const nick = $('#nick').value.trim(); if (!nick) return;
@@ -491,28 +617,39 @@ function bindSteppers(root){
   });
 }
 
+// Con las reglas del hábito, la racha define sola cuánto falta para el próximo hielo.
+const leftFor = (streak, every) => every - (streak % every);
+const iceFor = (streak, every, max) => Math.min(max, Math.floor(streak / every));
 function openActivateSheet(h, adjusting, rerender){
   const mine = S.me.habits.find(x => x.id === h.id);
-  const streak = mine ? mine.streak : 0, ice = mine ? mine.ice : 0, left = mine ? mine.left_for_ice : h.ice_every;
+  const streak = mine ? mine.streak : 0;
+  let iceTouched = !!mine;
   const el = openSheet(`
     <h2>${esc(h.emoji)} ${adjusting ? 'Corregir' : 'Activar'} ${esc(h.name)}</h2>
-    <p class="muted">${adjusting ? 'Ajustá los números si algo quedó mal.' : '¿Ya venías con racha? Copiá los números de tu último mensaje del grupo. Si arrancás de cero, dejalo así.'}</p>
+    <p class="muted">${adjusting ? 'Ajustá la racha si algo quedó mal. Lo demás se calcula solo.' : '¿Ya venías con racha? Poné los días que llevás. Si arrancás de cero, dejalo en 0.'}</p>
     <div class="stack section">
       <label class="field"><span>Días de racha 🔥</span><input class="input" id="a-streak" type="number" inputmode="numeric" min="0" max="9999" value="${streak}"></label>
       <div class="grid2">
-        <div class="field"><span>Hielos 🧊</span>${stepper('a-ice', ice, 0, h.max_ice)}</div>
-        <div class="field"><span>Faltan para hielo ⌛</span>${stepper('a-left', left, 1, h.ice_every)}</div>
+        <div class="field"><span>Hielos que tenés 🧊</span>${stepper('a-ice', mine ? mine.ice : 0, 0, h.max_ice)}</div>
+        <div class="field"><span>Faltan para hielo ⌛</span><div class="calc"><div><b id="a-left">${leftFor(streak, h.ice_every)}</b> días</div><div class="hint" style="margin:2px 0 0">calculado solo</div></div></div>
       </div>
-      <p class="hint">Máximo ${h.max_ice} hielos. Se gana uno cada ${h.ice_every} días anotados.</p>
+      <p class="hint">Se gana un hielo cada ${h.ice_every} días anotados (máximo ${h.max_ice}). Si ya usaste alguno, bajalo.</p>
       <button class="btn" id="a-save">${adjusting ? 'Guardar' : 'Activar'}</button>
     </div>`);
   bindSteppers(el);
+  const streakVal = () => Math.max(0, parseInt($('#a-streak', el).value || '0', 10) || 0);
+  el.querySelector('[data-stepper="a-ice"]').addEventListener('click', () => { iceTouched = true; });
+  $('#a-streak', el).oninput = () => {
+    const n = streakVal();
+    $('#a-left', el).textContent = leftFor(n, h.ice_every);
+    if (!iceTouched) $('#a-ice', el).textContent = iceFor(n, h.ice_every, h.max_ice);
+  };
   $('#a-save', el).onclick = async (e) => {
     e.target.disabled = true;
+    const n = streakVal();
     try {
       await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: true,
-        p_streak: Math.max(0, parseInt($('#a-streak', el).value || '0', 10)),
-        p_ice: +$('#a-ice', el).textContent, p_left: +$('#a-left', el).textContent });
+        p_streak: n, p_ice: +$('#a-ice', el).textContent, p_left: leftFor(n, h.ice_every) });
       S.me = await rpc('api_me', P()); closeSheet(); rerender();
       toast(adjusting ? 'Racha corregida' : `${h.name} activado 🔥`);
     } catch(err){ toast(err.message); e.target.disabled = false; }
@@ -827,6 +964,9 @@ function renderGrupo(){
   document.querySelectorAll('[data-delphoto]').forEach(b => b.onclick = () => confirmSheet('¿Borrar tu foto?', 'Se deja de ver en todos tus grupos. Tu racha no cambia.', 'Borrar foto', async () => {
     await rpc('api_delete_photo', { ...P(), p_photo: b.dataset.delphoto }); await loadGroup(); renderGrupo(); toast('Foto borrada');
   }));
+  document.querySelectorAll('[data-kick]').forEach(b => b.onclick = () => confirmSheet(`¿Sacar a ${b.dataset.nick}?`, 'Deja de estar en el grupo y desaparece para todos. Su racha no se toca y puede volver con el código.', 'Sacar del grupo', async () => {
+    await rpc('api_kick_member', { ...P(), p_group: G.group.id, p_user: b.dataset.kick }); await loadGroup(); renderGrupo(); toast(`${b.dataset.nick} ya no está en el grupo`);
+  }));
   $('#rec-add').onclick = () => recordSheet(null);
   document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
   const ha = $('#hab-add'); if (ha) ha.onclick = () => habitEditor(null);
@@ -837,8 +977,9 @@ function renderGrupo(){
 }
 const sumStreak = (m) => m.habits.reduce((a,h) => a + h.streak, 0);
 function memberRow(m){
+  const canKick = S.group && S.group.group.is_admin && !m.is_me;
   return `<div class="member">
-    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}</div>
+    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div><div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${canKick ? `<br><button class="link small danger" data-kick="${m.id}" data-nick="${esc(m.nick)}">Sacar del grupo</button>` : ''}</div></div>
     <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
   </div>`;
 }
@@ -1239,16 +1380,16 @@ function renderPerfil(){
 
     <div class="section"><div class="section-title"><h2>Widget en la pantalla</h2></div>
       <div class="card small">
-        <p style="margin-top:0"><b>iPhone</b>: tu racha en la pantalla de inicio, sin abrir la app.</p>
+        <p style="margin-top:0"><b>iPhone</b>: tu racha en la pantalla de inicio. Tocás un hábito y se anota con un tick; si fue sin querer, lo desanotás ahí mismo.</p>
         <ol style="padding-left:20px;margin:0 0 12px">
           <li>Bajá la app gratis <a href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener">Scriptable</a>.</li>
           <li>Tocá el botón de acá abajo para copiar tu widget.</li>
           <li>En Scriptable: <b>+</b> arriba a la derecha, pegá, y ponele de nombre Fueguitos.</li>
-          <li>Mantené apretada la pantalla de inicio → <b>+</b> → Scriptable → elegí tamaño → tocá el widget → Script: <b>Fueguitos</b>.</li>
+          <li>Mantené apretada la pantalla de inicio → <b>+</b> → Scriptable → tamaño <b>mediano</b> → tocá el widget → Script: <b>Fueguitos</b>.</li>
         </ol>
         <button class="btn sm" id="wid" style="width:100%">Copiar mi widget</button>
         <p class="hint">Tiene tu llave adentro: no lo compartas.</p>
-        <p style="margin:14px 0 0"><b>Android</b>: mantené apretado el ícono de Fueguitos y arrastrá <i>Anotar Deporte</i> o <i>Ver el grupo</i> a la pantalla como botón directo. El widget con la racha a la vista llega con la versión de Play Store.</p>
+        <p style="margin:14px 0 0"><b>Android</b>: mantené apretado el ícono de Fueguitos y arrastrá <i>Anotar Deporte</i> a la pantalla: un toque y queda anotado, con opción de desanotar. El widget con la racha a la vista llega con la versión de Play Store.</p>
       </div>
     </div>
 
@@ -1286,46 +1427,92 @@ function heatmap(){
 function widgetScript(){
   const app = `${location.origin}${location.pathname}`;
   return `// Fueguitos · widget para Scriptable (iPhone)
-// No compartas este código: tiene tu llave adentro.
+// Tocá un hábito del widget para anotarlo (o desanotarlo). No compartas este código: tiene tu llave adentro.
 const TOKEN = "${S.token}";
 const APP = "${app}";
-const URL_API = "${SB_URL}/rest/v1/rpc/api_me";
+const API = "${SB_URL}/rest/v1/rpc/";
 const KEY = "${SB_KEY}";
 
-const FIRE = new Color("#FF5A1F"), GOLD = new Color("#FFB800"), OK = new Color("#23A566");
-const w = new ListWidget();
-const g = new LinearGradient(); g.colors = [new Color("#2A140C"), new Color("#170E0B")]; g.locations = [0, 1];
-w.backgroundGradient = g;
-w.setPadding(12, 14, 12, 14);
-w.url = APP;
-try {
-  const r = new Request(URL_API);
+async function rpc(fn, body) {
+  const r = new Request(API + fn);
   r.method = "POST";
   r.headers = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };
-  r.body = JSON.stringify({ p_token: TOKEN });
-  const me = await r.loadJSON();
-  const hs = me.habits || [];
-  const faltan = hs.filter(h => h.required_today && !h.done_today);
-  const t = w.addText(faltan.length ? "🔥 Te falta hoy" : "🔥 Fueguitos");
-  t.font = Font.heavySystemFont(13); t.textColor = faltan.length ? FIRE : GOLD;
-  w.addSpacer(6);
-  const big = config.widgetFamily !== "small";
-  for (const h of hs.slice(0, big ? 4 : 3)) {
-    const row = w.addStack(); row.centerAlignContent();
-    const n = row.addText(\`\${h.emoji} \${h.streak}\`);
-    n.font = Font.heavySystemFont(big ? 22 : 20); n.textColor = h.done_today ? GOLD : new Color("#8E7A70");
-    row.addSpacer(6);
-    const s = row.addText(h.done_today ? "✓" : (h.required_today ? "pendiente" : "libre"));
-    s.font = Font.boldSystemFont(12); s.textColor = h.done_today ? OK : (h.required_today ? FIRE : new Color("#8E7A70"));
-    if (big) { row.addSpacer(); const i = row.addText(\`🧊\${h.ice}  ⌛\${h.left_for_ice}\`); i.font = Font.systemFont(12); i.textColor = new Color("#C2A69A"); }
-    w.addSpacer(3);
-  }
-  if (faltan.length === 1) w.url = APP + "?anotar=" + encodeURIComponent(faltan[0].name);
-} catch (e) {
-  const t = w.addText("🔥 Fueguitos\\nSin conexión"); t.textColor = Color.white(); t.font = Font.boldSystemFont(14);
+  r.body = JSON.stringify(Object.assign({ p_token: TOKEN }, body || {}));
+  return await r.loadJSON();
 }
-w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
-if (config.runsInWidget) Script.setWidget(w); else await w.presentMedium();
+const runUrl = (q) => "scriptable:///run/" + encodeURIComponent(Script.name()) + "?" + q;
+
+// Tocaron el widget: anotar o desanotar, con confirmación y tick.
+async function toggle(id) {
+  const me = await rpc("api_me");
+  const hs = me.habits || [];
+  let h = hs.find(x => x.id === id);
+  if (!h) {
+    const a = new Alert(); a.title = "¿Qué anotás hoy?";
+    hs.forEach(x => a.addAction((x.done_today ? "✓ " : "") + x.emoji + " " + x.name));
+    a.addCancelAction("Nada");
+    const i = await a.presentSheet(); if (i < 0) return;
+    h = hs[i];
+  }
+  const a = new Alert();
+  if (!h.done_today) {
+    const r = await rpc("api_checkin", { p_habits: [h.id], p_photo: null, p_note: null });
+    const x = (r.results || [])[0] || {};
+    a.title = "✓ " + h.name + " anotado";
+    a.message = "Día " + (x.streak || h.streak + 1) + " 🔥" + (x.earned_ice ? "\\n¡Ganaste un hielito! 🧊" : "");
+    a.addAction("Listo"); a.addDestructiveAction("Me equivoqué, desanotar");
+    if (await a.presentAlert() === 1) { await rpc("api_undo_checkin", { p_habit: h.id }); }
+  } else {
+    a.title = "✓ " + h.name + " ya está anotado hoy";
+    a.message = "Día " + h.streak + " 🔥";
+    a.addAction("Dejarlo así"); a.addDestructiveAction("Desanotar");
+    if (await a.presentAlert() === 1) { await rpc("api_undo_checkin", { p_habit: h.id }); }
+  }
+}
+
+async function buildWidget() {
+  const FIRE = new Color("#FF5A1F"), GOLD = new Color("#FFB800"), OK = new Color("#2BC273"), DIM = new Color("#8E7A70");
+  const w = new ListWidget();
+  const g = new LinearGradient(); g.colors = [new Color("#2A140C"), new Color("#170E0B")]; g.locations = [0, 1];
+  w.backgroundGradient = g;
+  w.setPadding(12, 14, 12, 14);
+  w.url = runUrl("h=menu");
+  try {
+    const me = await rpc("api_me");
+    const hs = me.habits || [];
+    const faltan = hs.filter(h => h.required_today && !h.done_today);
+    const t = w.addText(faltan.length ? "🔥 Te falta hoy" : "🔥 Día completo");
+    t.font = Font.heavySystemFont(13); t.textColor = faltan.length ? FIRE : GOLD;
+    w.addSpacer(6);
+    const big = config.widgetFamily !== "small";
+    for (const h of hs.slice(0, big ? 4 : 3)) {
+      const row = w.addStack(); row.centerAlignContent();
+      if (big) row.url = runUrl("h=" + h.id);
+      const tick = row.addText(h.done_today ? "✓" : "○");
+      tick.font = Font.heavySystemFont(big ? 20 : 17); tick.textColor = h.done_today ? OK : (h.required_today ? FIRE : DIM);
+      row.addSpacer(6);
+      const n = row.addText(h.emoji + " " + h.streak);
+      n.font = Font.heavySystemFont(big ? 20 : 17); n.textColor = h.done_today ? GOLD : Color.white();
+      if (big) { row.addSpacer(); const i = row.addText("🧊" + h.ice + "  ⌛" + h.left_for_ice); i.font = Font.systemFont(12); i.textColor = new Color("#C2A69A"); }
+      w.addSpacer(big ? 5 : 3);
+    }
+    // En el widget chico, si hay un solo hábito, el toque lo anota directo.
+    if (hs.length === 1) w.url = runUrl("h=" + hs[0].id);
+  } catch (e) {
+    const t = w.addText("🔥 Fueguitos\\nSin conexión"); t.textColor = Color.white(); t.font = Font.boldSystemFont(14);
+  }
+  w.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
+  return w;
+}
+
+const q = args.queryParameters || {};
+if (config.runsInWidget) {
+  Script.setWidget(await buildWidget());
+} else if (q.h) {
+  await toggle(q.h === "menu" ? null : q.h);
+} else {
+  await (await buildWidget()).presentMedium();
+}
 Script.complete();
 `;
 }
@@ -1337,14 +1524,18 @@ function installHelp(){
   const ua = navigator.userAgent;
   const ios = /iphone|ipad|ipod/i.test(ua);
   // Navegadores metidos adentro de otras apps (WhatsApp, Instagram…) no dejan instalar.
-  const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|; wv\)/i.test(ua);
+  const inApp = inAppBrowser();
   if (inApp) return `<p style="margin:0">Estás abriendo el link desde adentro de otra app. Para instalarla, abrilo en <b>${ios ? 'Safari' : 'Chrome'}</b> (menú ⋮ o ··· → <b>Abrir en el navegador</b>).</p>`;
   return ios
     ? '<p style="margin:0">En iPhone: abrí este link en <b>Safari</b>, tocá el botón <b>Compartir</b> (el cuadrado con la flecha) y elegí <b>Agregar a pantalla de inicio</b>.</p>'
     : `<p style="margin:0 0 10px">En Android: tocá el menú <b>⋮</b> de Chrome y elegí <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</p>${deferredInstall ? '<button class="btn sm" id="inst" style="width:100%">Instalar ahora</button>' : ''}`;
 }
 let deferredInstall = null;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; if (S.me && (S.tab === 'hoy' || S.tab === 'perfil')) renderMain(); });
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); deferredInstall = e;
+  const g = $('.guide'); if (g){ g.remove(); maybeInstallGuide(); } // ahora se puede ofrecer el botón de instalar directo
+  if (S.me && (S.tab === 'hoy' || S.tab === 'perfil')) renderMain();
+});
 document.addEventListener('click', async (e) => {
   if (e.target && e.target.id === 'inst' && deferredInstall){ deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; renderMain(); }
 });

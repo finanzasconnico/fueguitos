@@ -17,8 +17,8 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Anotar Deporte", "short_name": "Deporte", "url": "./?anotar=Deporte", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Anotar Lectura", "short_name": "Lectura", "url": "./?anotar=Lectura", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Anotar Deporte", "short_name": "Deporte", "url": "./?anotar=Deporte&rapido=1", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Anotar Lectura", "short_name": "Lectura", "url": "./?anotar=Lectura&rapido=1", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Rutinas", "short_name": "Rutinas", "url": "./?tab=rutinas", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Ver el grupo", "short_name": "Grupo", "url": "./?tab=grupo", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
