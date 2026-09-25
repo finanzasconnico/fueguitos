@@ -327,6 +327,21 @@ nav.tabs button.on{color:var(--fire)}
 const SB_URL = 'https://ngwrtivemyjueiysqqum.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nd3J0aXZlbXlqdWVpeXNxcXVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNDAwNjYsImV4cCI6MjEwNTkxNjA2Nn0._BwHSn4LH2V59jk90e2VS_xO3csW9S_idaxqO81_X3s';
 
+/* ============ App nativa (iPhone) ============ */
+const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PUBLIC_URL = 'https://fueguitos.vercel.app/';
+const appBase = () => IS_NATIVE ? PUBLIC_URL : `${location.origin}${location.pathname}`;
+// Llama al plugin nativo (ios/App/FueguitosPlugin.swift). En la web no hace nada.
+const nat = (method, opts = {}) => IS_NATIVE ? window.Capacitor.nativePromise('Fueguitos', method, opts).catch(e => { console.warn('nativo', method, e); return null; }) : Promise.resolve(null);
+let lastWidgetSync = '';
+function syncWidget(){
+  if (!IS_NATIVE || !S.me) return;
+  const hs = JSON.stringify(S.me.habits || []);
+  if (hs === lastWidgetSync) return;
+  lastWidgetSync = hs;
+  nat('setSession', { token: S.token, api: SB_URL, key: SB_KEY, app: PUBLIC_URL, habits: S.me.habits });
+}
+
 /* ============ Utilidades ============ */
 const LS = {
   get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
@@ -477,7 +492,8 @@ async function boot(){
   }
   await afterLogin();
   maybeInstallGuide();
-  syncPush();
+  syncPush().then(() => { if (IS_NATIVE && S.me && !S.onboarding) renderMain(); });
+  autoHealth();
 }
 
 async function afterLogin(){
@@ -515,7 +531,7 @@ function maybeInstallGuide(){
   const iosOther = isIOS && /CriOS|FxiOS|EdgiOS/i.test(UA);
   // En iPhone la app instalada no comparte datos con Safari: se lleva la invitación o la cuenta copiando un link.
   const hasPin = !!(S.me && S.me.user.has_pin);
-  const carry = S.token && !hasPin ? `${location.origin}${location.pathname}?k=${S.token}` : (!S.token && S.pendingJoin ? inviteLink(S.pendingJoin) : '');
+  const carry = S.token && !hasPin ? `${appBase()}?k=${S.token}` : (!S.token && S.pendingJoin ? inviteLink(S.pendingJoin) : '');
   let arrow = 'tr', title, steps;
   if (inApp){
     title = 'Abrila en el navegador';
@@ -629,7 +645,18 @@ async function pushSubscribe(){
   const j = sub.toJSON();
   await rpc('api_push_subscribe', { ...P(), p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
 }
+async function enablePushNative(){
+  const r = await nat('registerPush');
+  if (!r || !r.granted){ S.npush = 'denied'; toast('Sin permiso no te podemos avisar. Activalo en Ajustes → Fueguitos → Notificaciones.', 4200); return false; }
+  try {
+    await rpc('api_push_subscribe_apns', { ...P(), p_device: r.token });
+    S.npush = 'granted';
+    if (S.me.user.remind_hour == null){ await rpc('api_set_reminder', { ...P(), p_hour: 22 }); S.me.user.remind_hour = 22; }
+    toast('¡Listo! Te avisamos si te falta anotar 🔔'); return true;
+  } catch(e){ toast('No se pudo activar: ' + e.message, 4000); return false; }
+}
 async function enablePush(){
+  if (IS_NATIVE) return enablePushNative();
   if (!pushSupported()){ toast('Este navegador no permite avisos'); return false; }
   if (pushNeedsInstall()){ toast('En iPhone los avisos andan con la app instalada. Instalala primero.', 4000); return false; }
   const perm = await Notification.requestPermission();
@@ -641,13 +668,19 @@ async function enablePush(){
   } catch(e){ toast('No se pudo activar: ' + e.message, 4000); return false; }
 }
 // Si ya dio permiso, se re-sincroniza la suscripción en cada arranque (cambia de cuenta, se renueva, etc.).
-function syncPush(){ if (pushSupported() && Notification.permission === 'granted' && S.token) pushSubscribe().catch(() => {}); }
+async function syncPush(){
+  if (IS_NATIVE){
+    const st = await nat('pushStatus'); S.npush = st ? st.status : 'default';
+    if (S.npush === 'granted'){ const r = await nat('registerPush'); if (r && r.token) rpc('api_push_subscribe_apns', { ...P(), p_device: r.token }).catch(() => {}); }
+    return;
+  }
+  if (pushSupported() && Notification.permission === 'granted' && S.token) pushSubscribe().catch(() => {}); }
 async function testPush(){
   try { const r = await fetch(PUSH_FN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ test_token: S.token }) }).then(r => r.json());
     toast(r.sent ? 'Aviso de prueba enviado 🔔' : 'No encontramos este celu. Tocá Activar avisos.', 3500);
   } catch(e){ toast('No se pudo mandar la prueba'); }
 }
-const pushState = () => !pushSupported() ? 'no' : pushNeedsInstall() ? 'instalar' : Notification.permission;
+const pushState = () => IS_NATIVE ? (S.npush || 'default') : !pushSupported() ? 'no' : pushNeedsInstall() ? 'instalar' : Notification.permission;
 
 // Anotar o desanotar con un toque (desde accesos directos o el widget).
 async function quickToggle(h){
@@ -849,6 +882,7 @@ function go(tab){
   if (tab === 'grupo') refreshGroup();
 }
 function renderMain(){
+  syncWidget();
   if (!$('#main')) return;
   if (S.tab === 'hoy') renderHoy();
   else if (S.tab === 'grupo') renderGrupo();
@@ -1512,7 +1546,7 @@ function bindGroupForms(root=document){
     } catch(err){ toast(err.message, 3500); b.disabled = false; }
   };
 }
-function inviteLink(code){ return `${location.origin}${location.pathname}?g=${code}`; }
+function inviteLink(code){ return `${appBase()}?g=${code}`; }
 function shareInvite(g){
   const link = inviteLink(g.code);
   const text = `Sumate a "${g.name}" en Fueguitos 🔥 Anotamos deporte y lectura todos los días y nos cuidamos la racha.`;
@@ -1867,11 +1901,17 @@ function renderPerfil(){
       </div>
     </div>
 
-    <div class="section"><div class="section-title"><h2>Instalar en el celu</h2></div>
+    ${IS_NATIVE ? '' : `<div class="section"><div class="section-title"><h2>Instalar en el celu</h2></div>
       <div class="card small">${installHelp()}</div>
+    </div>`}
+
+    ${IS_NATIVE ? `<div class="section"><div class="section-title"><h2>App Salud</h2></div>
+      <div class="card">${healthBlock()}</div>
     </div>
 
-    <div class="section"><div class="section-title"><h2>Widget en la pantalla</h2></div>
+    <div class="section"><div class="section-title"><h2>Widget</h2></div>
+      <div class="card small"><p style="margin:0">Mantené apretada la pantalla de inicio → <b>+</b> (arriba a la izquierda) → buscá <b>Fueguitos</b> → elegí chico o mediano. Tocás un hábito y se anota con un ✓; si fue sin querer, lo tocás de nuevo y se desanota. Sin abrir la app.</p></div>
+    </div>` : `    <div class="section"><div class="section-title"><h2>Widget en la pantalla</h2></div>
       <div class="card small">
         <p style="margin-top:0"><b>iPhone</b>: tu racha en la pantalla de inicio. Tocás un hábito y se anota con un tick; si fue sin querer, lo desanotás ahí mismo.</p>
         <ol style="padding-left:20px;margin:0 0 12px">
@@ -1884,6 +1924,7 @@ function renderPerfil(){
         <p class="hint">Tiene tu llave adentro: no lo compartas.</p>
         <p style="margin:14px 0 0"><b>Android</b>: mantené apretado el ícono de Fueguitos y arrastrá <i>Anotar Deporte</i> a la pantalla: un toque y queda anotado, con opción de desanotar. El widget con la racha a la vista llega con la versión de Play Store.</p>
       </div>
+`}
     </div>
 
     <div class="section" style="text-align:center"><button class="link danger" id="logout">Cerrar sesión en este celu</button></div>
@@ -1896,9 +1937,10 @@ function renderPerfil(){
   };
   $('#pin-set').onclick = pinSheet;
   bindRemind();
-  $('#wid').onclick = async () => { (await copy(widgetScript())) ? toast('Widget copiado. Pegalo en Scriptable 📲', 3200) : toast('No se pudo copiar'); };
-  $('#key').onclick = async () => { const l = `${location.origin}${location.pathname}?k=${S.token}`; (await copy(l)) ? toast('Link copiado. Guardalo en un lugar seguro 🔑', 3200) : toast(l, 6000); };
-  $('#logout').onclick = () => confirmSheet('¿Cerrar sesión?', 'Si no guardaste tu link de acceso, no vas a poder volver a esta cuenta.', 'Cerrar sesión', async () => { LS.del('racha_token'); LS.del('racha_group'); location.reload(); });
+  const hs = $('#hl-tg'); if (hs) hs.onclick = toggleHealth;
+  const wid = $('#wid'); if (wid) wid.onclick = async () => { (await copy(widgetScript())) ? toast('Widget copiado. Pegalo en Scriptable 📲', 3200) : toast('No se pudo copiar'); };
+  $('#key').onclick = async () => { const l = `${appBase()}?k=${S.token}`; (await copy(l)) ? toast('Link copiado. Guardalo en un lugar seguro 🔑', 3200) : toast(l, 6000); };
+  $('#logout').onclick = () => confirmSheet('¿Cerrar sesión?', 'Si no guardaste tu link de acceso, no vas a poder volver a esta cuenta.', 'Cerrar sesión', async () => { LS.del('racha_token'); LS.del('racha_group'); await nat('clearSession'); location.reload(); });
 }
 const HOURS = [19, 20, 21, 22, 23, 0, 1];
 function remindBlock(){
@@ -1924,6 +1966,42 @@ function bindRemind(){
   const t = $('#rm-test'); if (t) t.onclick = testPush;
 }
 
+/* ============ App Salud (solo app nativa) ============ */
+const healthOn = () => IS_NATIVE && LS.get('fueguitos_salud') === '1';
+function healthBlock(){
+  return `<div class="hrow" style="padding-top:0"><div><b>Anotar solo con Salud</b><div class="small muted">Si Salud registra un entrenamiento de 10 min o más, anotamos Deporte. Si registra 5 min de mindfulness, Meditación.</div></div>
+    <button class="toggle ${healthOn() ? 'on' : ''}" role="switch" aria-checked="${healthOn()}" aria-label="Anotar con Salud" id="hl-tg"></button></div>
+    <p class="hint" style="margin-bottom:0">Sirve con el Apple Watch, Strava, Nike Run Club o cualquier app que guarde tus entrenamientos en Salud.</p>`;
+}
+async function toggleHealth(){
+  if (healthOn()){ LS.del('fueguitos_salud'); renderPerfil(); return; }
+  const r = await nat('healthAuthorize');
+  if (!r || !r.ok){ toast('No pudimos conectar con Salud. Revisá Ajustes → Salud → Acceso a datos → Fueguitos.', 4500); return; }
+  LS.set('fueguitos_salud', '1'); renderPerfil(); toast('Conectado con Salud 🍎'); autoHealth();
+}
+let healthBusy = false;
+async function autoHealth(){
+  if (!healthOn() || !S.me || healthBusy) return;
+  healthBusy = true;
+  try {
+    const since = parseDay(S.me.today).getTime() + 5 * 36e5; // el día arranca a las 5 AM
+    const r = await nat('healthSince', { since });
+    if (!r) return;
+    const hs = S.me.habits.filter(h => !h.done_today);
+    const dep = hs.find(h => /deporte|entren|gym|gimnas|ejerc|correr/i.test(h.name));
+    const med = hs.find(h => /medita|mindful/i.test(h.name));
+    const ws = (r.workouts || []).filter(w => w.minutes >= 10);
+    const ids = [], notes = [];
+    if (dep && ws.length){ ids.push(dep.id); notes.push(ws.map(w => `${w.type} ${w.minutes} min`).join(', ')); }
+    if (med && (r.mindful || 0) >= 5){ ids.push(med.id); notes.push(`meditación ${r.mindful} min`); }
+    if (!ids.length) return;
+    const res = await rpc('api_checkin', { ...P(), p_habits: ids, p_photo: null, p_note: `Anotado por Salud: ${notes.join(' · ')}` });
+    S.me.habits = res.habits; renderMain();
+    toast(`🍎 Salud: anotamos ${hs.filter(h => ids.includes(h.id)).map(h => h.name).join(' y ')} (${notes.join(' · ')})`, 4500);
+  } catch(e){ console.warn('salud', e); }
+  finally { healthBusy = false; }
+}
+
 function heatmap(){
   const today = S.me.today, weeks = 18;
   const byDay = {};
@@ -1944,7 +2022,7 @@ function heatmap(){
 }
 /* Widget de iPhone: código para la app gratis Scriptable, con la llave de este usuario adentro. */
 function widgetScript(){
-  const app = `${location.origin}${location.pathname}`;
+  const app = appBase();
   return `// Fueguitos · widget para Scriptable (iPhone)
 // Tocá un hábito del widget para anotarlo (o desanotarlo). No compartas este código: tiene tu llave adentro.
 const TOKEN = "${S.token}";
@@ -2036,7 +2114,7 @@ Script.complete();
 `;
 }
 
-const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const isStandalone = () => IS_NATIVE || matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 const showInstallCard = () => !isStandalone() && !LS.get('fueguitos_no_install');
 function installHelp(){
   if (isStandalone()) return '<p style="margin:0">✅ Ya la tenés instalada. Mantené apretado el ícono para ir directo a Anotar Deporte, Lectura o Rutinas.</p>';
@@ -2063,8 +2141,8 @@ document.addEventListener('click', async (e) => {
 let lastHidden = 0;
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden){ lastHidden = Date.now(); return; }
-  if (S.token && S.me && !S.onboarding && Date.now() - lastHidden > 60000 && !$('#layer').innerHTML){
-    try { await loadMe(); S.sel.clear(); renderMain(); if (S.tab === 'grupo') refreshGroup(); } catch(e){}
+  if (S.token && S.me && !S.onboarding && Date.now() - lastHidden > (IS_NATIVE ? 3000 : 60000) && !$('#layer').innerHTML){
+    try { await loadMe(); S.sel.clear(); renderMain(); if (S.tab === 'grupo') refreshGroup(); autoHealth(); } catch(e){}
   }
 });
 
