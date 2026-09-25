@@ -1,0 +1,25 @@
+{
+  "name": "Fueguitos",
+  "short_name": "Fueguitos",
+  "description": "Mantené el fueguito de deporte, lectura y meditación con tus amigos.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF4EC",
+  "theme_color": "#FFF4EC",
+  "lang": "es-AR",
+  "categories": ["health", "fitness", "lifestyle", "social"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Anotar Deporte", "short_name": "Deporte", "url": "./?anotar=Deporte", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Anotar Lectura", "short_name": "Lectura", "url": "./?anotar=Lectura", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Rutinas", "short_name": "Rutinas", "url": "./?tab=rutinas", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Ver el grupo", "short_name": "Grupo", "url": "./?tab=grupo", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

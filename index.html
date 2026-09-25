@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fueguitos</title>
+<meta name="description" content="Mantené el fueguito de deporte, lectura y meditación con tus amigos.">
+<meta name="theme-color" content="#FFF4EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#170E0B" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fueguitos">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFF4EC; --card:#FFFFFF; --ink:#26140E; --muted:#7A5F55; --line:#F2DDD0;
+  --fire:#FF5A1F; --fire-dark:#CC3F0B; --fire-soft:#FFE3D3;
+  --gold:#FFB800; --ember:#FF2E63; --ice:#3AA9E6; --ice-dark:#1E86C0; --ice-soft:#E2F3FC;
+  --ok:#23A566; --ok-soft:#DDF5E8; --danger:#D6364A;
+  --gray-flame:#DCC9BF; --gray-flame-2:#EFE1D8;
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+  --field:#FFFFFF; --nav:rgba(255,255,255,.96); --party:#1E0F0A; --toast:#26140E; --toast-ink:#FFFFFF;
+  --ok-ink:#16603F; --ok-line:#BFE8D2; --fire-ink:#8A3208; --ice-ink:#155F88;
+  --heat1:#FFD3BC; --heat2:#FF9E6E; --heat-ice:#A9DCF6;
+  color-scheme:light;
+}
+/* Modo oscuro: se usa mucho de noche, antes del corte de las 5 AM */
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#170E0B; --card:#241611; --ink:#FBEFE8; --muted:#C2A69A; --line:#3E2A21;
+    --fire-dark:#B83A0C; --fire-soft:#41200F; --ice-soft:#132A38; --ice-dark:#4DB5EE; --ok-soft:#14301F;
+    --gray-flame:#5A4439; --gray-flame-2:#735A4D;
+    --field:#1D120E; --nav:rgba(23,14,11,.94); --party:#0E0705; --toast:#FBEFE8; --toast-ink:#170E0B;
+    --ok-ink:#7DDBA8; --ok-line:#2C5A40; --fire-ink:#FFB08A; --ice-ink:#8FD2F7;
+    --heat1:#6A3420; --heat2:#B9552A; --heat-ice:#2A5F80;
+    color-scheme:dark;
+  }
+}
+::selection{background:var(--fire);color:#fff}
+input{caret-color:var(--fire)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.4;min-height:100dvh;overscroll-behavior-y:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+a{color:var(--ice-dark)}
+:focus-visible{outline:3px solid var(--ice);outline-offset:2px;border-radius:8px}
+.wrap{max-width:480px;margin:0 auto;padding:calc(var(--safe-t) + 14px) 16px calc(96px + var(--safe-b))}
+.wrap.with-bar{padding-bottom:calc(160px + var(--safe-b))}
+h1,h2,h3{margin:0;line-height:1.1;letter-spacing:-.01em}
+h1{font-size:30px;font-weight:800}
+h2{font-size:22px;font-weight:800}
+h3{font-size:17px;font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.stack>*+*{margin-top:12px}
+.section{margin-top:26px}
+.section-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+
+/* Botones gorditos */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:16px;font-weight:700;font-size:17px;background:var(--fire);color:#fff;box-shadow:0 4px 0 var(--fire-dark);transition:transform .06s,box-shadow .06s;width:100%}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--fire-dark)}
+.btn[disabled]{opacity:.55;pointer-events:none}
+.btn.ice{background:var(--ice);box-shadow:0 4px 0 var(--ice-dark)}
+.btn.ghost{background:var(--card);color:var(--ink);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
+.btn.green{background:var(--ok);box-shadow:0 4px 0 #17804E}
+.btn.sm{min-height:40px;font-size:15px;padding:0 14px;border-radius:12px;width:auto}
+.link{color:var(--ice-dark);font-weight:700;font-size:15px}
+.link.danger{color:var(--danger)}
+
+.card{background:var(--card);border-radius:20px;padding:16px;border:2px solid var(--line)}
+.field{display:block}
+.field span{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+.input{width:100%;min-height:50px;border:2px solid var(--line);border-radius:14px;padding:0 14px;background:var(--field);font-size:17px}
+.input:focus{border-color:var(--ice);outline:none}
+textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* Encabezado */
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+.top .date{font-size:15px;color:var(--muted);font-weight:600}
+
+/* Tarjetas de hábito */
+.habits{display:grid;gap:12px}
+.habit{display:grid;grid-template-columns:74px 1fr auto;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:12px 14px 12px 10px;text-align:left;width:100%;position:relative;transition:border-color .12s,background .12s}
+.habit.sel{border-color:var(--fire);background:var(--fire-soft)}
+.habit.done{border-color:var(--ok-line)}
+.flamebox{position:relative;width:74px;height:78px;display:grid;place-items:center}
+.flamebox svg{width:58px;height:72px}
+.flamebox .n{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-weight:800;font-size:22px;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.18)}
+.flamebox.off .n{color:var(--muted);text-shadow:none}
+.habit .name{font-weight:800;font-size:19px;display:flex;align-items:center;gap:6px}
+.meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg);color:var(--ink)}
+.pill.ice{background:var(--ice-soft);color:var(--ice-dark)}
+.pill.ok{background:var(--ok-soft);color:var(--ok-ink)}
+.pill.fire{background:var(--fire-soft);color:var(--fire-ink)}
+.check{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);display:grid;place-items:center;font-weight:800;color:#fff}
+.habit.sel .check{background:var(--fire);border-color:var(--fire)}
+.habit.done .check{background:var(--ok);border-color:var(--ok)}
+.undo{font-size:12px;font-weight:700;color:var(--muted);text-decoration:underline;margin-top:4px}
+
+.banner{border-radius:16px;padding:12px 14px;font-weight:600;font-size:15px;display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.banner.ice{background:var(--ice-soft);color:var(--ice-ink)}
+.banner.ok{background:var(--ok-soft);color:var(--ok-ink)}
+.banner.fire{background:var(--fire-soft);color:var(--fire-ink)}
+
+/* Motivación */
+.quote{position:relative;margin:0 0 16px;padding:14px 16px 14px 46px;border-radius:18px;background:var(--fire-soft);color:var(--fire-ink)}
+.quote p{margin:0;font-weight:700;font-size:17px;line-height:1.3;text-wrap:balance}
+.quote .qmark{position:absolute;left:12px;top:4px;font-size:52px;font-weight:800;color:var(--fire);line-height:1}
+.banner.urgent{border:2px solid var(--fire)}
+.music{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:2px solid var(--line);text-decoration:none;color:var(--ink)}
+.music:last-child{border-bottom:0}
+.music .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;flex:none;background:var(--fire-soft)}
+.music b{display:block;font-size:16px}
+.music .go{margin-left:auto;font-weight:800;color:var(--ok-ink);font-size:14px;flex:none}
+
+/* Barra de acción */
+.actionbar{position:fixed;left:0;right:0;bottom:calc(74px + var(--safe-b));padding:0 16px;z-index:20;pointer-events:none}
+.actionbar .inner{max-width:480px;margin:0 auto;pointer-events:auto;animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+
+/* Navegación inferior */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--nav);backdrop-filter:blur(10px);border-top:2px solid var(--line);padding-bottom:var(--safe-b);z-index:30}
+nav.tabs .inner{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 8px;font-size:12px;font-weight:700;color:var(--muted)}
+nav.tabs button svg{width:26px;height:26px}
+nav.tabs button.on{color:var(--fire)}
+
+/* Hojas (modales desde abajo) */
+.scrim{position:fixed;inset:0;background:rgba(38,20,14,.5);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.sheet{background:var(--bg);width:100%;max-width:480px;border-radius:26px 26px 0 0;padding:10px 16px calc(20px + var(--safe-b));max-height:92dvh;overflow:auto;animation:sheet .22s cubic-bezier(.2,.9,.3,1)}
+@keyframes sheet{from{transform:translateY(40%)}}
+.grab{width:44px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 14px}
+.photo-drop{border:2px dashed var(--gray-flame);border-radius:20px;background:var(--card);min-height:180px;display:grid;place-items:center;overflow:hidden;position:relative}
+.photo-drop img{width:100%;max-height:52dvh;object-fit:cover;display:block}
+.photo-drop .x{position:absolute;top:10px;right:10px;background:rgba(27,26,46,.7);color:#fff;border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
+
+/* Festejo */
+.party{position:fixed;inset:0;z-index:60;background:var(--party);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px calc(24px + var(--safe-b));text-align:center;animation:fade .2s}
+.party .bigflame{width:150px;height:186px;animation:pop .7s cubic-bezier(.2,1.6,.4,1) both}
+.party .bigflame .inner-f{transform-origin:50% 100%;animation:flick 1.1s ease-in-out .7s infinite alternate}
+@keyframes pop{0%{transform:scale(.2) translateY(40px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes flick{to{transform:scaleY(1.08) scaleX(.95)}}
+.party{background:radial-gradient(circle at 50% 34%, #6B240B 0, var(--party) 62%)}
+.party .hito{margin-top:14px;font-weight:800;font-size:22px}
+.party .hito.big{font-size:30px;color:var(--gold);animation:pop .6s .8s both}
+.party .count{font-size:88px;font-weight:800;line-height:1;margin-top:6px;color:var(--gold)}
+.party .lbl{font-size:20px;font-weight:700;margin-top:4px}
+.party .others{margin-top:18px;display:grid;gap:8px;width:100%;max-width:340px}
+.party .others .o{background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;font-weight:700}
+.party .gotice{margin-top:16px;background:var(--ice);color:#fff;border-radius:16px;padding:12px 16px;font-weight:800;font-size:18px;animation:pop .6s .5s both}
+.party .btns{width:100%;max-width:340px;margin-top:28px;display:grid;gap:14px}
+.party .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);box-shadow:0 4px 0 rgba(255,255,255,.12)}
+
+/* Grupo */
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.chip{flex:none;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--card);font-weight:700;font-size:15px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.board{display:grid;gap:10px}
+.member{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px}
+.member .who{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+.mh{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mh .m{display:inline-flex;align-items:center;gap:3px;font-weight:800;font-size:14px;padding:4px 8px;border-radius:10px;background:var(--bg);color:var(--muted)}
+.mh .m.done{background:var(--fire-soft);color:var(--fire-ink)}
+.post{background:var(--card);border:2px solid var(--line);border-radius:22px;overflow:hidden}
+.post img{width:100%;display:block;max-height:70dvh;object-fit:cover;background:#ddd}
+.post .pbody{padding:12px 14px}
+.reacts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.react{border:2px solid var(--line);border-radius:999px;padding:5px 11px;font-size:15px;font-weight:700;background:var(--card)}
+.react.mine{border-color:var(--fire);background:var(--fire-soft)}
+.empty{text-align:center;padding:26px 16px;border:2px dashed var(--line);border-radius:20px;color:var(--muted)}
+.rec{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:2px solid var(--line)}
+.rec:last-child{border-bottom:0}
+.rec .v{font-weight:800;font-size:22px;color:var(--fire)}
+
+/* Rutinas */
+.routine{display:flex;gap:14px;align-items:center;text-align:left;width:100%}
+.routine .ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:28px;flex:none}
+.runner{position:fixed;inset:0;z-index:55;background:var(--bg);overflow:auto;padding:calc(var(--safe-t) + 14px) 16px calc(24px + var(--safe-b))}
+.runner .inner{max-width:480px;margin:0 auto}
+.clock{font-size:76px;font-weight:800;text-align:center;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock.rest{color:var(--ice-dark)}
+.ex{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px;width:100%;text-align:left}
+.ex.done{border-color:var(--ok-line);background:var(--ok-soft)}
+.ex .reps{font-weight:800;font-size:22px;color:var(--fire);font-variant-numeric:tabular-nums}
+.ex.done .reps{color:var(--ok-ink)}
+.progress{height:10px;border-radius:10px;background:var(--line);overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--fire);border-radius:10px;transition:width .3s}
+.video{position:relative;padding-top:56.25%;border-radius:18px;overflow:hidden;background:#000}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+/* Perfil */
+.heat{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;overflow-x:auto}
+.heat i{width:14px;height:14px;border-radius:4px;background:var(--line);display:block}
+.heat i.l1{background:var(--heat1)}.heat i.l2{background:var(--heat2)}.heat i.l3{background:var(--fire)}
+.heat i.ic{background:var(--heat-ice)}.heat i.fut{background:transparent}
+.toggle{width:52px;height:32px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.toggle.on{background:var(--ok)}
+.toggle.on::after{transform:translateX(20px)}
+.hrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:2px solid var(--line)}
+.hrow:last-child{border-bottom:0}
+.days{display:flex;gap:6px}
+.day{width:38px;height:38px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:800}
+.day.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.emojis{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.emojis button{font-size:22px;width:40px;height:40px;border-radius:12px;background:var(--card);border:2px solid var(--line)}
+.stepper{display:flex;align-items:center;gap:0;border:2px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden;width:max-content}
+.stepper button{width:46px;height:46px;font-size:22px;font-weight:800}
+.stepper output{min-width:48px;text-align:center;font-weight:800;font-size:19px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Bienvenida */
+.welcome{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;max-width:420px;margin:0 auto;padding:24px 20px calc(24px + var(--safe-b))}
+.welcome .logo{width:92px;height:114px;margin-bottom:18px}
+.welcome h1{font-size:44px}
+
+.toast{position:fixed;left:50%;bottom:calc(150px + var(--safe-b));transform:translateX(-50%);background:var(--toast);color:var(--toast-ink);padding:12px 18px;border-radius:14px;font-weight:700;z-index:80;max-width:88vw;text-align:center;animation:up .2s}
+.spinner{width:28px;height:28px;border:4px solid var(--line);border-top-color:var(--fire);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><div class="spinner" aria-label="Cargando"></div></div>
+<div id="layer"></div>
+
+<script>
+/* ============ Config ============ */
+const SB_URL = 'https://ngwrtivemyjueiysqqum.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nd3J0aXZlbXlqdWVpeXNxcXVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNDAwNjYsImV4cCI6MjEwNTkxNjA2Nn0._BwHSn4LH2V59jk90e2VS_xO3csW9S_idaxqO81_X3s';
+
+/* ============ Utilidades ============ */
+const LS = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+const $ = (s, el=document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAYS = ['D','L','M','M','J','V','S'];
+const DAY_NAMES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const AV_COLORS = ['#FF6B2C','#3AA9E6','#23A566','#8A5CF6','#E8457A','#E0A100','#1B1A2E'];
+const avColor = (s) => { let h=0; for (const c of String(s)) h = (h*31 + c.charCodeAt(0))>>>0; return AV_COLORS[h % AV_COLORS.length]; };
+const parseDay = (d) => { const [y,m,dd] = d.split('-').map(Number); return new Date(y, m-1, dd); };
+const fmtDay = (d) => { const x = parseDay(d); return `${DAY_NAMES[x.getDay()][0].toUpperCase()+DAY_NAMES[x.getDay()].slice(1)} ${x.getDate()} de ${MONTHS[x.getMonth()]}`; };
+const addDays = (d, n) => { const x = parseDay(d); x.setDate(x.getDate()+n); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; };
+const ago = (iso) => { const m = Math.round((Date.now() - new Date(iso).getTime())/60000); if (m < 1) return 'recién'; if (m < 60) return `hace ${m} min`; const h = Math.round(m/60); return `hace ${h} h`; };
+const expiresIn = (iso) => { const h = Math.max(0, Math.round((new Date(iso).getTime() + 864e5 - Date.now())/36e5)); return h <= 1 ? 'se borra en menos de 1 h' : `se borra en ${h} h`; };
+const daysLabel = (days) => {
+  const s = [...days].sort((a,b)=>a-b).join(',');
+  if (s === '0,1,2,3,4,5,6') return 'Todos los días';
+  if (s === '0,1,2,3,4') return 'Domingo a jueves';
+  if (s === '1,2,3,4,5') return 'Lunes a viernes';
+  return [...days].sort((a,b)=>((a+6)%7)-((b+6)%7)).map(d => DAY_NAMES[d].slice(0,3)).join(', ');
+};
+
+function flameSVG(on=true, cls=''){
+  const a = on ? 'var(--fire)' : 'var(--gray-flame)';
+  const b = on ? 'var(--gold)' : 'var(--gray-flame-2)';
+  return `<svg class="${cls}" viewBox="0 0 64 80" aria-hidden="true"><path d="M32 2c4 16 22 24 22 48a22 22 0 0 1-44 0c0-12 6-20 12-26 0 8 4 12 8 12C28 22 28 12 32 2z" fill="${a}"/><g class="inner-f"><path d="M32 40c3 8 12 11 12 22a12 12 0 0 1-24 0c0-6 4-10 6-12 0 4 2 6 4 6-1-6 0-12 2-16z" fill="${b}"/></g></svg>`;
+}
+const ICONS = {
+  hoy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 5 7 7.5 7 13.5a7 7 0 0 1-14 0c0-3.5 2-6 3.8-7.8 0 2.4 1.2 3.6 2.4 3.6C10.6 7.6 11 4.8 12 2z"/></svg>',
+  grupo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16.5 14.6c2.6.1 4.5 1.8 5 4.9"/></svg>',
+  rutinas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg>',
+  perfil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5"/></svg>'
+};
+
+function toast(msg, ms=2400){
+  document.querySelectorAll('.toast').forEach(x => x.remove()); // uno a la vez, sin encimarse
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role','status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), ms);
+}
+async function copy(text){
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); let ok=false; try { ok = document.execCommand('copy'); } catch(_){} ta.remove(); return ok;
+  }
+}
+function vibrate(p){ try { navigator.vibrate && navigator.vibrate(p); } catch(e){} }
+let audioCtx;
+function beep(freq=880, dur=0.18, times=1){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    for (let i=0;i<times;i++){
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = freq; o.connect(g); g.connect(audioCtx.destination);
+      const t0 = audioCtx.currentTime + i*0.28;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.4, t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      o.start(t0); o.stop(t0+dur+0.02);
+    }
+  } catch(e){}
+}
+
+/* ============ API ============ */
+const ERRORS = {
+  SESION_INVALIDA: 'Tu sesión no existe más. Volvé a entrar con tu apodo.',
+  CODIGO_INVALIDO: 'Ese código no existe. Revisalo con quien te invitó.',
+  FOTO_MUY_GRANDE: 'La foto es muy pesada. Probá con otra.',
+  SOLO_ADMIN: 'Solo quien administra el grupo puede hacer esto.',
+  NO_PERMITIDO: 'No tenés acceso a eso.',
+  HABITO_NO_EXISTE: 'Ese hábito ya no existe.',
+  DATOS_INVALIDOS: 'Revisá los datos y probá de nuevo.'
+};
+async function rpc(fn, args={}){
+  let res;
+  try {
+    res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args)
+    });
+  } catch(e){ throw new Error('Sin conexión. Revisá tu internet y probá de nuevo.'); }
+  const txt = await res.text();
+  let data = null; try { data = txt ? JSON.parse(txt) : null; } catch(e){}
+  if (!res.ok){
+    const code = (data && data.message) || '';
+    if (code === 'SESION_INVALIDA'){ LS.del('racha_token'); S.token = null; }
+    throw new Error(ERRORS[code] || 'Algo falló. Probá de nuevo en un rato.');
+  }
+  return data;
+}
+
+/* ============ Estado ============ */
+const S = {
+  token: LS.get('racha_token'),
+  me: null, history: [],
+  tab: 'hoy',
+  groupId: LS.get('racha_group'),
+  group: null, groupLoading: false,
+  sel: new Set(),
+  pendingJoin: null, quick: null,
+  onboarding: false,
+  lifts: null
+};
+const P = () => ({ p_token: S.token });
+
+async function loadMe(){
+  S.me = await rpc('api_me', P());
+  rpc('api_history', P()).then(h => { S.history = h || []; if (S.tab === 'hoy' || S.tab === 'perfil') renderMain(); }).catch(()=>{});
+}
+async function loadGroup(){
+  const groups = S.me?.groups || [];
+  if (!groups.length){ S.group = null; return; }
+  if (!groups.find(g => g.id === S.groupId)) S.groupId = groups[0].id;
+  LS.set('racha_group', S.groupId);
+  S.groupLoading = true;
+  try { S.group = await rpc('api_group', { ...P(), p_group: S.groupId }); }
+  finally { S.groupLoading = false; }
+}
+
+/* ============ Arranque ============ */
+async function boot(){
+  const q = new URLSearchParams(location.search);
+  if (q.get('k')) { S.token = q.get('k'); LS.set('racha_token', S.token); }
+  if (q.get('g')) S.pendingJoin = q.get('g').toUpperCase();
+  if (q.get('anotar')) S.quick = q.get('anotar');
+  if (['hoy','grupo','rutinas','perfil'].includes(q.get('tab'))) S.tab = q.get('tab');
+  if (q.toString()) history.replaceState(null, '', location.pathname);
+
+  if (!S.token){ renderWelcome(); return; }
+  try {
+    await loadMe();
+  } catch(e){
+    if (!S.token){ renderWelcome(); return; }
+    renderOffline(e.message); return;
+  }
+  await afterLogin();
+}
+
+async function afterLogin(){
+  if (S.pendingJoin){
+    try {
+      const g = await rpc('api_join_group', { ...P(), p_code: S.pendingJoin });
+      S.groupId = g.id; LS.set('racha_group', g.id);
+      toast(`Te sumaste a ${g.name} 🔥`);
+      S.me = await rpc('api_me', P());
+    } catch(e){ toast(e.message, 3500); }
+    S.pendingJoin = null;
+  }
+  if (!S.me.habits.length){ S.onboarding = true; renderOnboarding(); return; }
+  renderShell();
+  if (S.quick){
+    const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
+    S.quick = null;
+    if (h && !h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); }
+  }
+}
+
+function renderOffline(msg){
+  $('#app').innerHTML = `<div class="welcome"><div class="logo">${flameSVG(false)}</div><h2>No pudimos cargar tu racha</h2><p class="muted">${esc(msg)}</p><button class="btn" id="retry">Probar de nuevo</button></div>`;
+  $('#retry').onclick = () => location.reload();
+}
+
+/* ============ Bienvenida y registro ============ */
+function renderWelcome(){
+  $('#app').innerHTML = `
+  <div class="welcome">
+    <div class="logo">${flameSVG(true)}</div>
+    <h1>Fueguitos</h1>
+    <p class="muted" style="font-size:18px;margin:8px 0 26px">Anotá tu deporte, lectura o meditación todos los días y mantené el fueguito con tus amigos.</p>
+    ${S.pendingJoin ? `<div class="banner fire">Te invitaron a un grupo. Poné tu apodo y entrás directo.</div>` : ''}
+    <form id="reg" class="stack">
+      <label class="field"><span>¿Cómo te dicen?</span>
+        <input class="input" id="nick" maxlength="30" autocomplete="nickname" placeholder="Tu nombre o apodo" required>
+      </label>
+      <button class="btn" type="submit">Empezar</button>
+    </form>
+    <p class="hint" style="text-align:center;margin-top:18px">No hace falta mail ni contraseña.</p>
+  </div>`;
+  $('#nick').focus();
+  $('#reg').onsubmit = async (e) => {
+    e.preventDefault();
+    const nick = $('#nick').value.trim(); if (!nick) return;
+    const b = e.target.querySelector('button'); b.disabled = true; b.textContent = 'Entrando…';
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+      const r = await rpc('api_register', { p_nick: nick, p_tz: tz });
+      S.token = r.token; LS.set('racha_token', r.token);
+      await loadMe(); await afterLogin();
+    } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = 'Empezar'; }
+  };
+}
+
+/* ============ Onboarding: elegir hábitos ============ */
+function renderOnboarding(){
+  const av = S.me.available;
+  $('#app').innerHTML = `
+  <div class="wrap" style="padding-bottom:40px">
+    <h1 style="margin-top:10px">Hola, ${esc(S.me.user.nick)} 👋</h1>
+    <p class="muted" style="font-size:17px">Elegí qué querés sostener todos los días. Si ya venías con racha en WhatsApp, la cargás y seguís desde ahí.</p>
+    <div class="card section">${habitToggleRows(av)}</div>
+    <div class="section"><button class="btn" id="go" ${S.me.habits.length ? '' : 'disabled'}>Listo, arrancar</button>
+    ${S.me.habits.length ? '' : '<p class="hint" style="text-align:center">Activá al menos un hábito para seguir.</p>'}</div>
+  </div>`;
+  bindHabitToggles(renderOnboarding);
+  $('#go').onclick = () => { S.onboarding = false; renderShell(); };
+}
+
+function habitToggleRows(av){
+  if (!av.length) return '<p class="muted">No hay hábitos disponibles.</p>';
+  return av.map(h => {
+    const mine = S.me.habits.find(x => x.id === h.id);
+    return `<div class="hrow">
+      <div>
+        <div style="font-weight:800;font-size:17px">${esc(h.emoji)} ${esc(h.name)}</div>
+        <div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días${h.group_name ? ` · de ${esc(h.group_name)}` : ''}</div>
+        ${mine ? `<button class="link small" data-adjust="${h.id}">Corregir racha (${mine.streak} 🔥 · ${mine.ice} 🧊 · ${mine.left_for_ice} ⌛)</button>` : ''}
+      </div>
+      <button class="toggle ${h.active ? 'on' : ''}" role="switch" aria-checked="${h.active}" aria-label="${esc(h.name)}" data-toggle="${h.id}"></button>
+    </div>`;
+  }).join('');
+}
+function bindHabitToggles(rerender){
+  document.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
+    const h = S.me.available.find(x => x.id === b.dataset.toggle);
+    if (h.active){
+      try { await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: false }); S.me = await rpc('api_me', P()); rerender(); toast(`${h.name} desactivado. Tu racha queda guardada.`); }
+      catch(e){ toast(e.message); }
+    } else openActivateSheet(h, false, rerender);
+  });
+  document.querySelectorAll('[data-adjust]').forEach(b => b.onclick = () => {
+    const h = S.me.available.find(x => x.id === b.dataset.adjust);
+    openActivateSheet(h, true, rerender);
+  });
+}
+
+function stepper(id, val, min, max){
+  return `<div class="stepper" data-stepper="${id}" data-min="${min}" data-max="${max}"><button type="button" data-d="-1" aria-label="Menos">−</button><output id="${id}">${val}</output><button type="button" data-d="1" aria-label="Más">+</button></div>`;
+}
+function bindSteppers(root){
+  root.querySelectorAll('[data-stepper]').forEach(s => {
+    const out = s.querySelector('output'); const min = +s.dataset.min, max = +s.dataset.max;
+    s.querySelectorAll('button').forEach(b => b.onclick = () => { out.value = out.textContent = Math.max(min, Math.min(max, (+out.textContent) + (+b.dataset.d))); });
+  });
+}
+
+function openActivateSheet(h, adjusting, rerender){
+  const mine = S.me.habits.find(x => x.id === h.id);
+  const streak = mine ? mine.streak : 0, ice = mine ? mine.ice : 0, left = mine ? mine.left_for_ice : h.ice_every;
+  const el = openSheet(`
+    <h2>${esc(h.emoji)} ${adjusting ? 'Corregir' : 'Activar'} ${esc(h.name)}</h2>
+    <p class="muted">${adjusting ? 'Ajustá los números si algo quedó mal.' : '¿Ya venías con racha? Copiá los números de tu último mensaje del grupo. Si arrancás de cero, dejalo así.'}</p>
+    <div class="stack section">
+      <label class="field"><span>Días de racha 🔥</span><input class="input" id="a-streak" type="number" inputmode="numeric" min="0" max="9999" value="${streak}"></label>
+      <div class="grid2">
+        <div class="field"><span>Hielos 🧊</span>${stepper('a-ice', ice, 0, h.max_ice)}</div>
+        <div class="field"><span>Faltan para hielo ⌛</span>${stepper('a-left', left, 1, h.ice_every)}</div>
+      </div>
+      <p class="hint">Máximo ${h.max_ice} hielos. Se gana uno cada ${h.ice_every} días anotados.</p>
+      <button class="btn" id="a-save">${adjusting ? 'Guardar' : 'Activar'}</button>
+    </div>`);
+  bindSteppers(el);
+  $('#a-save', el).onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: true,
+        p_streak: Math.max(0, parseInt($('#a-streak', el).value || '0', 10)),
+        p_ice: +$('#a-ice', el).textContent, p_left: +$('#a-left', el).textContent });
+      S.me = await rpc('api_me', P()); closeSheet(); rerender();
+      toast(adjusting ? 'Racha corregida' : `${h.name} activado 🔥`);
+    } catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+
+/* ============ Hojas ============ */
+/* El botón "atrás" de Android cierra la hoja/pantalla abierta en vez de salir de la app. */
+let layerInHistory = false, skipPop = false;
+function pushLayer(){ if (!layerInHistory){ history.pushState({ layer: 1 }, ''); layerInHistory = true; } }
+function popLayer(){
+  // Se espera un instante: si enseguida se abre otra capa (ej. el festejo), reusa la misma entrada.
+  setTimeout(() => { if (layerInHistory && !$('#layer').innerHTML){ layerInHistory = false; skipPop = true; history.back(); } }, 60);
+}
+function closeLayer(){ $('#layer .runner') ? closeRunner() : closeSheet(); }
+window.addEventListener('popstate', () => {
+  if (skipPop){ skipPop = false; return; }
+  layerInHistory = false;
+  if ($('#layer .runner')){ clearInterval(RT); RT = null; keepAwake(false); }
+  $('#layer').innerHTML = '';
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#layer').innerHTML) closeLayer(); });
+
+function openSheet(html, onClose){
+  const layer = $('#layer');
+  layer.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  pushLayer();
+  const scrim = $('#scrim');
+  scrim.addEventListener('click', (e) => { if (e.target === scrim){ closeSheet(); onClose && onClose(); } });
+  return scrim.querySelector('.sheet');
+}
+function closeSheet(){ $('#layer').innerHTML = ''; popLayer(); }
+
+/* ============ Estructura principal ============ */
+function renderShell(){
+  $('#app').innerHTML = `<main class="wrap" id="main"></main>
+  <div id="bar"></div>
+  <nav class="tabs" aria-label="Secciones"><div class="inner">
+    ${['hoy','grupo','rutinas','perfil'].map(t => `<button data-tab="${t}" class="${S.tab===t?'on':''}" aria-current="${S.tab===t?'page':'false'}">${ICONS[t]}<span>${t==='hoy'?'Hoy':t==='grupo'?'Grupo':t==='rutinas'?'Rutinas':'Perfil'}</span></button>`).join('')}
+  </div></nav>`;
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => go(b.dataset.tab));
+  renderMain();
+  if (S.tab === 'grupo') refreshGroup();
+}
+function go(tab){
+  S.tab = tab;
+  document.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'); });
+  window.scrollTo(0,0);
+  renderMain();
+  if (tab === 'grupo') refreshGroup();
+}
+function renderMain(){
+  if (!$('#main')) return;
+  if (S.tab === 'hoy') renderHoy();
+  else if (S.tab === 'grupo') renderGrupo();
+  else if (S.tab === 'rutinas') renderRutinas();
+  else renderPerfil();
+  renderBar();
+}
+
+/* ============ HOY ============ */
+function renderHoy(){
+  const me = S.me, hs = me.habits;
+  const req = hs.filter(h => h.required_today);
+  const allDone = req.length > 0 && req.every(h => h.done_today);
+  const pend = req.filter(h => !h.done_today), corte = hastaCorte();
+  const ices = (S.history || []).filter(x => x.kind === 'hielo' && x.day >= addDays(me.today, -3));
+  const iceMsg = ices.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
+  $('#main').innerHTML = `
+    <div class="top">
+      <div><div class="date">${fmtDay(me.today)}</div><h1>Hola, ${esc(me.user.nick)}</h1></div>
+    </div>
+    <div class="quote"><span class="qmark" aria-hidden="true">“</span><p>${esc(fraseDelDia(me.today))}</p></div>
+    ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
+    ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
+      (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
+      `<p class="muted" style="margin:0 0 14px">Tocá lo que hiciste hoy y anotalo. Si anotás después de las 12, hasta las 5 AM cuenta para hoy.</p>`}
+    <div class="habits">${hs.map(habitCard).join('')}</div>
+    <div class="section grid2">
+      <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
+      <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
+    </div>
+    ${showInstallCard() ? `<div class="card section" id="inst-card"><div class="row between"><h3>Instalá Fueguitos en tu celu</h3><button class="link small" id="inst-no" aria-label="No mostrar más">Ahora no</button></div><div class="small" style="margin-top:8px">${installHelp()}</div></div>` : ''}
+    ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Armá un grupo y compartí el link: van a ver sus rachas y las fotos del día.</p><button class="btn sm" id="to-group">Armar o unirme a un grupo</button></div>` : ''}
+  `;
+  document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
+    if (e.target.closest('[data-undo]')) return;
+    const h = hs.find(x => x.id === b.dataset.habit);
+    if (h.done_today){ toast(`${h.name} ya está anotado hoy ✅`); return; }
+    S.sel.has(h.id) ? S.sel.delete(h.id) : S.sel.add(h.id);
+    renderHoy(); renderBar();
+  });
+  document.querySelectorAll('[data-undo]').forEach(b => b.onclick = async (e) => {
+    e.stopPropagation();
+    try { const hj = await rpc('api_undo_checkin', { ...P(), p_habit: b.dataset.undo }); S.me.habits = hj; renderHoy(); toast('Anotación deshecha'); }
+    catch(err){ toast(err.message); }
+  });
+  $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
+  $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
+  const tg = $('#to-group'); if (tg) tg.onclick = () => go('grupo');
+  const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); $('#inst-card').remove(); toast('Lo tenés en Perfil cuando quieras'); };
+}
+/* ============ Motivación ============ */
+const FRASES = [
+  'No hace falta ganas. Hace falta arrancar.',
+  'Un día flojo anotado vale más que un día perfecto que no pasó.',
+  'El fueguito no se prende solo: se alimenta todos los días.',
+  'Hoy no competís con nadie. Competís con el vos de ayer.',
+  'Cinco minutos cuentan. Cero minutos, no.',
+  'La disciplina es acordarte de lo que querés cuando no tenés ganas.',
+  'Tus amigos están mirando la tabla. Dales un motivo.',
+  'Lo difícil es ponerte las zapatillas. Lo demás sale.',
+  'Cada día anotado es un voto por la persona que querés ser.',
+  'No rompas la cadena. Mañana te lo vas a agradecer.',
+  'El cansancio pasa. El orgullo de haberlo hecho queda.',
+  'Constancia le gana a intensidad. Siempre.',
+  'Si hoy cuesta, hacé la versión corta. Pero hacela.',
+  'Nadie se arrepiente de haber entrenado.',
+  'Una página, una respiración, una flexión. Arrancá por una.',
+  'El grupo tira para arriba. Sumate al empuje.',
+  'Hoy es un buen día para que tu racha tenga un número más.',
+  'Los hielitos son para emergencias, no para excusas.',
+  'Lo que hacés todos los días pesa más que lo que hacés de vez en cuando.',
+  'Prendé el fuego ahora; después te calentás con él.'
+];
+const fraseDelDia = (day) => { let h = 0; for (const c of day) h = (h*31 + c.charCodeAt(0))>>>0; return FRASES[h % FRASES.length]; };
+// Tiempo hasta el corte de las 5 AM (cuando se cierra el día).
+function hastaCorte(){
+  const now = new Date(), cut = new Date(now); cut.setHours(5, 0, 0, 0);
+  if (now >= cut) cut.setDate(cut.getDate() + 1);
+  const min = Math.round((cut - now) / 60000);
+  return { min, txt: min >= 60 ? `${Math.floor(min/60)} h ${String(min%60).padStart(2,'0')} min` : `${min} min` };
+}
+const HITOS = { 3: '¡Arrancó el fuego!', 7: '¡Una semana entera!', 14: '¡Dos semanas sin aflojar!', 21: '¡21 días: ya es costumbre!', 30: '¡Un mes completo!', 50: '¡50 días! Imparable', 100: '¡100 días! Leyenda del grupo', 150: '¡150! Esto ya es estilo de vida', 200: '¡200 días de fuego!', 365: '¡UN AÑO! Histórico' };
+const ANIMO = ['¡Bien ahí!', '¡Sumaste otro!', '¡Fuego!', '¡Así se hace!', '¡Uno más a la cuenta!', '¡Imparable!'];
+
+function habitCard(h){
+  const sel = S.sel.has(h.id);
+  const status = h.done_today ? `<span class="pill ok">Anotado hoy</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
+  return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
+    <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
+    <div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="meta">${status}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
+      ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
+    </div>
+    <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
+  </button>`;
+}
+function wppText(hs = S.me.habits){
+  return hs.map(h => `${h.wpp_label} día ${h.streak}${h.emoji}🔥\nHielo disponible ${h.ice}🧊\n${h.left_for_ice}⌛`).join('\n\n');
+}
+function renderBar(){
+  const bar = $('#bar'); if (!bar) return;
+  const main = $('#main'); if (main) main.classList.toggle('with-bar', S.tab === 'hoy' && S.sel.size > 0);
+  if (S.tab !== 'hoy' || !S.sel.size){ bar.innerHTML = ''; return; }
+  const names = S.me.habits.filter(h => S.sel.has(h.id)).map(h => h.name);
+  bar.innerHTML = `<div class="actionbar"><div class="inner"><button class="btn" id="do-check">Anotar ${esc(names.join(' + '))}</button></div></div>`;
+  $('#do-check').onclick = openCheckinSheet;
+}
+
+/* ============ Anotar con foto ============ */
+let photoData = null;
+function openCheckinSheet(){
+  photoData = null;
+  const hs = S.me.habits.filter(h => S.sel.has(h.id));
+  const nG = S.me.groups.length;
+  const el = openSheet(`
+    <h2>${hs.map(h => esc(h.emoji)).join(' ')} Anotar ${esc(hs.map(h => h.name).join(' + '))}</h2>
+    <p class="muted small" style="margin:6px 0 14px">La foto es opcional. ${nG ? `Si subís una, la ve${nG > 1 ? `n tus ${nG} grupos` : ' tu grupo'} durante 24 h y después se borra sola.` : 'Cuando te sumes a un grupo, tus amigos van a ver tus fotos durante 24 h.'}</p>
+    <div class="photo-drop" id="pd"><div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div></div>
+    <div class="grid2" style="margin-top:12px">
+      <label class="btn ghost sm" style="width:100%">Sacar foto<input type="file" accept="image/*" capture="environment" id="cam" hidden></label>
+      <label class="btn ghost sm" style="width:100%">Elegir de galería<input type="file" accept="image/*" id="gal" hidden></label>
+    </div>
+    <label class="field" style="margin-top:14px"><span>Comentario (opcional)</span><input class="input" id="note" maxlength="140" placeholder="Ej: 5 km en el parque"></label>
+    <div class="section"><button class="btn" id="confirm">Anotar sin foto</button></div>
+  `);
+  const onFile = async (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    $('#pd', el).innerHTML = '<div class="spinner"></div>';
+    try {
+      photoData = await compress(f);
+      $('#pd', el).innerHTML = `<img src="${photoData}" alt="Tu foto"><button class="x" id="rm">Quitar</button>`;
+      $('#rm', el).onclick = () => { photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div>'; $('#confirm', el).textContent = 'Anotar sin foto'; };
+      $('#confirm', el).textContent = 'Anotar y compartir';
+    } catch(err){ photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="padding:20px">No se pudo leer esa foto. Probá con otra.</div>'; }
+  };
+  $('#cam', el).onchange = onFile; $('#gal', el).onchange = onFile;
+  $('#confirm', el).onclick = async (e) => {
+    const b = e.target; b.disabled = true; b.textContent = 'Anotando…';
+    try {
+      const r = await rpc('api_checkin', { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || null });
+      S.me.habits = r.habits; S.sel.clear(); closeSheet(); renderMain();
+      const fresh = (r.results || []).filter(x => !x.already);
+      if (fresh.length) celebrate(fresh); else toast('Listo');
+      S.group = null;
+      rpc('api_history', P()).then(h => { S.history = h || []; }).catch(()=>{});
+    } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; }
+  };
+}
+function compress(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 1080; let { width: w, height: h } = img;
+      const k = Math.min(1, max / Math.max(w, h)); w = Math.round(w*k); h = Math.round(h*k);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      let q = 0.75, out = c.toDataURL('image/jpeg', q);
+      while (out.length > 900000 && q > 0.35){ q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('img')); };
+    img.src = url;
+  });
+}
+
+/* ============ Festejo ============ */
+function celebrate(results){
+  const main = results[0];
+  const earned = results.filter(r => r.earned_ice);
+  const layer = $('#layer');
+  layer.innerHTML = `<div class="party" role="dialog" aria-modal="true" aria-label="Racha extendida">
+    ${flameSVG(true, 'bigflame')}
+    <div class="count" id="cnt">${Math.max(0, main.streak - 1)}</div>
+    <div class="lbl">${main.streak === 1 ? 'día de racha' : 'días de racha'} de ${esc(main.name)}</div>
+    <div class="hito ${HITOS[main.streak] ? 'big' : ''}">${HITOS[main.streak] || ANIMO[main.streak % ANIMO.length]}</div>
+    ${results.length > 1 ? `<div class="others">${results.slice(1).map(r => `<div class="o"><span>${esc(r.emoji)} ${esc(r.name)}</span><span>${r.streak} 🔥</span></div>`).join('')}</div>` : ''}
+    ${earned.length ? `<div class="gotice">🧊 ¡Ganaste un hielito en ${esc(earned.map(r => r.name).join(' y '))}!</div>` :
+      `<p style="opacity:.75;margin-top:14px">⌛ ${main.left_for_ice} días para el próximo hielito</p>`}
+    <div class="btns">
+      <button class="btn green" id="p-wa">Mandar al grupo de WhatsApp</button>
+      <button class="btn ghost" id="p-ok">Listo</button>
+    </div>
+  </div>`;
+  pushLayer();
+  vibrate([30, 60, 30]);
+  setTimeout(() => { const c = $('#cnt'); if (c){ c.textContent = main.streak; c.animate && c.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}], {duration:380, easing:'cubic-bezier(.2,1.6,.4,1)'}); beep(660, .12); setTimeout(() => beep(990, .16), 120); } }, 650);
+  $('#p-ok').onclick = closeSheet;
+  $('#p-wa').onclick = () => {
+    const done = S.me.habits.filter(h => h.done_today);
+    location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText(done.length ? done : S.me.habits));
+    layer.innerHTML = '';
+  };
+}
+
+/* ============ GRUPO ============ */
+let groupTimer = null;
+async function refreshGroup(){
+  clearInterval(groupTimer);
+  if (!S.me.groups.length){ renderMain(); return; }
+  try { await loadGroup(); } catch(e){ toast(e.message); }
+  if (S.tab === 'grupo') renderMain();
+  groupTimer = setInterval(async () => {
+    if (S.tab !== 'grupo' || document.hidden || $('#layer').innerHTML) return;
+    try { await loadGroup(); renderMain(); } catch(e){}
+  }, 45000);
+}
+function renderGrupo(){
+  const gs = S.me.groups;
+  if (!gs.length){
+    $('#main').innerHTML = `
+      <div class="top"><h1>Grupo</h1></div>
+      <p class="muted">Armá un grupo con tus amigos para ver sus rachas y las fotos del día. Podés estar en varios grupos, y con una sola anotación aparecés en todos.</p>
+      ${groupForms()}`;
+    bindGroupForms(); return;
+  }
+  const G = S.group;
+  const chips = `<div class="chips">${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${esc(g.name)}</button>`).join('')}<button class="chip" id="g-new">+ Grupo</button></div>`;
+  if (!G || G.group.id !== S.groupId){
+    $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
+    bindChips(); return;
+  }
+  const members = [...G.members].sort((a,b) => sumStreak(b) - sumStreak(a));
+  const doneCount = members.filter(m => m.habits.some(h => h.done_today)).length;
+  $('#main').innerHTML = `
+    <div class="top"><div><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1>${esc(G.group.name)}</h1></div>
+      <button class="btn sm ice" id="invite">Invitar</button></div>
+    ${gs.length > 1 ? chips : `<div class="chips"><button class="chip" id="g-new">+ Otro grupo</button></div>`}
+
+    <div class="board">${members.map(memberRow).join('')}</div>
+
+    <div class="section">
+      <div class="section-title"><h2>Fotos de hoy</h2><span class="small muted">Duran 24 h</span></div>
+      ${G.feed.length ? `<div class="stack">${G.feed.map(postCard).join('')}</div>` :
+        `<div class="empty">Todavía nadie subió foto. Anotá tu día con una foto y arrancás vos.</div>`}
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>Récords</h2><button class="link" id="rec-add">Agregar</button></div>
+      <div class="card">${G.records.length ? G.records.map(r => `<div class="rec"><button style="text-align:left;flex:1" data-rec="${r.id}"><div style="font-weight:700">${esc(r.title)}</div></button><span class="v">${esc(r.value)}</span></div>`).join('') :
+        `<p class="muted" style="margin:0">Guardá los récords del grupo, como los cabezazos sin que se caiga la pelota.</p>`}</div>
+    </div>
+
+    ${G.group.is_admin ? `<div class="section">
+      <div class="section-title"><h2>Hábitos del grupo</h2><button class="link" id="hab-add">Crear hábito</button></div>
+      <div class="card">
+        ${G.habits.length ? G.habits.map(h => `<div class="hrow"><div><div style="font-weight:800">${esc(h.emoji)} ${esc(h.name)}</div><div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días · máx ${h.max_ice}</div></div><button class="link" data-hedit="${h.id}">Editar</button></div>`).join('') :
+        `<p class="muted" style="margin:0">Deporte, Lectura y Meditación ya vienen incluidos. Acá podés crear otros con sus propias reglas, como Tomar 2 L de agua o No redes antes de dormir. Cada miembro después elige si lo activa.</p>`}
+      </div></div>` : ''}
+
+    <div class="section" style="text-align:center"><button class="link danger" id="leave">Salir de ${esc(G.group.name)}</button></div>
+  `;
+  bindChips();
+  $('#invite').onclick = () => shareInvite(G.group);
+  document.querySelectorAll('[data-react]').forEach(b => b.onclick = async () => {
+    try { await rpc('api_react', { ...P(), p_photo: b.dataset.react, p_emoji: b.dataset.e }); await loadGroup(); renderGrupo(); } catch(e){ toast(e.message); }
+  });
+  document.querySelectorAll('[data-delphoto]').forEach(b => b.onclick = () => confirmSheet('¿Borrar tu foto?', 'Se deja de ver en todos tus grupos. Tu racha no cambia.', 'Borrar foto', async () => {
+    await rpc('api_delete_photo', { ...P(), p_photo: b.dataset.delphoto }); await loadGroup(); renderGrupo(); toast('Foto borrada');
+  }));
+  $('#rec-add').onclick = () => recordSheet(null);
+  document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
+  const ha = $('#hab-add'); if (ha) ha.onclick = () => habitEditor(null);
+  document.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => habitEditor(G.habits.find(h => h.id === b.dataset.hedit)));
+  $('#leave').onclick = () => confirmSheet(`¿Salir de ${G.group.name}?`, 'Tu racha no cambia. Podés volver con el código del grupo.', 'Salir del grupo', async () => {
+    await rpc('api_leave_group', { ...P(), p_group: G.group.id }); S.me = await rpc('api_me', P()); S.group = null; S.groupId = null; LS.del('racha_group'); refreshGroup(); toast('Saliste del grupo');
+  });
+}
+const sumStreak = (m) => m.habits.reduce((a,h) => a + h.streak, 0);
+function memberRow(m){
+  return `<div class="member">
+    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}</div>
+    <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
+  </div>`;
+}
+function postCard(p){
+  const mine = p.user.id === S.me.user.id;
+  const R = ['🔥','💪','👏','😂'];
+  // Solo imágenes base64 limpias: la foto la sube otro miembro, no se confía en su contenido.
+  const img = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(p.data)) ? `<img src="${p.data}" alt="Foto de ${esc(p.user.nick)}" loading="lazy">` : '';
+  return `<article class="post">${img}<div class="pbody">
+    <div class="row between"><div class="who row" style="font-weight:800"><div class="avatar" style="background:${avColor(p.user.nick)};width:30px;height:30px;font-size:14px">${esc(p.user.nick.slice(0,1).toUpperCase())}</div>${esc(p.user.nick)}</div><span class="small muted">${ago(p.created_at)}</span></div>
+    <div class="meta">${p.habits.map(h => `<span class="pill fire">${esc(h.emoji)} ${esc(h.name)} · día ${h.streak ?? ''}</span>`).join('')}</div>
+    ${p.note ? `<p style="margin:8px 0 0">${esc(p.note)}</p>` : ''}
+    <div class="reacts">${R.map(e => { const r = p.reactions.find(x => x.emoji === e); return `<button class="react ${r && r.mine ? 'mine' : ''}" data-react="${p.id}" data-e="${e}" aria-label="Reaccionar ${e}">${e}${r ? ' ' + r.count : ''}</button>`; }).join('')}</div>
+    <div class="row between" style="margin-top:8px"><span class="small muted">${expiresIn(p.created_at)}</span>${mine ? `<button class="link small danger" data-delphoto="${p.id}">Borrar</button>` : ''}</div>
+  </div></article>`;
+}
+function bindChips(){
+  document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { S.groupId = b.dataset.g; LS.set('racha_group', S.groupId); S.group = null; renderGrupo(); refreshGroup(); });
+  const n = $('#g-new'); if (n) n.onclick = () => { const el = openSheet(`<h2>Otro grupo</h2><div class="section">${groupForms()}</div>`); bindGroupForms(el); };
+}
+function groupForms(){
+  return `<div class="stack section">
+    <form class="card stack" id="f-create"><h3>Crear un grupo</h3>
+      <input class="input" id="g-name" maxlength="40" placeholder="Ej: Los del fútbol" required>
+      <button class="btn" type="submit">Crear grupo</button></form>
+    <form class="card stack" id="f-join"><h3>Unirme con un código</h3>
+      <input class="input" id="g-code" maxlength="6" placeholder="Código de 6 letras" style="text-transform:uppercase;letter-spacing:.15em" autocapitalize="characters" required>
+      <button class="btn ice" type="submit">Unirme</button></form>
+  </div>`;
+}
+function bindGroupForms(root=document){
+  $('#f-create', root).onsubmit = async (e) => {
+    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    try {
+      const g = await rpc('api_create_group', { ...P(), p_name: $('#g-name', root).value });
+      S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); closeSheet(); S.group = null;
+      go('grupo'); setTimeout(() => shareInvite(g), 400);
+    } catch(err){ toast(err.message); b.disabled = false; }
+  };
+  $('#f-join', root).onsubmit = async (e) => {
+    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    try {
+      const g = await rpc('api_join_group', { ...P(), p_code: $('#g-code', root).value });
+      S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); closeSheet(); S.group = null;
+      go('grupo'); toast(`Te sumaste a ${g.name} 🔥`);
+    } catch(err){ toast(err.message, 3500); b.disabled = false; }
+  };
+}
+function inviteLink(code){ return `${location.origin}${location.pathname}?g=${code}`; }
+function shareInvite(g){
+  const link = inviteLink(g.code);
+  const text = `Sumate a "${g.name}" en Fueguitos 🔥 Anotamos deporte y lectura todos los días y nos cuidamos la racha.`;
+  const el = openSheet(`
+    <h2>Invitar a ${esc(g.name)}</h2>
+    <p class="muted">Mandales este link. Ponen su apodo y quedan adentro.</p>
+    <div class="card section" style="text-align:center"><div class="small muted">Código del grupo</div><div style="font-size:40px;font-weight:800;letter-spacing:.18em">${esc(g.code)}</div></div>
+    <div class="stack section">
+      <button class="btn green" id="sh-wa">Mandar por WhatsApp</button>
+      ${navigator.share ? '<button class="btn ice" id="sh-share">Compartir por otra app</button>' : ''}
+      <button class="btn ghost" id="sh-copy">Copiar link</button>
+    </div>`);
+  $('#sh-wa', el).onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(`${text}\n${link}`); };
+  $('#sh-copy', el).onclick = async () => { (await copy(link)) ? toast('Link copiado') : toast(link, 5000); };
+  const sh = $('#sh-share', el); if (sh) sh.onclick = () => navigator.share({ title: 'Fueguitos', text, url: link }).catch(() => {});
+}
+function confirmSheet(title, body, cta, fn){
+  const el = openSheet(`<h2>${esc(title)}</h2><p class="muted">${esc(body)}</p><div class="stack section"><button class="btn" id="c-yes" style="background:var(--danger);box-shadow:0 4px 0 #A5243A">${esc(cta)}</button><button class="btn ghost" id="c-no">Cancelar</button></div>`);
+  $('#c-no', el).onclick = closeSheet;
+  $('#c-yes', el).onclick = async (e) => { e.target.disabled = true; try { await fn(); closeSheet(); } catch(err){ toast(err.message); e.target.disabled = false; } };
+}
+function recordSheet(r){
+  const el = openSheet(`<h2>${r ? 'Editar récord' : 'Nuevo récord'}</h2>
+    <div class="stack section">
+      <label class="field"><span>Qué</span><input class="input" id="r-t" maxlength="60" placeholder="Ej: Cabezazos Nico - Iña" value="${esc(r ? r.title : '')}"></label>
+      <label class="field"><span>Récord</span><input class="input" id="r-v" maxlength="20" placeholder="Ej: 830" value="${esc(r ? r.value : '')}"></label>
+      <button class="btn" id="r-save">Guardar récord</button>
+      ${r ? '<button class="link danger" id="r-del">Borrar récord</button>' : ''}
+    </div>`);
+  $('#r-save', el).onclick = async (e) => {
+    const t = $('#r-t', el).value.trim(), v = $('#r-v', el).value.trim(); if (!t || !v){ toast('Completá los dos campos'); return; }
+    e.target.disabled = true;
+    try { await rpc('api_save_record', { ...P(), p_group: S.groupId, p_id: r ? r.id : null, p_title: t, p_value: v }); await loadGroup(); closeSheet(); renderGrupo(); toast('Récord guardado 🏆'); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+  const d = $('#r-del', el); if (d) d.onclick = async () => { try { await rpc('api_delete_record', { ...P(), p_id: r.id }); await loadGroup(); closeSheet(); renderGrupo(); } catch(err){ toast(err.message); } };
+}
+function habitEditor(h){
+  let days = h ? [...h.days] : [0,1,2,3,4,5,6];
+  let autoIce = !h;
+  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🙏','🚶','🏋️'];
+  const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
+    <div class="stack section">
+      <label class="field"><span>Nombre</span><input class="input" id="h-name" maxlength="30" placeholder="Ej: Tomar agua" value="${esc(h ? h.name : '')}"></label>
+      <div class="field"><span>Emoji</span><input class="input" id="h-emoji" maxlength="4" style="width:80px;text-align:center;font-size:24px" value="${esc(h ? h.emoji : '🔥')}">
+        <div class="emojis">${EM.map(e => `<button type="button" data-em="${e}">${e}</button>`).join('')}</div></div>
+      <label class="field"><span>Cómo aparece en el mensaje de WhatsApp</span><input class="input" id="h-wpp" maxlength="20" placeholder="Ej: Agua" value="${esc(h ? h.wpp_label : '')}"><div class="hint">Queda así: <b id="h-prev"></b></div></label>
+      <div class="field"><span>Días que cuenta</span><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
+        <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div>
+      <div class="grid2">
+        <div class="field"><span>Hielo cada</span>${stepper('h-ice', h ? h.ice_every : 14, 1, 90)}<div class="hint">días anotados</div></div>
+        <div class="field"><span>Máximo de hielos</span>${stepper('h-max', h ? h.max_ice : 2, 0, 5)}</div>
+      </div>
+      <p class="hint" id="h-rule"></p>
+      <button class="btn" id="h-save">${h ? 'Guardar cambios' : 'Crear hábito'}</button>
+      ${h ? '<button class="link danger" id="h-del">Eliminar hábito</button>' : ''}
+    </div>`);
+  bindSteppers(el);
+  const paint = () => {
+    el.querySelectorAll('[data-day]').forEach(b => b.classList.toggle('on', days.includes(+b.dataset.day)));
+    if (autoIce) $('#h-ice', el).textContent = Math.max(1, days.length * 2);
+    const name = $('#h-wpp', el).value || $('#h-name', el).value || 'Hábito';
+    $('#h-prev', el).textContent = `${name} día 6${$('#h-emoji', el).value}🔥`;
+    $('#h-rule', el).textContent = `${days.length} veces por semana → un hielo cada ${$('#h-ice', el).textContent} días (el doble del hábito semanal).`;
+  };
+  el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { const d = +b.dataset.day; days = days.includes(d) ? days.filter(x => x !== d) : [...days, d]; if (!days.length) days = [d]; paint(); });
+  el.querySelectorAll('[data-em]').forEach(b => b.onclick = () => { $('#h-emoji', el).value = b.dataset.em; paint(); });
+  ['#h-name','#h-wpp','#h-emoji'].forEach(s => $(s, el).oninput = paint);
+  el.querySelector('[data-stepper="h-ice"]').addEventListener('click', () => { autoIce = false; setTimeout(paint); });
+  paint();
+  $('#h-save', el).onclick = async (e) => {
+    const name = $('#h-name', el).value.trim(); if (!name){ toast('Ponele un nombre'); return; }
+    e.target.disabled = true;
+    try {
+      await rpc('api_save_habit', { ...P(), p_group: S.groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
+        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent });
+      S.me = await rpc('api_me', P()); await loadGroup(); closeSheet(); renderGrupo();
+      toast(h ? 'Hábito actualizado' : 'Hábito creado. Cada uno lo activa desde Perfil.', 3500);
+    } catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+  const d = $('#h-del', el); if (d) d.onclick = () => confirmSheet(`¿Eliminar ${h.name}?`, 'Deja de aparecer para todos los del grupo.', 'Eliminar hábito', async () => {
+    await rpc('api_archive_habit', { ...P(), p_habit: h.id }); S.me = await rpc('api_me', P()); await loadGroup(); renderGrupo();
+  });
+}
+
+/* ============ RUTINAS ============ */
+const R_QTY = { series: 4, rest: 60, ex: [
+  { n: 'Flexiones', r: '20' }, { n: 'Plancha', r: '1 min', t: 60 }, { n: 'Rodillas al pecho en plancha', r: '50' },
+  { n: 'Fondos de tríceps', r: '20' }, { n: 'Sentadillas con salto', r: '15' } ] };
+const R_TIME = { min: 12, ex: [
+  { n: 'Sentadillas', k: 1 }, { n: 'Estocadas', k: 2, note: 'una por pierna' }, { n: 'Flexiones', k: 1 }, { n: 'Escaladores', k: 1 },
+  { n: 'Burpees', k: 1 }, { n: 'Abro y cierro', k: 1 }, { n: 'Escaleras', fixed: 1, note: 'o un pique ida y vuelta' } ] };
+const MED_VIDEO = '9-IOMXpv7Ys';
+
+/* ============ Marcas del gym ============ */
+const EJERCICIOS = ['Press plano', 'Press inclinado', 'Sentadilla', 'Peso muerto', 'Press militar', 'Remo con barra', 'Dominadas', 'Hip thrust', 'Prensa', 'Curl de bíceps'];
+const capEx = (t) => { t = String(t).trim().replace(/\s+/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1); };
+const kgTxt = (n) => `${Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 })} kg`;
+const shortDate = (iso) => { const d = new Date(iso); return `${d.getDate()}/${d.getMonth()+1}`; };
+async function loadLifts(){
+  try { S.lifts = await rpc('api_lifts', P()); } catch(e){ S.lifts = S.lifts || []; }
+  const box = $('#lifts'); if (box && S.tab === 'rutinas'){ box.innerHTML = liftsBlock(); bindLifts(); }
+}
+function liftGroups(){
+  const g = {};
+  (S.lifts || []).forEach(l => { const k = l.exercise.toLowerCase(); (g[k] = g[k] || { name: capEx(l.exercise), items: [] }).items.push(l); });
+  return Object.values(g).map(x => ({ ...x, best: x.items.reduce((a, l) => Math.max(a, +l.kg), 0), last: x.items[0] }))
+    .sort((a, b) => new Date(b.last.created_at) - new Date(a.last.created_at));
+}
+function liftsBlock(){
+  if (!S.lifts) return '<div class="spinner" style="margin:12px auto"></div>';
+  const gs = liftGroups();
+  if (!gs.length) return '<p class="muted" style="margin:0">Anotá cuánto levantás en cada ejercicio (ej: Press plano 80 kg × 8) y seguí tu progreso. Cada récord nuevo se festeja.</p>';
+  return gs.map(x => `<button class="hrow" style="width:100%;text-align:left" data-lift="${esc(x.name)}">
+    <div><div style="font-weight:800;font-size:17px">${esc(x.name)}</div><div class="small muted">Último: ${kgTxt(x.last.kg)}${x.last.reps ? ` × ${x.last.reps}` : ''} · ${shortDate(x.last.created_at)}</div></div>
+    <span class="pill fire">🏆 ${kgTxt(x.best)}</span></button>`).join('');
+}
+function bindLifts(){
+  document.querySelectorAll('[data-lift]').forEach(b => b.onclick = () => liftHistory(b.dataset.lift));
+}
+function liftHistory(name){
+  const x = liftGroups().find(g => g.name === name); if (!x) return;
+  const el = openSheet(`<h2>${esc(x.name)}</h2><p class="muted">Récord: <b>${kgTxt(x.best)}</b> · ${x.items.length} ${x.items.length === 1 ? 'marca' : 'marcas'}</p>
+    <div class="card section">${x.items.map(l => `<div class="hrow"><div><b>${kgTxt(l.kg)}</b>${l.reps ? ` × ${l.reps}` : ''}${+l.kg === x.best ? ' 🏆' : ''}<div class="small muted">${shortDate(l.created_at)}${l.note ? ` · ${esc(l.note)}` : ''}</div></div><button class="link small danger" data-ldel="${l.id}">Borrar</button></div>`).join('')}</div>
+    <div class="section"><button class="btn" id="l-more">Cargar otra marca</button></div>`);
+  $('#l-more', el).onclick = () => liftSheet(x.name);
+  el.querySelectorAll('[data-ldel]').forEach(b => b.onclick = async () => {
+    try { await rpc('api_lift_delete', { ...P(), p_id: b.dataset.ldel }); S.lifts = S.lifts.filter(l => l.id !== b.dataset.ldel); closeSheet(); renderRutinas(); toast('Marca borrada'); }
+    catch(err){ toast(err.message); }
+  });
+}
+function liftSheet(name){
+  const seen = new Set(), known = [...liftGroups().map(g => g.name), ...EJERCICIOS].filter(e => !seen.has(e.toLowerCase()) && seen.add(e.toLowerCase())).slice(0, 10);
+  const el = openSheet(`<h2>🏋️ Cargar peso</h2>
+    <div class="stack section">
+      <label class="field"><span>Ejercicio</span><input class="input" id="l-ex" maxlength="40" placeholder="Ej: Press plano" value="${esc(name)}"></label>
+      <div class="chips" style="flex-wrap:wrap;margin:0">${known.map(e => `<button type="button" class="chip" data-lex="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+      <div class="grid2">
+        <label class="field"><span>Peso (kg)</span><input class="input" id="l-kg" type="number" inputmode="decimal" min="0" max="1000" step="0.5" placeholder="80"></label>
+        <label class="field"><span>Repeticiones</span><input class="input" id="l-reps" type="number" inputmode="numeric" min="1" max="200" placeholder="8"></label>
+      </div>
+      <label class="field"><span>Nota (opcional)</span><input class="input" id="l-note" maxlength="140" placeholder="Ej: con spotter, última serie al fallo"></label>
+      <button class="btn" id="l-save">Guardar marca</button>
+    </div>`);
+  el.querySelectorAll('[data-lex]').forEach(b => b.onclick = () => { $('#l-ex', el).value = b.dataset.lex; $('#l-kg', el).focus(); });
+  $('#l-save', el).onclick = async (e) => {
+    const ex = capEx($('#l-ex', el).value), kg = parseFloat(($('#l-kg', el).value || '').replace(',', '.')), reps = parseInt($('#l-reps', el).value, 10);
+    if (!ex){ toast('Elegí el ejercicio'); return; }
+    if (!(kg >= 0 && kg <= 1000)){ toast('Poné el peso en kg'); return; }
+    e.target.disabled = true;
+    try {
+      const r = await rpc('api_lift_add', { ...P(), p_exercise: ex, p_kg: kg, p_reps: reps > 0 ? reps : null, p_note: $('#l-note', el).value || null });
+      closeSheet(); S.lifts = null; renderRutinas();
+      if (r && r.pr && r.prev != null){ vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120); toast(`🏆 ¡Récord nuevo en ${ex}! ${kgTxt(kg)} (antes ${kgTxt(r.prev)})`, 4000); }
+      else toast(`Marca guardada: ${ex} ${kgTxt(kg)} 💪`);
+    } catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+
+const MUSICA = [
+  { ic: '🔥', t: 'Beast Mode', d: 'Para entrenar a full', q: 'beast mode' },
+  { ic: '💪', t: 'Motivación gym', d: 'Temas que empujan', q: 'motivacion gym' },
+  { ic: '🎤', t: 'Reggaetón para entrenar', d: 'Para el cardio', q: 'reggaeton para entrenar' },
+  { ic: '🎸', t: 'Rock para entrenar', d: 'Guitarras y energía', q: 'rock workout' },
+  { ic: '📚', t: 'Lo-fi para leer', d: 'Concentración sin letra', q: 'lofi para leer' },
+  { ic: '🧘', t: 'Meditación', d: 'Calma y respiración', q: 'meditacion relajacion' }
+];
+const spotifySearch = (q) => `https://open.spotify.com/search/${encodeURIComponent(q)}/playlists`;
+const myPlaylist = () => LS.get('fueguitos_playlist') || '';
+const musicRow = (ic, t, d, url) => `<a class="music" href="${esc(url)}" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">${ic}</span><span><b>${esc(t)}</b><span class="small muted">${esc(d)}</span></span><span class="go">Abrir ↗</span></a>`;
+
+function renderRutinas(){
+  $('#main').innerHTML = `
+    <div class="top"><h1>Rutinas</h1></div>
+    <p class="muted" style="margin-top:-8px">Las del grupo, con cronómetro. Al terminar, anotás el día directo.</p>
+    <div class="stack section">
+      <button class="card routine" data-r="qty"><div class="ic" style="background:var(--fire-soft)">💪</div><div><h3>Rutina por cantidad</h3><div class="small muted">4 series · 1 min de descanso entre series</div></div></button>
+      <button class="card routine" data-r="time"><div class="ic" style="background:var(--ice-soft)">⏱️</div><div><h3>Rutina por tiempo · 12 min</h3><div class="small muted">Arrancás con 1 de cada una y sumás 1 por ronda</div></div></button>
+      <button class="card routine" data-r="med"><div class="ic" style="background:var(--ok-soft)">🧘</div><div><h3>Meditación guiada</h3><div class="small muted">El video del grupo</div></div></button>
+    </div>
+    <div class="section"><div class="section-title"><h2>Mis marcas del gym</h2><button class="link" id="lift-add">+ Cargar peso</button></div>
+      <div class="card" id="lifts">${liftsBlock()}</div>
+    </div>
+    <div class="section"><div class="section-title"><h2>Música para darle</h2><span class="small muted">Abre Spotify</span></div>
+      <div class="card">
+        ${myPlaylist() ? musicRow('⭐', 'Tu playlist', 'La que guardaste vos', myPlaylist()) : ''}
+        ${MUSICA.map(m => musicRow(m.ic, m.t, m.d, spotifySearch(m.q))).join('')}
+      </div>
+      <button class="link" id="pl-set" style="margin-top:10px">${myPlaylist() ? 'Cambiar tu playlist' : '+ Guardar tu propia playlist'}</button>
+    </div>`;
+  document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => ({ qty: runQty, time: runTime, med: runMed })[b.dataset.r]());
+  $('#lift-add').onclick = () => liftSheet('');
+  bindLifts();
+  if (!S.lifts) loadLifts();
+  $('#pl-set').onclick = () => {
+    const el = openSheet(`<h2>Tu playlist</h2><p class="muted">Pegá el link de una playlist de Spotify (o YouTube Music). Aparece primera en la lista y en las rutinas.</p>
+      <div class="stack section"><input class="input" id="pl-url" type="url" inputmode="url" placeholder="https://open.spotify.com/playlist/…" value="${esc(myPlaylist())}">
+      <button class="btn" id="pl-save">Guardar</button>${myPlaylist() ? '<button class="link danger" id="pl-del">Quitar</button>' : ''}</div>`);
+    $('#pl-save', el).onclick = () => {
+      const u = $('#pl-url', el).value.trim();
+      if (!/^https:\/\/(open\.spotify\.com|spotify\.link|music\.youtube\.com|www\.youtube\.com|youtu\.be)\//.test(u)){ toast('Pegá un link de Spotify o YouTube Music'); return; }
+      LS.set('fueguitos_playlist', u); closeSheet(); renderRutinas(); toast('Playlist guardada 🎧');
+    };
+    const d = $('#pl-del', el); if (d) d.onclick = () => { LS.del('fueguitos_playlist'); closeSheet(); renderRutinas(); };
+  };
+}
+
+let RT = null; // runner timer
+let wakeLock = null;
+async function keepAwake(on){
+  try {
+    if (on && 'wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    else if (!on && wakeLock){ await wakeLock.release(); wakeLock = null; }
+  } catch(e){}
+}
+function openRunner(html){
+  $('#layer').innerHTML = `<div class="runner" role="dialog" aria-modal="true"><div class="inner">${html}</div></div>`;
+  pushLayer();
+  keepAwake(true);
+  return $('#layer .runner');
+}
+function closeRunner(){ clearInterval(RT); RT = null; keepAwake(false); $('#layer').innerHTML = ''; popLayer(); }
+const mmss = (s) => `${Math.floor(s/60)}:${String(Math.max(0, s%60)).padStart(2,'0')}`;
+function countdown(seconds, onTick, onEnd){
+  clearInterval(RT);
+  const end = Date.now() + seconds*1000;
+  const tick = () => { const left = Math.max(0, Math.round((end - Date.now())/1000)); onTick(left); if (left <= 0){ clearInterval(RT); RT = null; onEnd && onEnd(); } };
+  tick(); RT = setInterval(tick, 250);
+}
+function runnerHeader(title){
+  const music = myPlaylist() || spotifySearch(title.includes('Medita') ? 'meditacion relajacion' : 'beast mode');
+  return `<div class="row between" style="margin-bottom:18px"><h2>${title}</h2><div class="row" style="gap:8px"><a class="btn ghost sm" href="${esc(music)}" target="_blank" rel="noopener" aria-label="Poner música">🎧</a><button class="btn ghost sm" data-close>Cerrar</button></div></div>`;
+}
+function finishBlock(habitName, msg){
+  const h = S.me.habits.find(x => x.name === habitName);
+  const can = h && !h.done_today;
+  return `<div style="text-align:center;padding:30px 0"><div style="width:110px;height:136px;margin:0 auto">${flameSVG(true)}</div>
+    <h2 style="margin-top:14px">${msg}</h2>
+    ${can ? `<div class="section"><button class="btn" data-log="${h.id}">Anotar ${esc(h.name)}</button></div>` :
+      h ? `<p class="muted">${esc(h.name)} ya está anotado hoy ✅</p>` : ''}
+    <div class="section"><button class="btn ghost" data-close>Cerrar</button></div></div>`;
+}
+function bindRunnerCommon(el){
+  el.querySelectorAll('[data-close]').forEach(b => b.onclick = closeRunner);
+  el.querySelectorAll('[data-log]').forEach(b => b.onclick = () => { closeRunner(); S.sel = new Set([b.dataset.log]); go('hoy'); openCheckinSheet(); });
+}
+
+function runQty(){
+  let serie = 1, done = new Set(), resting = false;
+  const paint = () => {
+    if (serie > R_QTY.series){ const el = openRunner(runnerHeader('Rutina por cantidad') + finishBlock('Deporte', '¡Rutina completa! 4 series 💪')); bindRunnerCommon(el); beep(880,.2,3); vibrate([200,100,200]); return; }
+    const el = openRunner(`${runnerHeader('Rutina por cantidad')}
+      <div class="row between"><h3>Serie ${serie} de ${R_QTY.series}</h3><span class="small muted">${done.size}/${R_QTY.ex.length}</span></div>
+      <div class="progress" style="margin:10px 0 16px"><i style="width:${((serie-1)*R_QTY.ex.length + done.size)/(R_QTY.series*R_QTY.ex.length)*100}%"></i></div>
+      ${resting ? `<div class="card" style="text-align:center"><div class="small muted">Descanso</div><div class="clock rest" id="clk">1:00</div><button class="btn ghost sm" id="skip" style="margin-top:12px">Saltar descanso</button></div>` :
+      `<div class="stack">${R_QTY.ex.map((x,i) => `<button class="ex ${done.has(i) ? 'done' : ''}" data-ex="${i}"><span style="font-weight:700">${done.has(i) ? '✓ ' : ''}${x.n}</span><span class="reps" ${x.t ? `id="t${i}"` : ''}>${x.r}</span></button>`).join('')}</div>
+      <p class="hint" style="text-align:center">Tocá cada ejercicio cuando lo termines.${R_QTY.ex.some(x=>x.t) ? ' La plancha arranca un cronómetro de 1 min.' : ''}</p>`}
+    `);
+    bindRunnerCommon(el);
+    if (resting){
+      countdown(R_QTY.rest, (l) => { const c = $('#clk'); if (c) c.textContent = mmss(l); if (l === 3 || l === 2 || l === 1) beep(520,.1); }, () => { beep(990,.25,2); vibrate(300); resting = false; serie++; done = new Set(); paint(); });
+      $('#skip', el).onclick = () => { clearInterval(RT); resting = false; serie++; done = new Set(); paint(); };
+      return;
+    }
+    el.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.ex, x = R_QTY.ex[i];
+      if (done.has(i)){ done.delete(i); paint(); return; }
+      if (x.t && !b.dataset.running){
+        b.dataset.running = '1';
+        countdown(x.t, (l) => { const t = $('#t'+i); if (t) t.textContent = mmss(l); }, () => { beep(990,.25,2); vibrate(300); done.add(i); after(); });
+        return;
+      }
+      clearInterval(RT); done.add(i); after();
+    });
+    function after(){
+      if (done.size === R_QTY.ex.length){ if (serie < R_QTY.series) resting = true; else serie++; }
+      paint();
+    }
+  };
+  paint();
+}
+
+function runTime(){
+  let round = 1, started = false, finished = false, left = R_TIME.min*60, paused = false;
+  const reps = (x) => x.fixed ?? x.k * round;
+  const paint = () => {
+    if (finished){ const el = openRunner(runnerHeader('Rutina por tiempo') + finishBlock('Deporte', `¡Tiempo! Llegaste a la ronda ${round} 🔥`)); bindRunnerCommon(el); return; }
+    const el = openRunner(`${runnerHeader('Rutina por tiempo')}
+      <div class="clock" id="clk">${mmss(left)}</div>
+      <div class="progress" style="margin:14px 0"><i id="bar" style="width:${(1 - left/(R_TIME.min*60))*100}%"></i></div>
+      <div class="row between" style="margin-bottom:10px"><h3>Ronda ${round}</h3><span class="small muted">Sube 1 por ronda</span></div>
+      <div class="stack">${R_TIME.ex.map(x => `<div class="ex"><span><b>${x.n}</b>${x.note ? `<br><span class="small muted">${x.note}</span>` : ''}</span><span class="reps">${reps(x)}</span></div>`).join('')}</div>
+      <div class="section grid2">
+        <button class="btn ghost" id="pause">${!started ? 'Empezar' : paused ? 'Seguir' : 'Pausa'}</button>
+        <button class="btn" id="next" ${started ? '' : 'disabled'}>Ronda ${round+1}</button>
+      </div>`);
+    bindRunnerCommon(el);
+    const start = () => countdown(left, (l) => { left = l; const c = $('#clk'); if (c) c.textContent = mmss(l); const b = $('#bar'); if (b) b.style.width = `${(1 - l/(R_TIME.min*60))*100}%`; if (l === 60) beep(700,.15,2); }, () => { beep(990,.3,3); vibrate([300,100,300]); finished = true; paint(); });
+    $('#pause', el).onclick = () => {
+      if (!started){ started = true; paused = false; paint(); start(); return; }
+      if (paused){ paused = false; paint(); start(); } else { paused = true; clearInterval(RT); paint(); }
+    };
+    $('#next', el).onclick = () => { round++; vibrate(40); const run = !paused; paint(); if (run) start(); };
+  };
+  paint();
+}
+
+function runMed(){
+  const el = openRunner(`${runnerHeader('Meditación')}
+    <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${MED_VIDEO}" title="Meditación guiada" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+    <p class="muted small">Si no carga, <a href="https://youtu.be/${MED_VIDEO}" target="_blank" rel="noopener">abrilo en YouTube</a>.</p>
+    ${finishBlock('Meditación', 'Cuando termines, anotala')}`);
+  bindRunnerCommon(el);
+}
+
+/* ============ PERFIL ============ */
+function renderPerfil(){
+  const me = S.me;
+  const best = me.habits.reduce((a,h) => Math.max(a, h.best ?? h.streak), 0);
+  $('#main').innerHTML = `
+    <div class="top"><div class="row"><div class="avatar" style="background:${avColor(me.user.nick)};width:52px;height:52px;font-size:22px">${esc(me.user.nick.slice(0,1).toUpperCase())}</div><h1>${esc(me.user.nick)}</h1></div></div>
+
+    <div class="section"><div class="section-title"><h2>Últimos meses</h2></div>
+      <div class="card">${heatmap()}<div class="row small muted" style="margin-top:10px;gap:14px"><span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--fire)"></i> anotado</span><span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--heat-ice)"></i> hielo</span></div></div>
+    </div>
+
+    <div class="section"><div class="section-title"><h2>Mis hábitos</h2></div>
+      <div class="card">${habitToggleRows(me.available)}</div>
+      <p class="hint">Al desactivar un hábito tu racha queda guardada. Los que crea el admin de un grupo aparecen acá para que los actives.</p>
+    </div>
+
+    <div class="section"><div class="section-title"><h2>Mis datos</h2></div>
+      <form class="card stack" id="prof">
+        <label class="field"><span>Apodo</span><input class="input" id="p-nick" maxlength="30" value="${esc(me.user.nick)}"></label>
+        <label class="field"><span>Mail (opcional)</span><input class="input" id="p-mail" type="email" placeholder="Para avisos, si algún día los activamos" value="${esc(me.user.email || '')}"></label>
+        <button class="btn sm" type="submit" style="width:100%">Guardar datos</button>
+      </form>
+    </div>
+
+    <div class="section"><div class="section-title"><h2>Tu llave</h2></div>
+      <div class="card"><p style="margin-top:0">Tu cuenta vive en este celu. Si lo cambiás o borrás la app, abrí este link y recuperás tu racha. Guardalo en un chat con vos mismo.</p>
+        <button class="btn ice sm" id="key" style="width:100%">Copiar mi link de acceso</button>
+        <p class="hint">No lo compartas: con ese link cualquiera entra como vos.</p></div>
+    </div>
+
+    <div class="section"><div class="section-title"><h2>Instalar en el celu</h2></div>
+      <div class="card small">${installHelp()}</div>
+    </div>
+
+    <div class="section"><div class="section-title"><h2>Widget en la pantalla</h2></div>
+      <div class="card small">
+        <p style="margin-top:0"><b>iPhone</b>: tu racha en la pantalla de inicio, sin abrir la app.</p>
+        <ol style="padding-left:20px;margin:0 0 12px">
+          <li>Bajá la app gratis <a href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank" rel="noopener">Scriptable</a>.</li>
+          <li>Tocá el botón de acá abajo para copiar tu widget.</li>
+          <li>En Scriptable: <b>+</b> arriba a la derecha, pegá, y ponele de nombre Fueguitos.</li>
+          <li>Mantené apretada la pantalla de inicio → <b>+</b> → Scriptable → elegí tamaño → tocá el widget → Script: <b>Fueguitos</b>.</li>
+        </ol>
+        <button class="btn sm" id="wid" style="width:100%">Copiar mi widget</button>
+        <p class="hint">Tiene tu llave adentro: no lo compartas.</p>
+        <p style="margin:14px 0 0"><b>Android</b>: mantené apretado el ícono de Fueguitos y arrastrá <i>Anotar Deporte</i> o <i>Ver el grupo</i> a la pantalla como botón directo. El widget con la racha a la vista llega con la versión de Play Store.</p>
+      </div>
+    </div>
+
+    <div class="section" style="text-align:center"><button class="link danger" id="logout">Cerrar sesión en este celu</button></div>
+  `;
+  bindHabitToggles(renderPerfil);
+  $('#prof').onsubmit = async (e) => {
+    e.preventDefault();
+    try { await rpc('api_update_profile', { ...P(), p_nick: $('#p-nick').value, p_email: $('#p-mail').value, p_tz: null }); S.me = await rpc('api_me', P()); renderPerfil(); toast('Datos guardados'); }
+    catch(err){ toast(err.message); }
+  };
+  $('#wid').onclick = async () => { (await copy(widgetScript())) ? toast('Widget copiado. Pegalo en Scriptable 📲', 3200) : toast('No se pudo copiar'); };
+  $('#key').onclick = async () => { const l = `${location.origin}${location.pathname}?k=${S.token}`; (await copy(l)) ? toast('Link copiado. Guardalo en un lugar seguro 🔑', 3200) : toast(l, 6000); };
+  $('#logout').onclick = () => confirmSheet('¿Cerrar sesión?', 'Si no guardaste tu link de acceso, no vas a poder volver a esta cuenta.', 'Cerrar sesión', async () => { LS.del('racha_token'); LS.del('racha_group'); location.reload(); });
+}
+function heatmap(){
+  const today = S.me.today, weeks = 18;
+  const byDay = {};
+  (S.history || []).forEach(x => { byDay[x.day] = byDay[x.day] || { d: 0, i: 0 }; x.kind === 'hecho' ? byDay[x.day].d++ : byDay[x.day].i++; });
+  const t = parseDay(today);
+  // columnas = semanas (domingo arriba)
+  const first = addDays(today, -t.getDay() - (weeks-1)*7);
+  let cells = '';
+  for (let i = 0; i < weeks*7; i++){
+    const d = addDays(first, i);
+    if (d > today){ cells += '<i class="fut"></i>'; continue; }
+    const v = byDay[d]; let c = '';
+    if (v && v.d) c = v.d >= 3 ? 'l3' : v.d === 2 ? 'l2' : 'l1';
+    else if (v && v.i) c = 'ic';
+    cells += `<i class="${c}" title="${d}"></i>`;
+  }
+  return `<div class="heat" aria-label="Historial de las últimas ${weeks} semanas">${cells}</div>`;
+}
+/* Widget de iPhone: código para la app gratis Scriptable, con la llave de este usuario adentro. */
+function widgetScript(){
+  const app = `${location.origin}${location.pathname}`;
+  return `// Fueguitos · widget para Scriptable (iPhone)
+// No compartas este código: tiene tu llave adentro.
+const TOKEN = "${S.token}";
+const APP = "${app}";
+const URL_API = "${SB_URL}/rest/v1/rpc/api_me";
+const KEY = "${SB_KEY}";
+
+const FIRE = new Color("#FF5A1F"), GOLD = new Color("#FFB800"), OK = new Color("#23A566");
+const w = new ListWidget();
+const g = new LinearGradient(); g.colors = [new Color("#2A140C"), new Color("#170E0B")]; g.locations = [0, 1];
+w.backgroundGradient = g;
+w.setPadding(12, 14, 12, 14);
+w.url = APP;
+try {
+  const r = new Request(URL_API);
+  r.method = "POST";
+  r.headers = { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json" };
+  r.body = JSON.stringify({ p_token: TOKEN });
+  const me = await r.loadJSON();
+  const hs = me.habits || [];
+  const faltan = hs.filter(h => h.required_today && !h.done_today);
+  const t = w.addText(faltan.length ? "🔥 Te falta hoy" : "🔥 Fueguitos");
+  t.font = Font.heavySystemFont(13); t.textColor = faltan.length ? FIRE : GOLD;
+  w.addSpacer(6);
+  const big = config.widgetFamily !== "small";
+  for (const h of hs.slice(0, big ? 4 : 3)) {
+    const row = w.addStack(); row.centerAlignContent();
+    const n = row.addText(\`\${h.emoji} \${h.streak}\`);
+    n.font = Font.heavySystemFont(big ? 22 : 20); n.textColor = h.done_today ? GOLD : new Color("#8E7A70");
+    row.addSpacer(6);
+    const s = row.addText(h.done_today ? "✓" : (h.required_today ? "pendiente" : "libre"));
+    s.font = Font.boldSystemFont(12); s.textColor = h.done_today ? OK : (h.required_today ? FIRE : new Color("#8E7A70"));
+    if (big) { row.addSpacer(); const i = row.addText(\`🧊\${h.ice}  ⌛\${h.left_for_ice}\`); i.font = Font.systemFont(12); i.textColor = new Color("#C2A69A"); }
+    w.addSpacer(3);
+  }
+  if (faltan.length === 1) w.url = APP + "?anotar=" + encodeURIComponent(faltan[0].name);
+} catch (e) {
+  const t = w.addText("🔥 Fueguitos\\nSin conexión"); t.textColor = Color.white(); t.font = Font.boldSystemFont(14);
+}
+w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
+if (config.runsInWidget) Script.setWidget(w); else await w.presentMedium();
+Script.complete();
+`;
+}
+
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const showInstallCard = () => !isStandalone() && !LS.get('fueguitos_no_install');
+function installHelp(){
+  if (isStandalone()) return '<p style="margin:0">✅ Ya la tenés instalada. Mantené apretado el ícono para ir directo a Anotar Deporte, Lectura o Rutinas.</p>';
+  const ua = navigator.userAgent;
+  const ios = /iphone|ipad|ipod/i.test(ua);
+  // Navegadores metidos adentro de otras apps (WhatsApp, Instagram…) no dejan instalar.
+  const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|; wv\)/i.test(ua);
+  if (inApp) return `<p style="margin:0">Estás abriendo el link desde adentro de otra app. Para instalarla, abrilo en <b>${ios ? 'Safari' : 'Chrome'}</b> (menú ⋮ o ··· → <b>Abrir en el navegador</b>).</p>`;
+  return ios
+    ? '<p style="margin:0">En iPhone: abrí este link en <b>Safari</b>, tocá el botón <b>Compartir</b> (el cuadrado con la flecha) y elegí <b>Agregar a pantalla de inicio</b>.</p>'
+    : `<p style="margin:0 0 10px">En Android: tocá el menú <b>⋮</b> de Chrome y elegí <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</p>${deferredInstall ? '<button class="btn sm" id="inst" style="width:100%">Instalar ahora</button>' : ''}`;
+}
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; if (S.me && (S.tab === 'hoy' || S.tab === 'perfil')) renderMain(); });
+document.addEventListener('click', async (e) => {
+  if (e.target && e.target.id === 'inst' && deferredInstall){ deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; renderMain(); }
+});
+
+/* Al volver a la app (por ej. al día siguiente), refrescar */
+let lastHidden = 0;
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden){ lastHidden = Date.now(); return; }
+  if (S.token && S.me && !S.onboarding && Date.now() - lastHidden > 60000 && !$('#layer').innerHTML){
+    try { await loadMe(); S.sel.clear(); renderMain(); if (S.tab === 'grupo') refreshGroup(); } catch(e){}
+  }
+});
+
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+boot();
+</script>
+</body>
+</html>
