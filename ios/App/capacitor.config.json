@@ -1,0 +1,7 @@
+{
+  "appId": "com.nicostrijland.fueguitos",
+  "appName": "Fueguitos",
+  "webDir": "public",
+  "packageClassList": [],
+  "ios": { "contentInset": "never", "backgroundColor": "#FFF4EC" }
+}

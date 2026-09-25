@@ -1,0 +1,73 @@
+# Compila la app de iPhone en una Mac de GitHub.
+# - Siempre: build de simulador sin firmar (confirma que el código compila).
+# - Cuando estén los secretos de Apple (APPSTORE_*), firma y sube a TestFlight.
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    paths: ["ios/**", "index.html", "manifest.webmanifest", "icons/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Herramientas
+        run: brew install xcodegen
+
+      - name: Copiar la web a la app
+        run: |
+          mkdir -p ios/public
+          cp index.html manifest.webmanifest ios/public/
+          cp -R icons ios/public/
+
+      - name: Generar proyecto de Xcode
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Compilar para simulador (sin firmar)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project Fueguitos.xcodeproj -scheme Fueguitos -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 60
+
+      - name: Firmar y subir a TestFlight
+        if: ${{ env.DEVELOPMENT_TEAM != '' }}
+        working-directory: ios
+        env:
+          ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.APPSTORE_KEY_P8 }}
+        run: |
+          set -o pipefail
+          mkdir -p ~/private_keys
+          echo "$ASC_KEY_P8" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          BUILD=$(( GITHUB_RUN_NUMBER + 1 ))
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $HOME/private_keys/AuthKey_$ASC_KEY_ID.p8 -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          xcodebuild -project Fueguitos.xcodeproj -scheme Fueguitos -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/Fueguitos.xcarchive \
+            CURRENT_PROJECT_VERSION=$BUILD DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM $AUTH archive | tail -n 40
+          cat > build/export.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$DEVELOPMENT_TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/Fueguitos.xcarchive -exportOptionsPlist build/export.plist \
+            -exportPath build/export $AUTH | tail -n 40

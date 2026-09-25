@@ -1,0 +1,4 @@
+public/
+*.xcodeproj/
+build/
+DerivedData/
