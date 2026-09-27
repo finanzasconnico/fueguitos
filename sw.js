@@ -1,5 +1,5 @@
 // Service worker: deja la app instalable y abre rápido aunque haya mala señal.
-const CACHE = 'fueguitos-v4';
+const CACHE = 'fueguitos-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png'];
 
 self.addEventListener('install', (e) => {
@@ -35,7 +35,7 @@ self.addEventListener('push', (e) => {
     body: d.body || 'No te olvides de anotar hoy.',
     icon: 'icons/icon-192.png',
     badge: 'icons/favicon.png',
-    tag: 'recordatorio',
+    tag: d.tag || 'recordatorio',
     renotify: true,
     data: { url: d.url || './' }
   }));
