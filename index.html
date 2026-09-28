@@ -257,7 +257,9 @@ nav.tabs button.on{color:var(--fire)}
 @keyframes fade{from{opacity:0}}
 .sheet{background:var(--bg);width:100%;max-width:480px;border-radius:26px 26px 0 0;padding:10px 16px calc(20px + var(--safe-b));max-height:92dvh;overflow:auto;animation:sheet .22s cubic-bezier(.2,.9,.3,1)}
 @keyframes sheet{from{transform:translateY(40%)}}
-.grab{width:44px;height:5px;border-radius:5px;background:var(--line);margin:0 auto 14px}
+.grab{width:44px;height:5px;border-radius:5px;background:var(--muted);opacity:.45;margin:0 auto 14px;position:relative}
+.grab::before{content:"";position:absolute;inset:-14px -60px}
+.sheet{overscroll-behavior:contain;will-change:transform}
 .photo-drop{border:2px dashed var(--gray-flame);border-radius:20px;background:var(--card);min-height:180px;display:grid;place-items:center;overflow:hidden;position:relative}
 .photo-drop img{width:100%;max-height:52dvh;object-fit:cover;display:block}
 .photo-drop .x{position:absolute;top:10px;right:10px;background:rgba(27,26,46,.7);color:#fff;border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
@@ -921,13 +923,60 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#laye
 
 function openSheet(html, onClose){
   const layer = $('#layer');
-  layer.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  layer.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab" aria-hidden="true"></div>${html}</div></div>`;
   pushLayer();
-  const scrim = $('#scrim');
-  scrim.addEventListener('click', (e) => { if (e.target === scrim){ closeSheet(); onClose && onClose(); } });
-  return scrim.querySelector('.sheet');
+  const scrim = $('#scrim'), sheet = scrim.querySelector('.sheet');
+  const dismiss = () => { slideAway(scrim, sheet, () => { if ($('#layer').contains(scrim)){ $('#layer').innerHTML = ''; popLayer(); } }); onClose && onClose(); };
+  scrim.addEventListener('click', (e) => { if (e.target === scrim) dismiss(); });
+  dragToClose(scrim, sheet, dismiss);
+  return sheet;
 }
 function closeSheet(){ $('#layer').innerHTML = ''; popLayer(); }
+
+// La hoja se va deslizando hacia abajo y el fondo se aclara; después se ejecuta `done`.
+function slideAway(scrim, sheet, done){
+  if (scrim.dataset.closing) return;
+  scrim.dataset.closing = '1';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  sheet.style.transition = reduce ? 'none' : 'transform .22s cubic-bezier(.4,0,1,1)';
+  scrim.style.transition = reduce ? 'none' : 'background-color .22s';
+  sheet.style.transform = 'translateY(105%)';
+  scrim.style.backgroundColor = 'rgba(0,0,0,0)';
+  setTimeout(done, reduce ? 0 : 220);
+}
+// Arrastrar hacia abajo para cerrar: desde la rayita, o desde cualquier lado si la hoja está scrolleada arriba de todo.
+function dragToClose(scrim, sheet, dismiss){
+  let y0 = 0, t0 = 0, dy = 0, dragging = false, allowed = false, fromGrab = false;
+  const bg = getComputedStyle(scrim).backgroundColor;
+  sheet.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    const onGrab = e.target.closest('.grab') || e.touches[0].clientY - sheet.getBoundingClientRect().top < 44;
+    // En campos de texto o listas que scrollean de costado, no se arrastra la hoja.
+    fromGrab = !!onGrab;
+    allowed = (onGrab || sheet.scrollTop <= 0) && !e.target.closest('input, textarea, select, .chips, .bracket, .emojis');
+    y0 = e.touches[0].clientY; t0 = Date.now(); dy = 0; dragging = false;
+  }, { passive: true });
+  sheet.addEventListener('touchmove', (e) => {
+    if (!allowed) return;
+    const d = e.touches[0].clientY - y0;
+    if (!dragging && (d < 6 || (!fromGrab && sheet.scrollTop > 0))) return;
+    dragging = true; dy = Math.max(0, d);
+    e.preventDefault();
+    sheet.style.transition = 'none';
+    sheet.style.transform = `translateY(${dy}px)`;
+    scrim.style.backgroundColor = bg.replace(/[\d.]+\)$/, m => (parseFloat(m) * Math.max(0, 1 - dy / sheet.offsetHeight)).toFixed(3) + ')');
+  }, { passive: false });
+  sheet.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    const speed = dy / Math.max(1, Date.now() - t0);
+    if (dy > Math.min(140, sheet.offsetHeight * .3) || (speed > .6 && dy > 30)) dismiss();
+    else {
+      sheet.style.transition = 'transform .2s cubic-bezier(.2,.9,.3,1)'; sheet.style.transform = '';
+      scrim.style.transition = 'background-color .2s'; scrim.style.backgroundColor = '';
+    }
+  });
+}
 
 /* ============ Estructura principal ============ */
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -1729,7 +1778,9 @@ function tSheet(html, bind){
   const s = document.createElement('div'); s.className = 'scrim tsheet';
   s.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
   root.appendChild(s);
-  s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('[data-tclose]')) s.remove(); });
+  const sheet = s.querySelector('.sheet'), dismiss = () => slideAway(s, sheet, () => s.remove());
+  s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('[data-tclose]')) dismiss(); });
+  dragToClose(s, sheet, dismiss);
   bind && bind(s);
 }
 function resultSheet(m, P_){
