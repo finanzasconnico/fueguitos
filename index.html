@@ -142,6 +142,13 @@ details.more[open] summary{margin-bottom:8px}
 .week{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px;margin-bottom:12px}
 .wrow{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;font-size:15px}
 .wrow b{font-size:20px;font-variant-numeric:tabular-nums}
+.gav{display:inline-grid;place-items:center;border-radius:18px;background:var(--fire-soft);object-fit:cover;flex:none}
+.gname{overflow-wrap:anywhere}
+.achs{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 14px;margin:0 0 14px}
+.achemo{flex:1;font-size:20px;letter-spacing:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ach{display:flex;gap:12px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px}
+.ach .aemo{font-size:30px;width:40px;text-align:center;filter:grayscale(1);opacity:.45}
+.ach.on{border-color:var(--ok-line)}.ach.on .aemo{filter:none;opacity:1}
 .gdescr{margin:-8px 0 14px;color:var(--muted);font-size:15px}
 .subtabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:16px;background:var(--line);margin:0 0 16px}
 .subtabs button{min-height:40px;border-radius:12px;font-weight:800;font-size:14px;color:var(--muted)}
@@ -500,7 +507,7 @@ const S = {
   onboarding: false,
   lifts: null, acts: null, pendingActivity: null,
   gsub: ['racha','compartido','duelos'].includes(LS.get('fueguitos_gsub')) ? LS.get('fueguitos_gsub') : 'racha',
-  shares: {}, tourns: {}, duels: {}, week: {}
+  shares: {}, tourns: {}, duels: {}, week: {}, ach: {}
 };
 const P = () => ({ p_token: S.token });
 
@@ -1263,9 +1270,10 @@ function renderGrupo(){
   const members = [...G.members].sort((a,b) => sumStreak(b) - sumStreak(a));
   const doneCount = members.filter(m => m.habits.some(h => h.done_today)).length;
   $('#main').innerHTML = `
-    <div class="top"><div><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1>${esc(G.group.emoji || '🔥')} ${esc(G.group.name)}</h1></div>
+    <div class="top"><div class="row" style="gap:12px;align-items:center;min-width:0">${groupAvatar(G.group, 56)}<div style="min-width:0"><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1 class="gname">${esc(G.group.name)}</h1></div></div>
       <div class="row" style="gap:8px">${G.group.is_admin ? '<button class="btn sm ghost" id="g-edit" aria-label="Editar grupo">Editar</button>' : ''}<button class="btn sm ice" id="invite">Invitar</button></div></div>
     ${G.group.descr ? `<p class="gdescr">${esc(G.group.descr)}</p>` : ''}
+    <button class="achs" id="achs">${achStrip(S.ach[G.group.id])}</button>
     ${gs.length > 1 ? chips : `<div class="chips"><button class="chip" id="g-new">+ Otro grupo</button></div>`}
 
     <div class="subtabs" role="tablist">${[['racha','🔥 Racha'],['compartido','🎧 Compartido'],['duelos','⚔️ Duelos']].map(([k,l]) => `<button role="tab" aria-selected="${S.gsub===k}" class="${S.gsub===k?'on':''}" data-gsub="${k}">${l}</button>`).join('')}</div>
@@ -1274,6 +1282,8 @@ function renderGrupo(){
   bindChips();
   $('#invite').onclick = () => shareInvite(G.group);
   const ge = $('#g-edit'); if (ge) ge.onclick = () => groupEditor(G);
+  $('#achs').onclick = () => achSheet(G);
+  loadAch(G);
   document.querySelectorAll('[data-react]').forEach(b => b.onclick = async () => {
     try { await rpc('api_react', { ...P(), p_photo: b.dataset.react, p_emoji: b.dataset.e }); await loadGroup(); renderGrupo(); } catch(e){ toast(e.message); }
   });
@@ -1837,25 +1847,71 @@ function postCard(p){
     <div class="row between" style="margin-top:8px"><span class="small muted">${expiresIn(p.created_at)}</span>${mine ? `<button class="link small danger" data-delphoto="${p.id}">Borrar</button>` : ''}</div>
   </div></article>`;
 }
+/* ============ Foto y logros del grupo ============ */
+const groupAvatar = (g, size) => g.photo && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(g.photo)
+  ? `<img class="gav" src="${g.photo}" alt="" style="width:${size}px;height:${size}px">`
+  : `<span class="gav" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .55)}px">${esc(g.emoji || '🔥')}</span>`;
+async function loadAch(G){
+  const gid = G.group.id;
+  let r; try { r = await rpc('api_group_achievements', { ...P(), p_group: gid }); } catch(e){ return; }
+  S.ach[gid] = r.items;
+  const b = $('#achs'); if (b && S.groupId === gid) b.innerHTML = achStrip(r.items);
+  if (r.nuevos && r.nuevos.length){
+    const x = r.items.find(i => i.code === r.nuevos[0]);
+    vibrate([60, 60, 120]); beep(660, .12); setTimeout(() => beep(990, .2), 140);
+    toast(`${x.emoji} ¡Logro desbloqueado: ${x.name}! Ya pueden usar ${x.emoji} como emoji del grupo.`, 5000);
+  }
+}
+function achStrip(items){
+  if (!items) return '<span class="small muted">🏅 Logros del grupo…</span>';
+  const got = items.filter(i => i.unlocked);
+  return `<span class="small" style="font-weight:800">🏅 Logros ${got.length}/${items.length}</span>
+    ${got.length ? `<span class="achemo">${got.map(i => i.emoji).join(' ')}</span>` : '<span class="small muted" style="flex:1">Tocá para ver cómo ganarlos</span>'}<span class="muted" aria-hidden="true">›</span>`;
+}
+function achSheet(G){
+  const items = S.ach[G.group.id]; if (!items) return;
+  const nf = (v) => Number(v).toLocaleString('es-AR', { maximumFractionDigits: 0 });
+  openSheet(`<h2>🏅 Logros del grupo</h2>
+    <p class="muted">Se consiguen entre todos. Cada uno desbloquea un emoji que el grupo puede usar como emoji propio.</p>
+    <div class="stack section">${items.map(i => `<div class="ach ${i.unlocked ? 'on' : ''}">
+      <span class="aemo">${i.emoji}</span>
+      <div style="flex:1;min-width:0"><b>${esc(i.name)}</b><div class="small muted">${esc(i.how)}</div>
+        ${i.unlocked ? '<div class="small" style="font-weight:800;color:var(--ok-ink)">✓ Desbloqueado</div>' : `<div class="progress" style="margin-top:6px"><i style="width:${Math.min(100, i.value / i.goal * 100)}%"></i></div><div class="small muted">${nf(Math.min(i.value, i.goal))} de ${nf(i.goal)}</div>`}
+      </div></div>`).join('')}</div>`);
+}
+
 const G_EMOJI = ['🔥', '⚽', '🏃', '💪', '🏀', '🎾', '🏓', '🍺', '📚', '🧘', '🚴', '🏊', '🎮', '🏆', '🐐', '🦁', '👊', '🌮'];
 function groupEditor(G){
-  let emoji = G.group.emoji || '🔥';
+  let emoji = G.group.emoji || '🔥', photo = G.group.photo || null, photoChanged = false;
+  const won = (S.ach[G.group.id] || []).filter(i => i.unlocked).map(i => i.emoji).filter(e => !G_EMOJI.includes(e));
   const el = openSheet(`<h2>Editar grupo</h2>
     <div class="stack section">
       <label class="field"><span>Nombre</span><input class="input" id="ge-n" maxlength="40" value="${esc(G.group.name)}"></label>
-      <div class="field"><span>Emoji del grupo</span><div class="emojis">${G_EMOJI.map(e => `<button type="button" data-ge="${e}">${e}</button>`).join('')}</div></div>
+      <div class="field"><span>Foto del grupo</span><div class="row" style="gap:12px"><span id="ge-av">${groupAvatar({ ...G.group, photo }, 64)}</span>
+        <label class="btn ghost sm" style="width:auto">${G.group.photo ? 'Cambiar foto' : 'Subir foto'}<input type="file" accept="image/*" id="ge-ph" hidden></label>
+        ${G.group.photo ? '<button type="button" class="link danger small" id="ge-phdel">Quitar</button>' : ''}</div></div>
+      <div class="field"><span>Emoji del grupo</span>
+        ${won.length ? `<div class="small" style="font-weight:700;margin:2px 0 4px">✨ Ganados con logros</div><div class="emojis">${won.map(e => `<button type="button" data-ge="${e}">${e}</button>`).join('')}</div><div class="small" style="font-weight:700;margin:10px 0 4px">Básicos</div>` : ''}
+        <div class="emojis">${G_EMOJI.map(e => `<button type="button" data-ge="${e}">${e}</button>`).join('')}</div></div>
       <label class="field"><span>Descripción (opcional)</span><textarea class="input" id="ge-d" maxlength="200" placeholder="Ej: Racha de deporte y lectura. El que corta la racha paga el asado 🥩">${esc(G.group.descr || '')}</textarea></label>
       <div class="card small"><b>Código para invitar:</b> <span style="letter-spacing:.15em;font-weight:800">${esc(G.group.code)}</span><br><span class="muted">Para sacar a alguien, tocá "Sacar del grupo" debajo de su nombre en la tabla.</span></div>
       <button class="btn" id="ge-save">Guardar</button>
     </div>`);
   const paint = () => el.querySelectorAll('[data-ge]').forEach(b => b.classList.toggle('on', b.dataset.ge === emoji));
   el.querySelectorAll('[data-ge]').forEach(b => b.onclick = () => { emoji = b.dataset.ge; paint(); });
+  $('#ge-ph', el).onchange = async (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try { photo = await compress(f, 256, 60000); photoChanged = true; $('#ge-av', el).innerHTML = groupAvatar({ photo }, 64); }
+    catch(err){ toast('No se pudo leer esa foto'); }
+  };
+  const pd = $('#ge-phdel', el); if (pd) pd.onclick = () => { photo = null; photoChanged = true; $('#ge-av', el).innerHTML = groupAvatar({ emoji }, 64); pd.remove(); };
   paint();
   $('#ge-save', el).onclick = async (e) => {
     const n = $('#ge-n', el).value.trim(); if (!n){ toast('Ponele un nombre'); return; }
     e.target.disabled = true;
     try {
       await rpc('api_update_group', { ...P(), p_group: G.group.id, p_name: n, p_emoji: emoji, p_descr: $('#ge-d', el).value });
+      if (photoChanged) await rpc('api_set_group_photo', { ...P(), p_group: G.group.id, p_photo: photo });
       S.me = await rpc('api_me', P()); await loadGroup(); closeSheet(); renderGrupo(); toast('Grupo actualizado');
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
