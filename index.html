@@ -134,6 +134,9 @@ details.more[open] summary{margin-bottom:8px}
 .nudge{border-color:var(--fire)}
 
 /* Subsecciones del grupo */
+.week{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px;margin-bottom:12px}
+.wrow{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;font-size:15px}
+.wrow b{font-size:20px;font-variant-numeric:tabular-nums}
 .gdescr{margin:-8px 0 14px;color:var(--muted);font-size:15px}
 .subtabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:16px;background:var(--line);margin:0 0 16px}
 .subtabs button{min-height:40px;border-radius:12px;font-weight:800;font-size:14px;color:var(--muted)}
@@ -456,6 +459,9 @@ const ERRORS = {
   PIN_INVALIDO: 'El PIN son 4 números.',
   EMPATE_KO: 'EMPATE_KO',
   PARTIDO_INCOMPLETO: 'Todavía falta saber quién juega ese partido.',
+  SIN_HIELO: 'No tenés hielitos en ese hábito para regalar.',
+  HIELO_LLENO: 'Ya tiene todos los hielitos que se pueden tener.',
+  YA_REGALASTE: 'Hoy ya regalaste un hielito. Mañana podés de nuevo.',
   YA_SE_JUGO_SIGUIENTE: 'Ese resultado ya definió el partido siguiente. Borrá primero el de la ronda siguiente.'
 };
 async function rpc(fn, args={}){
@@ -489,7 +495,7 @@ const S = {
   onboarding: false,
   lifts: null, acts: null, pendingActivity: null,
   gsub: ['racha','compartido','duelos'].includes(LS.get('fueguitos_gsub')) ? LS.get('fueguitos_gsub') : 'racha',
-  shares: {}, tourns: {}, duels: {}
+  shares: {}, tourns: {}, duels: {}, week: {}
 };
 const P = () => ({ p_token: S.token });
 
@@ -1231,6 +1237,8 @@ function renderGrupo(){
     await rpc('api_kick_member', { ...P(), p_group: G.group.id, p_user: b.dataset.kick }); await loadGroup(); renderGrupo(); toast(`${b.dataset.nick} ya no está en el grupo`);
   }));
   document.querySelectorAll('[data-gsub]').forEach(b => b.onclick = () => { S.gsub = b.dataset.gsub; LS.set('fueguitos_gsub', S.gsub); renderGrupo(); });
+  if (S.gsub === 'racha') loadWeek(G.group.id);
+  document.querySelectorAll('[data-gift]').forEach(b => b.onclick = () => giftSheet(G, b.dataset.gift));
   if (S.gsub === 'compartido') renderShared(G);
   if (S.gsub === 'duelos') renderDuels(G);
   const ra = $('#rec-add'); if (ra) ra.onclick = () => recordSheet(null);
@@ -1243,6 +1251,7 @@ function renderGrupo(){
 }
 function grupoRacha(G, members){
   return `
+    <div class="week" id="week">${weekStrip(S.week[G.group.id])}</div>
     <div class="board">${members.map(memberRow).join('')}</div>
 
     <div class="section">
@@ -1713,11 +1722,49 @@ async function toKnockout(){
   catch(e){ toast(e.message); }
 }
 
+/* ============ Resumen de la semana ============ */
+async function loadWeek(gid){
+  try { S.week[gid] = await rpc('api_group_week', { ...P(), p_group: gid }); } catch(e){ return; }
+  const w = $('#week'); if (w && S.groupId === gid) w.innerHTML = weekStrip(S.week[gid]);
+}
+function weekStrip(w){
+  if (!w) return '<span class="muted small">Cargando la semana…</span>';
+  const km = +w.km;
+  return `<div class="small muted" style="font-weight:700">Últimos 7 días</div>
+    <div class="wrow"><span><b>${w.days}</b> ${+w.days === 1 ? 'día anotado' : 'días anotados'}</span>${km ? `<span><b>${String(km).replace('.', ',')}</b> km</span>` : ''}<span><b>${w.active}</b> de ${w.members} activos</span></div>
+    ${w.top ? `<div class="small" style="margin-top:4px">🔥 Viene al frente: <b>${esc(w.top.nick)}</b> (${w.top.n})</div>` : ''}`;
+}
+
+/* ============ Regalar un hielito ============ */
+// Hábitos en los que yo tengo hielo y mi amigo tiene lugar para uno más.
+function giftable(m){
+  if (m.is_me) return [];
+  return m.habits.filter(h => h.ice < h.max_ice && S.me.habits.some(x => x.id === h.id && x.ice >= 1));
+}
+function giftSheet(G, uid){
+  const m = G.members.find(x => x.id === uid); if (!m) return;
+  const hs = giftable(m);
+  if (!hs.length){ toast('Ahora no hay hielitos para regalarle'); return; }
+  const el = openSheet(`<h2>🎁 Regalale un hielito a ${esc(m.nick)}</h2>
+    <p class="muted">Le pasás uno de tus hielitos: si un día no llega, le salva la racha. Podés regalar uno por día.</p>
+    <div class="stack section">${hs.map(h => { const mine = S.me.habits.find(x => x.id === h.id);
+      return `<button class="btn ${hs.length > 1 ? 'ghost' : ''}" data-gh="${h.id}">${esc(h.emoji)} ${esc(h.name)} · vos tenés ${mine.ice} 🧊, ${esc(m.nick)} tiene ${h.ice}</button>`; }).join('')}
+    </div>`);
+  el.querySelectorAll('[data-gh]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try {
+      S.me.habits = await rpc('api_gift_ice', { ...P(), p_friend: uid, p_habit: b.dataset.gh });
+      closeSheet(); await loadGroup(); renderGrupo(); vibrate([30, 60, 30]);
+      toast(`🎁 Le regalaste un hielito a ${m.nick}. Le llega un aviso.`, 3500);
+    } catch(e){ toast(e.message, 3500); b.disabled = false; }
+  });
+}
+
 const sumStreak = (m) => m.habits.reduce((a,h) => a + h.streak, 0);
 function memberRow(m){
   const canKick = S.group && S.group.group.is_admin && !m.is_me;
   return `<div class="member">
-    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div><div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${canKick ? `<br><button class="link small danger" data-kick="${m.id}" data-nick="${esc(m.nick)}">Sacar del grupo</button>` : ''}</div></div>
+    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div><div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? `<br><button class="link small" data-gift="${m.id}">🎁 Regalar hielito</button>` : ''}${canKick ? `<br><button class="link small danger" data-kick="${m.id}" data-nick="${esc(m.nick)}">Sacar del grupo</button>` : ''}</div></div>
     <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
   </div>`;
 }
