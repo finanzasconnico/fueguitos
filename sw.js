@@ -1,5 +1,5 @@
 // Service worker: deja la app instalable y abre rápido aunque haya mala señal.
-const CACHE = 'fueguitos-v5';
+const CACHE = 'fueguitos-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png'];
 
 self.addEventListener('install', (e) => {
@@ -45,7 +45,7 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
-    for (const c of cs) if (c.url.startsWith(self.registration.scope)) return c.focus();
+    for (const c of cs) if (c.url.startsWith(self.registration.scope)) return (c.navigate ? c.navigate(url).catch(() => c) : Promise.resolve(c)).then((w) => (w || c).focus());
     return self.clients.openWindow(url);
   }));
 });

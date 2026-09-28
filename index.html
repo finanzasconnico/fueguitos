@@ -102,6 +102,9 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit .name{font-weight:800;font-size:19px;display:flex;align-items:center;gap:6px}
 .meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg);color:var(--ink)}
+.plan{border-color:var(--fire)}
+.pses{margin-top:8px;padding:10px 12px;border-radius:14px;background:var(--fire-soft);color:var(--fire-ink)}
+.pses b{font-size:17px}
 .pill.ice{background:var(--ice-soft);color:var(--ice-dark)}
 .pill.ok{background:var(--ok-soft);color:var(--ok-ink)}
 .pill.fire{background:var(--fire-soft);color:var(--fire-ink)}
@@ -132,6 +135,8 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--ice-dark);font-s
 details.more summary::-webkit-details-marker{display:none}
 details.more[open] summary{margin-bottom:8px}
 .nudge{border-color:var(--fire)}
+.push-card{background:var(--fire-soft)}
+.plist{margin:0 0 12px;padding-left:18px}.plist li{margin:2px 0}
 
 /* Subsecciones del grupo */
 .week{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px;margin-bottom:12px}
@@ -520,6 +525,7 @@ async function boot(){
   if (q.get('g')) S.pendingJoin = q.get('g').toUpperCase();
   if (q.get('anotar')) S.quick = q.get('anotar');
   S.rapido = q.get('rapido') === '1';
+  S.rutina = q.get('rutina');
   if (['hoy','grupo','torneos','rutinas','perfil'].includes(q.get('tab'))) S.tab = q.get('tab');
   // Dentro de WhatsApp/Instagram se deja el link intacto, para que "Abrir en el navegador" conserve la invitación.
   if (q.toString() && !inAppBrowser()) history.replaceState(null, '', location.pathname);
@@ -549,6 +555,7 @@ async function afterLogin(){
   }
   if (!S.me.habits.length){ S.onboarding = true; renderOnboarding(); return; }
   renderShell();
+  if (S.rutina === 'tiempo'){ S.rutina = null; runTime(); }
   if (S.quick){
     const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
     S.quick = null;
@@ -797,7 +804,10 @@ function renderOnboarding(){
     ${S.me.habits.length ? '' : '<p class="hint" style="text-align:center">Activá al menos un hábito para seguir.</p>'}</div>
   </div>`;
   bindHabitToggles(renderOnboarding);
-  $('#go').onclick = () => { S.onboarding = false; renderShell(); };
+  $('#go').onclick = () => {
+    S.onboarding = false; renderShell();
+    if (pushState() === 'default') askPushOnce();
+  };
 }
 
 function habitToggleRows(av){
@@ -956,6 +966,7 @@ function renderHoy(){
       <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
       <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
     </div>
+    ${planCard(true)}
     ${hoyNudge()}
     ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Armá un grupo y compartí el link: van a ver sus rachas y las fotos del día.</p><button class="btn sm" id="to-group">Armar o unirme a un grupo</button></div>` : ''}
   `;
@@ -976,8 +987,10 @@ function renderHoy(){
   const tg = $('#to-group'); if (tg) tg.onclick = () => go('grupo');
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
+  bindPlanCard();
   const npush = $('#n-push'); if (npush) npush.onclick = async () => { if (await enablePush()) renderHoy(); };
-  const nno = $('#n-push-no'); if (nno) nno.onclick = () => { LS.set('fueguitos_no_push', '1'); renderHoy(); };
+  const nno = $('#n-push-no'); if (nno) nno.onclick = () => { LS.set('fueguitos_push_snooze', String(Date.now())); renderHoy(); toast('Te lo recordamos en unos días. También está en Perfil.'); };
+  const nin = $('#n-inst'); if (nin) nin.onclick = () => { LS.del('fueguitos_guia'); maybeInstallGuide(); };
 }
 /* ============ Motivación ============ */
 const FRASES = [
@@ -1014,9 +1027,33 @@ const HITOS = { 3: '¡Arrancó el fuego!', 7: '¡Una semana entera!', 14: '¡Dos
 const ANIMO = ['¡Bien ahí!', '¡Sumaste otro!', '¡Fuego!', '¡Así se hace!', '¡Uno más a la cuenta!', '¡Imparable!'];
 
 // Una sola sugerencia a la vez en Hoy: primero el PIN, después los avisos, después instalar.
+// Pregunta de avisos en un momento con ganas (recién arrancás o recién anotaste). Una vez por sesión.
+let pushAsked = false;
+function askPushOnce(){
+  if (pushAsked || pushState() !== 'default') return;
+  pushAsked = true;
+  const el = openSheet(`<div style="text-align:center"><div style="font-size:54px;line-height:1">🔔</div>
+    <h2 style="margin-top:8px">¿Te avisamos?</h2>
+    <p class="muted">Un aviso a la noche si te falta anotar, y cuando tus amigos entrenan. Nada de spam.</p></div>
+    <div class="stack section"><button class="btn" id="ap-yes">Sí, avisame</button><button class="btn ghost" id="ap-no">Ahora no</button>
+    <p class="hint" style="text-align:center;margin:0">El celu te va a preguntar: tocá <b>Permitir</b>.</p></div>`);
+  $('#ap-yes', el).onclick = async () => { closeSheet(); if (await enablePush()) renderMain(); };
+  $('#ap-no', el).onclick = () => { closeSheet(); LS.set('fueguitos_push_snooze', String(Date.now())); };
+}
+const pushSnoozed = () => { const t = +(LS.get('fueguitos_push_snooze') || 0); return Date.now() - t < 3 * 864e5; };
 function hoyNudge(){
+  const ps = pushState();
+  if (ps === 'default' && !pushSnoozed()) return `<div class="card section nudge push-card">
+      <div class="row between"><h3>🔔 Activá los avisos</h3><button class="link small" id="n-push-no">Ahora no</button></div>
+      <p class="small" style="margin:6px 0 4px">Sin avisos, la app no te puede ayudar. Con un toque:</p>
+      <ul class="small muted plist"><li>Te avisa a la noche si te falta anotar</li><li>Te enterás cuando tus amigos entrenan</li><li>El domingo, el resumen del grupo</li></ul>
+      <button class="btn" style="width:100%" id="n-push">Activar avisos</button>
+      <p class="hint" style="text-align:center;margin-bottom:0">El celu te va a preguntar: tocá <b>Permitir</b>.</p></div>`;
+  if (ps === 'instalar' && !pushSnoozed()) return `<div class="card section nudge push-card">
+      <div class="row between"><h3>🔔 Para recibir avisos, instalala</h3><button class="link small" id="n-push-no">Ahora no</button></div>
+      <p class="small" style="margin:6px 0 12px">En iPhone, los avisos solo funcionan con Fueguitos en la pantalla de inicio. Son 3 toques y después la abrís desde el ícono.</p>
+      <button class="btn" style="width:100%" id="n-inst">Ver cómo instalarla</button></div>`;
   if (!S.me.user.has_pin) return `<div class="card section nudge"><h3>🔐 Creá tu PIN</h3><p class="small muted" style="margin:6px 0 12px">Con tu apodo y un PIN de 4 números entrás a tu cuenta desde cualquier celu. Si cambiás de teléfono no perdés la racha.</p><button class="btn sm" style="width:100%" id="n-pin">Crear mi PIN</button></div>`;
-  if (pushState() === 'default' && !LS.get('fueguitos_no_push')) return `<div class="card section nudge"><div class="row between"><h3>🔔 Que no se te apague</h3><button class="link small" id="n-push-no">Ahora no</button></div><p class="small muted" style="margin:6px 0 12px">Te avisamos a la noche si te falta anotar algo. Solo eso, nada de spam.</p><button class="btn sm" style="width:100%" id="n-push">Activar avisos</button></div>`;
   if (showInstallCard()) return `<div class="card section" id="inst-card"><div class="row between"><h3>Instalá Fueguitos en tu celu</h3><button class="link small" id="inst-no" aria-label="No mostrar más">Ahora no</button></div><div class="small" style="margin-top:8px">${installHelp()}</div></div>`;
   return '';
 }
@@ -1065,7 +1102,7 @@ function openCheckinSheet(){
     ${sport ? `<details class="more section" id="det" ${S.pendingActivity ? 'open' : ''}><summary>＋ Agregar detalle: distancia, tiempo o pesos (opcional)</summary><div id="det-body"></div></details>` : ''}
     <div class="section"><button class="btn" id="confirm">Anotar sin foto</button></div>
   `);
-  const det = { kind: S.pendingActivity ? S.pendingActivity.kind : null, minutes: S.pendingActivity ? S.pendingActivity.minutes : null };
+  const det = { kind: S.pendingActivity ? S.pendingActivity.kind : null, minutes: S.pendingActivity ? S.pendingActivity.minutes : null, km: S.pendingActivity ? S.pendingActivity.km : null };
   S.pendingActivity = null;
   if (sport) paintDetail(el, det);
   const onFile = async (e) => {
@@ -1104,7 +1141,7 @@ function paintDetail(el, det){
   box.innerHTML = `<div class="stack" style="margin-top:4px">
     <div class="chips" style="flex-wrap:wrap;margin:0">${Object.entries(ACT).map(([key, [ic, l]]) => `<button type="button" class="chip ${k === key ? 'on' : ''}" data-ak="${key}">${ic} ${l}</button>`).join('')}</div>
     ${k ? `<div class="grid2">
-      ${dist ? `<label class="field"><span>Distancia (km)</span><input class="input" id="d-km" type="number" inputmode="decimal" step="0.1" min="0" max="500" placeholder="5"></label>` : ''}
+      ${dist ? `<label class="field"><span>Distancia (km)</span><input class="input" id="d-km" type="number" inputmode="decimal" step="0.1" min="0" max="500" placeholder="5" value="${det.km || ''}"></label>` : ''}
       <label class="field"><span>Tiempo (min)</span><input class="input" id="d-min" type="number" inputmode="numeric" min="1" max="1440" placeholder="30" value="${det.minutes || ''}"></label>
     </div>` : '<p class="hint" style="margin:0">Elegí qué hiciste. Todo es opcional: lo que cargues arma tus gráficos de progreso en Perfil.</p>'}
     ${k === 'gym' ? `<div class="field"><span>Un ejercicio (opcional)</span>
@@ -1172,6 +1209,7 @@ function celebrate(results){
       `<p style="opacity:.75;margin-top:14px">⌛ ${main.left_for_ice} días para el próximo hielito</p>`}
     <div class="btns">
       <button class="btn green" id="p-wa">Mandar al grupo de WhatsApp</button>
+      ${pushState() === 'default' ? '<button class="btn ice" id="p-push">🔔 Avisame si me olvido</button>' : ''}
       <button class="btn ghost" id="p-ok">Listo</button>
     </div>
   </div>`;
@@ -1179,6 +1217,7 @@ function celebrate(results){
   vibrate([30, 60, 30]);
   setTimeout(() => { const c = $('#cnt'); if (c){ c.textContent = main.streak; c.animate && c.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}], {duration:380, easing:'cubic-bezier(.2,1.6,.4,1)'}); beep(660, .12); setTimeout(() => beep(990, .16), 120); } }, 650);
   $('#p-ok').onclick = closeSheet;
+  const pp = $('#p-push'); if (pp) pp.onclick = async () => { if (await enablePush()){ pp.remove(); } };
   $('#p-wa').onclick = () => {
     const done = S.me.habits.filter(h => h.done_today);
     location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText(done.length ? done : S.me.habits));
@@ -2008,14 +2047,132 @@ const spotifySearch = (q) => `https://open.spotify.com/search/${encodeURICompone
 const myPlaylist = () => LS.get('fueguitos_playlist') || '';
 const musicRow = (ic, t, d, url) => `<a class="music" href="${esc(url)}" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">${ic}</span><span><b>${esc(t)}</b><span class="small muted">${esc(d)}</span></span><span class="go">Abrir ↗</span></a>`;
 
+/* ============ Planes de running ============ */
+// Contenido propio, progresivo y conservador. La app aclara que no reemplaza a un profe ni a un control médico.
+const S_EASY = (km) => ({ t: 'Suave', d: `${String(km).replace('.', ',')} km a ritmo cómodo (podés hablar mientras corrés)`, km });
+const S_Q = (d) => ({ t: /tempo/.test(d) ? 'Tempo' : 'Series', d: d + (/tempo/.test(d) ? ' a ritmo cómodo-fuerte, con 10 min de trote antes y después' : ', con 10 min de trote antes y después') });
+const S_LONG = (km) => ({ t: 'Fondo', d: `${String(km).replace('.', ',')} km tranquilo, sin mirar el ritmo`, km });
+const S_RACE = (km, name) => ({ t: '🏁 ' + name, d: `¡El gran día! ${String(km).replace('.', ',')} km. Salí tranquilo y apretá al final.`, km, race: true });
+const PLANES = {
+  '5k': { name: 'Primeros 5 km', emoji: '🌱', weeks: 8, days: [2, 4, 6],
+    desc: 'De cero a correr 5 km seguidos. Arrancás alternando trote y caminata.',
+    week: (w) => {
+      const pats = ['8 × (1 min trote + 1 min 30 s caminata)', '6 × (2 min trote + 1 min 30 s caminata)', '5 × (3 min trote + 1 min 30 s caminata)', '4 × (5 min trote + 2 min caminata)',
+        '3 × (8 min trote + 2 min caminata)', '2 × (12 min trote + 2 min caminata)', '25 min de trote seguido'];
+      if (w < 7) return [0, 1, 2].map(() => ({ t: 'Trote y caminata', d: pats[w] + ', con 5 min de caminata antes y después' }));
+      return [{ t: 'Suave', d: '20 min de trote suave' }, { t: 'Suave', d: '25 min de trote suave' }, S_RACE(5, 'Tus primeros 5 km')];
+    } },
+  '10k': { name: '10 km', emoji: '🔥', weeks: 10, days: [2, 4, 6],
+    desc: 'Para quien ya corre 5 km. Tres salidas por semana: suave, series y fondo.',
+    week: (w) => {
+      const easy = [4, 4, 5, 5, 5, 6, 6, 6, 5, 4], long = [6, 7, 7, 8, 8, 9, 9, 10, 8];
+      const q = ['6 × 400 m rápido, 2 min de trote entre cada una', '20 min tempo', '5 × 600 m rápido, 2 min de trote entre cada una', '25 min tempo',
+        '6 × 600 m rápido, 2 min de trote entre cada una', '4 × 1 km rápido, 2 min de trote entre cada uno', '30 min tempo', '5 × 1 km rápido, 2 min de trote entre cada uno', '20 min tempo', '4 × 400 m alegres, sin exigirte'];
+      return [S_EASY(easy[w]), S_Q(q[w]), w === 9 ? S_RACE(10, 'Tus 10 km') : S_LONG(long[w])];
+    } },
+  '21k': { name: 'Media maratón', emoji: '🏅', weeks: 12, days: [2, 4, 6, 0],
+    desc: 'Para quien ya corre 10 km. Cuatro salidas por semana y un fondo que crece hasta los 18 km.',
+    week: (w) => {
+      const easy = [5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 6, 4], easy2 = [4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 5, 3], long = [8, 9, 10, 11, 12, 10, 13, 14, 16, 18, 12];
+      const q = ['6 × 400 m rápido, 2 min de trote entre cada una', '20 min tempo', '5 × 800 m rápido, 2 min de trote entre cada una', '25 min tempo',
+        '6 × 800 m rápido, 2 min de trote entre cada una', '4 × 1 km rápido, 2 min de trote entre cada uno', '30 min tempo', '5 × 1 km rápido, 2 min de trote entre cada uno',
+        '3 × 2 km rápido, 3 min de trote entre cada uno', '35 min tempo', '4 × 1 km alegre, 2 min de trote entre cada uno', '15 min suave con 4 aceleraciones cortas'];
+      return [S_EASY(easy[w]), S_Q(q[w]), S_EASY(easy2[w]), w === 11 ? S_RACE(21.1, 'Tu media maratón') : S_LONG(long[w])];
+    } },
+};
+const DOW_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lunes primero
+// Viernes a domingo, el plan arranca el lunes que viene (si no, la semana 1 queda casi vacía).
+const planStart = () => { const dw = parseDay(S.me.today).getDay(); return [5, 6, 0].includes(dw) ? addDays(mondayOf(S.me.today), 7) : mondayOf(S.me.today); };
+const mondayOf = (d) => { const x = parseDay(d); const k = (x.getDay() + 6) % 7; return addDays(d, -k); };
+// Qué toca un día dado del plan: { w, i, s } o null si es descanso / fuera del plan.
+function planSession(day){
+  const pl = S.me && S.me.user.plan; if (!pl || !PLANES[pl.id]) return null;
+  const P_ = PLANES[pl.id], w = Math.floor((parseDay(mondayOf(day)) - parseDay(pl.start)) / (7 * 864e5));
+  if (w < 0 || w >= P_.weeks) return { out: true, w };
+  const order = DOW_ORDER.filter(d => pl.days.includes(d)), i = order.indexOf(parseDay(day).getDay());
+  if (i < 0) return { rest: true, w };
+  const ses = P_.week(w)[i];
+  return ses ? { w, i, s: ses } : { rest: true, w };
+}
+function nextSession(){
+  for (let k = 1; k <= 7; k++){ const d = addDays(S.me.today, k), x = planSession(d); if (x && x.s) return { d, ...x }; }
+  return null;
+}
+function planLog(ses){
+  const h = S.me.habits.find(isSport);
+  if (!h){ toast('Activá Deporte en Perfil para anotarlo'); return; }
+  if (h.done_today){ toast(`${h.name} ya está anotado hoy ✅`); return; }
+  S.pendingActivity = { kind: 'correr', minutes: null, km: ses.km || null };
+  S.sel = new Set([h.id]); go('hoy'); openCheckinSheet();
+}
+function planCard(compact){
+  const pl = S.me.user.plan; if (!pl || !PLANES[pl.id]) return '';
+  const P_ = PLANES[pl.id], x = planSession(S.me.today);
+  if (x && x.out && x.w < 0){ const nx0 = nextSession(); return compact ? '' : `<div class="card plan"><div class="row between"><h3>${P_.emoji} ${esc(P_.name)}</h3><span class="small muted">Arranca pronto</span></div><p class="small" style="margin:6px 0 0">Primera salida: <b>${nx0 ? DAY_NAMES[parseDay(nx0.d).getDay()] + ' · ' + esc(nx0.s.t) : 'el lunes'}</b>. ¡A prepararse!</p><div class="row" style="gap:16px;margin-top:12px"><button class="link" id="pl-see">Ver el plan completo</button><button class="link danger" id="pl-stop">Dejar el plan</button></div></div>`; }
+  if (x && x.out && x.w >= P_.weeks) return `<div class="card plan"><h3>${P_.emoji} ${esc(P_.name)}: ¡plan terminado! 🎉</h3><p class="small muted" style="margin:6px 0 10px">Podés arrancar otro cuando quieras.</p>${compact ? '' : '<button class="link danger" id="pl-stop">Cerrar el plan</button>'}</div>`;
+  const wk = x ? x.w : 0, sport = S.me.habits.find(isSport), done = sport && sport.done_today;
+  const nx = !x || !x.s ? nextSession() : null;
+  const body = x && x.s
+    ? `<div class="pses"><b>${esc(x.s.t)}</b><div class="small">${esc(x.s.d)}</div></div>${done ? '<p class="small" style="margin:8px 0 0;font-weight:700">✅ Hecho hoy</p>' : '<button class="btn sm" id="pl-do" style="width:100%;margin-top:10px">Ya lo hice: anotar</button>'}`
+    : `<p class="small" style="margin:6px 0 0">Hoy descansás 😌${nx ? ` · El ${DAY_NAMES[parseDay(nx.d).getDay()]}: <b>${esc(nx.s.t)}</b>` : ''}</p>`;
+  if (compact && !(x && x.s && !done)) return '';
+  return `<div class="card plan ${compact ? 'section' : ''}">
+    <div class="row between"><h3>${compact ? '🏃 Hoy te toca' : `${P_.emoji} ${esc(P_.name)}`}</h3><span class="small muted">Semana ${Math.min(wk + 1, P_.weeks)} de ${P_.weeks}</span></div>
+    ${compact ? '' : `<div class="progress" style="margin:8px 0 10px"><i style="width:${Math.min(100, (wk / P_.weeks) * 100)}%"></i></div>`}
+    ${body}
+    ${compact ? '' : '<div class="row" style="gap:16px;margin-top:12px"><button class="link" id="pl-see">Ver el plan completo</button><button class="link danger" id="pl-stop">Dejar el plan</button></div>'}
+  </div>`;
+}
+function bindPlanCard(){
+  const x = planSession(S.me.today);
+  const d = $('#pl-do'); if (d && x && x.s) d.onclick = () => planLog(x.s);
+  const see = $('#pl-see'); if (see) see.onclick = planWeeksSheet;
+  const st = $('#pl-stop'); if (st) st.onclick = () => confirmSheet('¿Dejar el plan?', 'Tu racha y lo que anotaste no cambian. Podés empezar otro cuando quieras.', 'Dejar el plan', async () => {
+    await rpc('api_set_plan', { ...P(), p_plan: null }); S.me.user.plan = null; renderMain();
+  });
+}
+function planSheet(id){
+  const P_ = PLANES[id]; let days = [...P_.days];
+  const el = openSheet(`<h2>${P_.emoji} ${esc(P_.name)}</h2>
+    <p class="muted">${esc(P_.desc)} ${P_.weeks} semanas, ${P_.days.length} salidas por semana.</p>
+    <div class="stack section">
+      <div class="field"><span>¿Qué días podés correr? (elegí ${P_.days.length})</span><div class="days" id="pl-days">${DOW_ORDER.map(d => `<button type="button" class="day" data-pd="${d}">${DAYS[d]}</button>`).join('')}</div>
+        <div class="hint">El fondo (la salida más larga) cae el último día que elijas: mejor un fin de semana.</div></div>
+      <div class="card small">📅 ${planStart() === mondayOf(S.me.today) ? 'Arranca esta semana.' : `Arranca el ${fmtDay(planStart()).toLowerCase()}.`}</div>
+      <p class="hint" style="margin:0">Es una guía general: escuchá a tu cuerpo, y si tenés alguna lesión o condición, consultá antes con un médico o un profe.</p>
+      <button class="btn" id="pl-go">Empezar el plan</button>
+    </div>`);
+  const paint = () => el.querySelectorAll('[data-pd]').forEach(b => b.classList.toggle('on', days.includes(+b.dataset.pd)));
+  el.querySelectorAll('[data-pd]').forEach(b => b.onclick = () => { const d = +b.dataset.pd; days = days.includes(d) ? days.filter(x => x !== d) : [...days, d]; paint(); });
+  paint();
+  $('#pl-go', el).onclick = async (e) => {
+    if (days.length !== P_.days.length){ toast(`Elegí ${P_.days.length} días`); return; }
+    e.target.disabled = true;
+    const plan = { id, start: planStart(), days };
+    try { await rpc('api_set_plan', { ...P(), p_plan: plan }); S.me.user.plan = plan; closeSheet(); renderMain(); toast(`¡Arrancó tu plan de ${P_.name}! 🔥`); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+function planWeeksSheet(){
+  const pl = S.me.user.plan, P_ = PLANES[pl.id], cur = (planSession(S.me.today) || {}).w || 0;
+  const order = DOW_ORDER.filter(d => pl.days.includes(d));
+  openSheet(`<h2>${P_.emoji} ${esc(P_.name)}</h2><div class="stack section">${Array.from({ length: P_.weeks }, (_, w) => `<div class="card ${w === cur ? 'plan' : ''}">
+    <h3>Semana ${w + 1}${w === cur ? ' · esta semana' : ''}</h3>
+    ${P_.week(w).map((ses, i) => `<div class="rec"><span><b>${DAY_NAMES[order[i]][0].toUpperCase() + DAY_NAMES[order[i]].slice(1, 3)}</b> · ${esc(ses.t)}<div class="small muted">${esc(ses.d)}</div></span></div>`).join('')}
+  </div>`).join('')}</div>`);
+}
+
 function renderRutinas(){
   $('#main').innerHTML = `
     <div class="top"><h1>Rutinas</h1></div>
     <p class="muted" style="margin-top:-8px">Las del grupo, con cronómetro. Al terminar, anotás el día directo.</p>
+    <div class="section"><div class="section-title"><h2>Planes de running</h2></div>
+      ${S.me.user.plan ? planCard(false) : `<div class="stack">${Object.entries(PLANES).map(([id, pl]) => `<button class="card routine" data-plan="${id}"><div class="ic" style="background:var(--fire-soft)">${pl.emoji}</div><div><h3>${esc(pl.name)}</h3><div class="small muted">${pl.weeks} semanas · ${pl.days.length} salidas por semana</div></div></button>`).join('')}</div>`}
+    </div>
     <div class="stack section">
       <button class="card routine" data-r="qty"><div class="ic" style="background:var(--fire-soft)">💪</div><div><h3>Rutina por cantidad</h3><div class="small muted">4 series · 1 min de descanso entre series</div></div></button>
       <button class="card routine" data-r="time"><div class="ic" style="background:var(--ice-soft)">⏱️</div><div><h3>Rutina por tiempo · 12 min</h3><div class="small muted">Arrancás con 1 de cada una y sumás 1 por ronda</div></div></button>
-      <button class="card routine" data-r="crono"><div class="ic" style="background:var(--fire-soft)">⏱️</div><div><h3>Cronómetro</h3><div class="small muted">Para correr, nadar o lo que hagas. Con vueltas</div></div></button>
+      <button class="card routine" data-r="crono"><div class="ic" style="background:var(--fire-soft)">⏲️</div><div><h3>Cronómetro</h3><div class="small muted">Para correr, nadar o lo que hagas. Con vueltas</div></div></button>
       <button class="card routine" data-r="med"><div class="ic" style="background:var(--ok-soft)">🧘</div><div><h3>Meditación guiada</h3><div class="small muted">El video del grupo</div></div></button>
     </div>
     <div class="section"><div class="section-title"><h2>Mis marcas del gym</h2><button class="link" id="lift-add">+ Cargar peso</button></div>
@@ -2030,6 +2187,8 @@ function renderRutinas(){
     </div>`;
   document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => ({ qty: runQty, time: runTime, med: runMed, crono: runCrono })[b.dataset.r]());
   $('#lift-add').onclick = () => liftSheet('');
+  document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => planSheet(b.dataset.plan));
+  bindPlanCard();
   bindLifts();
   if (!S.lifts) loadLifts();
   $('#pl-set').onclick = () => {
@@ -2281,6 +2440,8 @@ function remindBlock(){
   return `<div class="hrow" style="padding-top:0"><div><b>Avisarme si me falta anotar</b><div class="small muted">Solo si ese día te falta algo</div></div>
       <button class="toggle ${h != null ? 'on' : ''}" role="switch" aria-checked="${h != null}" aria-label="Recordatorio" id="rm-tg"></button></div>
     ${h != null ? `<div class="hrow"><span>A las</span><select class="input" id="rm-h" style="width:auto;min-height:44px">${HOURS.map(x => `<option value="${x}" ${x === h ? 'selected' : ''}>${String(x).padStart(2, '0')}:00</option>`).join('')}</select></div>` : ''}
+    <div class="hrow"><div><b>Empujón de las 19 h</b><div class="small muted">Si no hiciste deporte, te pasamos una rutina corta o lo que toca en tu plan</div></div>
+      <button class="toggle ${S.me.user.nudge_hour != null ? 'on' : ''}" role="switch" aria-checked="${S.me.user.nudge_hour != null}" aria-label="Empujón de las 19 h" id="rm-nd"></button></div>
     <div class="hrow"><div><b>Avisarme cuando un amigo anota</b><div class="small muted">Uno por amigo por día, de 8 a 24 h</div></div>
       <button class="toggle ${S.me.user.notify_friends !== false ? 'on' : ''}" role="switch" aria-checked="${S.me.user.notify_friends !== false}" aria-label="Avisos de amigos" id="rm-fr"></button></div>
     <button class="link" id="rm-test" style="margin-top:10px">Mandarme un aviso de prueba</button>`;
@@ -2293,6 +2454,10 @@ function bindRemind(){
   };
   const sel = $('#rm-h'); if (sel) sel.onchange = async () => {
     try { await rpc('api_set_reminder', { ...P(), p_hour: +sel.value }); S.me.user.remind_hour = +sel.value; toast(`Te avisamos a las ${sel.options[sel.selectedIndex].text}`); } catch(e){ toast(e.message); }
+  };
+  const nd = $('#rm-nd'); if (nd) nd.onclick = async () => {
+    const h = S.me.user.nudge_hour != null ? null : 19;
+    try { await rpc('api_set_nudge', { ...P(), p_hour: h }); S.me.user.nudge_hour = h; renderPerfil(); } catch(e){ toast(e.message); }
   };
   const fr = $('#rm-fr'); if (fr) fr.onclick = async () => {
     const on = S.me.user.notify_friends === false;
