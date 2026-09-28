@@ -1959,7 +1959,7 @@ function groupHabitAdd(G){
 function habitEditor(h, groupId = null, after){
   let days = h ? [...h.days] : [0,1,2,3,4,5,6];
   let autoIce = !h;
-  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🙏','🚶','🏋️'];
+  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🙏','🚶','🏋️','🦉','🗣️','🎹','🧹','💊','🦷','🌅','🍎'];
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
       <label class="field"><span>Nombre</span><input class="input" id="h-name" maxlength="30" placeholder="Ej: Tomar agua" value="${esc(h ? h.name : '')}"></label>
