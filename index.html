@@ -810,15 +810,17 @@ function renderOnboarding(){
   };
 }
 
-function habitToggleRows(av){
+function habitToggleRows(av, full){
   if (!av.length) return '<p class="muted">No hay hábitos disponibles.</p>';
   return av.map(h => {
     const mine = S.me.habits.find(x => x.id === h.id);
+    const origin = h.mine ? (h.group_name ? `tuyo · compartido con ${esc(h.group_name)}` : 'tuyo') : h.group_name ? `de ${esc(h.owner || h.group_name)}${h.owner ? ` · ${esc(h.group_name)}` : ''}` : '';
     return `<div class="hrow">
       <div>
         <div style="font-weight:800;font-size:17px">${esc(h.emoji)} ${esc(h.name)}</div>
-        <div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días${h.group_name ? ` · de ${esc(h.group_name)}` : ''}</div>
+        <div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días${origin ? ` · ${origin}` : ''}</div>
         ${mine ? `<button class="link small" data-adjust="${h.id}">Corregir racha (${mine.streak} 🔥 · ${mine.ice} 🧊 · ${mine.left_for_ice} ⌛)</button>` : ''}
+        ${full && h.mine ? `<div class="row" style="gap:14px;margin-top:2px"><button class="link small" data-hown="${h.id}">Editar</button>${S.me.groups.length ? `<button class="link small" data-hshare="${h.id}">${h.group_id ? 'Compartir en otro grupo' : 'Compartir con el grupo'}</button>` : ''}${h.group_id ? `<button class="link small danger" data-hunshare="${h.id}">Dejar de compartir</button>` : ''}</div>` : ''}
       </div>
       <button class="toggle ${h.active ? 'on' : ''}" role="switch" aria-checked="${h.active}" aria-label="${esc(h.name)}" data-toggle="${h.id}"></button>
     </div>`;
@@ -831,6 +833,12 @@ function bindHabitToggles(rerender){
       try { await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: false }); S.me = await rpc('api_me', P()); rerender(); toast(`${h.name} desactivado. Tu racha queda guardada.`); }
       catch(e){ toast(e.message); }
     } else openActivateSheet(h, false, rerender);
+  });
+  document.querySelectorAll('[data-hown]').forEach(b => b.onclick = () => { const h = S.me.available.find(x => x.id === b.dataset.hown); habitEditor(S.me.habits.find(x => x.id === h.id) || h, null, rerender); });
+  document.querySelectorAll('[data-hshare]').forEach(b => b.onclick = () => shareHabitSheet(S.me.available.find(x => x.id === b.dataset.hshare), rerender));
+  document.querySelectorAll('[data-hunshare]').forEach(b => b.onclick = async () => {
+    try { await rpc('api_share_habit', { ...P(), p_habit: b.dataset.hunshare, p_group: null }); S.me = await rpc('api_me', P()); S.group = null; rerender(); toast('Ya no está compartido. Quienes lo activaron lo siguen teniendo.', 3500); }
+    catch(e){ toast(e.message); }
   });
   document.querySelectorAll('[data-adjust]').forEach(b => b.onclick = () => {
     const h = S.me.available.find(x => x.id === b.dataset.adjust);
@@ -1282,8 +1290,14 @@ function renderGrupo(){
   if (S.gsub === 'duelos') renderDuels(G);
   const ra = $('#rec-add'); if (ra) ra.onclick = () => recordSheet(null);
   document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
-  const ha = $('#hab-add'); if (ha) ha.onclick = () => habitEditor(null);
-  document.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => habitEditor(G.habits.find(h => h.id === b.dataset.hedit)));
+  const ha = $('#hab-add'); if (ha) ha.onclick = () => groupHabitAdd(G);
+  const afterG = async () => { await loadGroup(); renderGrupo(); };
+  document.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => { const h = G.habits.find(x => x.id === b.dataset.hedit); habitEditor({ ...h, group_id: G.group.id }, G.group.id, afterG); });
+  document.querySelectorAll('[data-hact]').forEach(b => b.onclick = () => openActivateSheet(G.habits.find(x => x.id === b.dataset.hact), false, () => afterG()));
+  document.querySelectorAll('[data-hrem]').forEach(b => b.onclick = () => { const h = G.habits.find(x => x.id === b.dataset.hrem);
+    confirmSheet(`¿Quitar ${h.name} del grupo?`, 'Deja de aparecer para sumar. Quienes ya lo activaron lo siguen teniendo.', 'Quitar del grupo', async () => {
+      await rpc('api_share_habit', { ...P(), p_habit: h.id, p_group: null }); S.me = await rpc('api_me', P()); await afterG();
+    }); });
   const lv = $('#leave'); if (lv) lv.onclick = () => confirmSheet(`¿Salir de ${G.group.name}?`, 'Tu racha no cambia. Podés volver con el código del grupo.', 'Salir del grupo', async () => {
     await rpc('api_leave_group', { ...P(), p_group: G.group.id }); S.me = await rpc('api_me', P()); S.group = null; S.groupId = null; LS.del('racha_group'); refreshGroup(); toast('Saliste del grupo');
   });
@@ -1299,12 +1313,15 @@ function grupoRacha(G, members){
         `<div class="empty">Todavía nadie subió foto. Anotá tu día con una foto y arrancás vos.</div>`}
     </div>
 
-    ${G.group.is_admin ? `<div class="section">
-      <div class="section-title"><h2>Hábitos del grupo</h2><button class="link" id="hab-add">Crear hábito</button></div>
+    <div class="section">
+      <div class="section-title"><h2>Hábitos del grupo</h2><button class="link" id="hab-add">+ Sumar hábito</button></div>
       <div class="card">
-        ${G.habits.length ? G.habits.map(h => `<div class="hrow"><div><div style="font-weight:800">${esc(h.emoji)} ${esc(h.name)}</div><div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días · máx ${h.max_ice}</div></div><button class="link" data-hedit="${h.id}">Editar</button></div>`).join('') :
-        `<p class="muted" style="margin:0">Deporte, Lectura y Meditación ya vienen incluidos. Acá podés crear otros con sus propias reglas, como Tomar 2 L de agua o No redes antes de dormir. Cada miembro después elige si lo activa.</p>`}
-      </div></div>` : ''}
+        ${G.habits.length ? G.habits.map(h => { const on = S.me.habits.some(x => x.id === h.id);
+          return `<div class="hrow"><div><div style="font-weight:800">${esc(h.emoji)} ${esc(h.name)}</div><div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días${h.owner ? ` · de ${esc(h.owner)}` : ''}</div>
+            <div class="row" style="gap:14px;margin-top:2px">${h.mine ? `<button class="link small" data-hedit="${h.id}">Editar</button>` : ''}${h.can_remove ? `<button class="link small danger" data-hrem="${h.id}">Quitar del grupo</button>` : ''}</div></div>
+            ${on ? '<span class="pill ok">Activado</span>' : `<button class="btn sm" data-hact="${h.id}">Activar</button>`}</div>`; }).join('') :
+        `<p class="muted" style="margin:0">Deporte, Lectura y Meditación ya vienen incluidos. Sumá otros con sus propias reglas, como Tomar 2 L de agua o No redes antes de dormir. Cada uno elige si lo activa.</p>`}
+      </div></div>
 
     <div class="section" style="text-align:center"><button class="link danger" id="leave">Salir de ${esc(G.group.name)}</button></div>`;
 }
@@ -1913,7 +1930,33 @@ function recordSheet(r){
   };
   const d = $('#r-del', el); if (d) d.onclick = async () => { try { await rpc('api_delete_record', { ...P(), p_id: r.id }); await loadGroup(); closeSheet(); renderGrupo(); } catch(err){ toast(err.message); } };
 }
-function habitEditor(h){
+function shareHabitSheet(h, rerender){
+  const gs = S.me.groups;
+  const el = openSheet(`<h2>Compartir ${esc(h.emoji)} ${esc(h.name)}</h2>
+    <p class="muted">Los del grupo lo van a ver y cada uno elige si lo activa. Tu racha no cambia.</p>
+    <div class="stack section">${gs.map(g => `<button class="btn ${g.id === h.group_id ? '' : 'ghost'}" data-shg="${g.id}">${esc(g.emoji || '🔥')} ${esc(g.name)}${g.id === h.group_id ? ' · ya está' : ''}</button>`).join('')}</div>`);
+  el.querySelectorAll('[data-shg]').forEach(b => b.onclick = async () => {
+    try { await rpc('api_share_habit', { ...P(), p_habit: h.id, p_group: b.dataset.shg }); S.me = await rpc('api_me', P()); S.group = null; closeSheet(); rerender(); toast('Compartido con el grupo 🙌'); }
+    catch(e){ toast(e.message); }
+  });
+}
+// Desde el grupo: compartir uno propio que todavía no está en ningún grupo, o crear uno nuevo ahí mismo.
+function groupHabitAdd(G){
+  const own = S.me.available.filter(h => h.mine && h.group_id !== G.group.id);
+  const el = openSheet(`<h2>Sumar un hábito al grupo</h2>
+    <p class="muted">Los del grupo lo ven y cada uno elige si lo activa.</p>
+    <div class="stack section">
+      ${own.length ? `<div class="field"><span>Uno tuyo</span><div class="stack">${own.map(h => `<button class="btn ghost" data-shown="${h.id}">${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div></div>` : ''}
+      <button class="btn" id="gh-new">+ Crear uno nuevo</button>
+    </div>`);
+  el.querySelectorAll('[data-shown]').forEach(b => b.onclick = async () => {
+    try { await rpc('api_share_habit', { ...P(), p_habit: b.dataset.shown, p_group: G.group.id }); S.me = await rpc('api_me', P()); await loadGroup(); closeSheet(); renderGrupo(); toast('Compartido con el grupo 🙌'); }
+    catch(e){ toast(e.message); }
+  });
+  $('#gh-new', el).onclick = () => habitEditor(null, G.group.id, async () => { await loadGroup(); renderGrupo(); });
+}
+
+function habitEditor(h, groupId = null, after){
   let days = h ? [...h.days] : [0,1,2,3,4,5,6];
   let autoIce = !h;
   const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🙏','🚶','🏋️'];
@@ -1950,14 +1993,18 @@ function habitEditor(h){
     const name = $('#h-name', el).value.trim(); if (!name){ toast('Ponele un nombre'); return; }
     e.target.disabled = true;
     try {
-      await rpc('api_save_habit', { ...P(), p_group: S.groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
+      const saved = await rpc('api_save_habit', { ...P(), p_group: h ? (h.group_id || null) : groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
         p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent });
-      S.me = await rpc('api_me', P()); await loadGroup(); closeSheet(); renderGrupo();
-      toast(h ? 'Hábito actualizado' : 'Hábito creado. Cada uno lo activa desde Perfil.', 3500);
+      // Un hábito nuevo queda activado para quien lo creó.
+      if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
+      S.me = await rpc('api_me', P()); if (S.group) await loadGroup().catch(() => {}); closeSheet();
+      after ? await after() : renderMain();
+      toast(h ? 'Hábito actualizado' : groupId ? 'Hábito creado y compartido con el grupo. Ya lo tenés activado.' : 'Hábito creado y activado. Si querés, compartilo con tu grupo.', 3800);
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
-  const d = $('#h-del', el); if (d) d.onclick = () => confirmSheet(`¿Eliminar ${h.name}?`, 'Deja de aparecer para todos los del grupo.', 'Eliminar hábito', async () => {
-    await rpc('api_archive_habit', { ...P(), p_habit: h.id }); S.me = await rpc('api_me', P()); await loadGroup(); renderGrupo();
+  const d = $('#h-del', el); if (d) d.onclick = () => confirmSheet(`¿Eliminar ${h.name}?`, h.group_id ? 'Deja de aparecer para vos y para todos los del grupo.' : 'Deja de aparecer en tu lista.', 'Eliminar hábito', async () => {
+    await rpc('api_archive_habit', { ...P(), p_habit: h.id }); S.me = await rpc('api_me', P()); if (S.group) await loadGroup().catch(() => {});
+    after ? await after() : renderMain();
   });
 }
 
@@ -2359,9 +2406,9 @@ function renderPerfil(){
       <div class="card" id="prog">${progressBlock()}</div>
     </div>
 
-    <div class="section"><div class="section-title"><h2>Mis hábitos</h2></div>
-      <div class="card">${habitToggleRows(me.available)}</div>
-      <p class="hint">Al desactivar un hábito tu racha queda guardada. Los que crea el admin de un grupo aparecen acá para que los actives.</p>
+    <div class="section"><div class="section-title"><h2>Mis hábitos</h2><button class="link" id="h-new">+ Crear hábito</button></div>
+      <div class="card">${habitToggleRows(me.available, true)}</div>
+      <p class="hint">Creá los tuyos (tomar agua, no redes, lo que quieras) y, si querés, compartilos con tu grupo para que los demás los activen. Al desactivar un hábito, tu racha queda guardada.</p>
     </div>
 
     <div class="section"><div class="section-title"><h2>Mis datos</h2></div>
@@ -2416,6 +2463,7 @@ function renderPerfil(){
     <div class="section" style="text-align:center"><button class="link danger" id="logout">Cerrar sesión en este celu</button></div>
   `;
   bindHabitToggles(renderPerfil);
+  $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
   $('#prof').onsubmit = async (e) => {
     e.preventDefault();
     try { await rpc('api_update_profile', { ...P(), p_nick: $('#p-nick').value, p_email: $('#p-mail').value, p_tz: null }); S.me = await rpc('api_me', P()); renderPerfil(); toast('Datos guardados'); }
