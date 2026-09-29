@@ -149,6 +149,11 @@ details.more[open] summary{margin-bottom:8px}
 .ach{display:flex;gap:12px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px}
 .ach .aemo{font-size:30px;width:40px;text-align:center;filter:grayscale(1);opacity:.45}
 .ach.on{border-color:var(--ok-line)}.ach.on .aemo{filter:none;opacity:1}
+.gacts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}
+.gacts .btn{width:100%}
+.code-in{text-transform:uppercase;letter-spacing:.18em;font-weight:800;text-align:center}
+.code-in.big{font-size:28px;min-height:62px}
+.code-in::placeholder{letter-spacing:.18em;opacity:.35}
 .gdescr{margin:-8px 0 14px;color:var(--muted);font-size:15px}
 .subtabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:16px;background:var(--line);margin:0 0 16px}
 .subtabs button{min-height:40px;border-radius:12px;font-weight:800;font-size:14px;color:var(--muted)}
@@ -1032,7 +1037,7 @@ function renderHoy(){
     </div>
     ${planCard(true)}
     ${hoyNudge()}
-    ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Armá un grupo y compartí el link: van a ver sus rachas y las fotos del día.</p><button class="btn sm" id="to-group">Armar o unirme a un grupo</button></div>` : ''}
+    ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Si un amigo ya armó el grupo, pedile el código. Si no, armalo vos y pasales el link.</p><div class="grid2"><button class="btn sm ice" style="width:100%" id="to-join">🔑 Unirme</button><button class="btn sm" style="width:100%" id="to-group">+ Crear grupo</button></div></div>` : ''}
   `;
   document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
     if (e.target.closest('[data-undo]')) return;
@@ -1048,7 +1053,8 @@ function renderHoy(){
   });
   $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
   $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
-  const tg = $('#to-group'); if (tg) tg.onclick = () => go('grupo');
+  const tg = $('#to-group'); if (tg) tg.onclick = createGroupSheet;
+  const tj = $('#to-join'); if (tj) tj.onclick = () => joinGroupSheet();
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
   bindPlanCard();
@@ -1311,7 +1317,8 @@ function renderGrupo(){
     bindGroupForms(); return;
   }
   const G = S.group;
-  const chips = `<div class="chips">${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${esc(g.emoji || '🔥')} ${esc(g.name)}</button>`).join('')}<button class="chip" id="g-new">+ Grupo</button></div>`;
+  const chips = `<div class="chips">${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${esc(g.emoji || '🔥')} ${esc(g.name)}</button>`).join('')}</div>`;
+  const gActions = `<div class="gacts"><button class="btn sm ghost" id="g-join">🔑 Unirme</button><button class="btn sm ghost" id="g-new">+ Crear grupo</button></div>`;
   if (!G || G.group.id !== S.groupId){
     $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
     bindChips(); return;
@@ -1323,8 +1330,9 @@ function renderGrupo(){
       <div class="row" style="gap:8px">${G.group.is_admin ? '<button class="btn sm ghost" id="g-edit" aria-label="Editar grupo">Editar</button>' : ''}<button class="btn sm ice" id="invite">Invitar</button></div></div>
     ${G.group.descr ? `<p class="gdescr">${esc(G.group.descr)}</p>` : ''}
     <button class="achs" id="achs">${achStrip(S.ach[G.group.id])}</button>
-    ${gs.length > 1 ? chips : `<div class="chips"><button class="chip" id="g-new">+ Otro grupo</button></div>`}
+    ${gs.length > 1 ? chips : ''}
 
+    ${gActions}
     <div class="subtabs" role="tablist">${[['racha','🔥 Racha'],['compartido','🎧 Compartido'],['duelos','⚔️ Duelos']].map(([k,l]) => `<button role="tab" aria-selected="${S.gsub===k}" class="${S.gsub===k?'on':''}" data-gsub="${k}">${l}</button>`).join('')}</div>
     ${S.gsub === 'racha' ? grupoRacha(G, members) : '<div id="gsub"></div>'}
   `;
@@ -1969,17 +1977,68 @@ function groupEditor(G){
 }
 function bindChips(){
   document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { S.groupId = b.dataset.g; LS.set('racha_group', S.groupId); S.group = null; renderGrupo(); refreshGroup(); });
-  const n = $('#g-new'); if (n) n.onclick = () => { const el = openSheet(`<h2>Otro grupo</h2><div class="section">${groupForms()}</div>`); bindGroupForms(el); };
+  const n = $('#g-new'); if (n) n.onclick = createGroupSheet;
+  const j = $('#g-join'); if (j) j.onclick = () => joinGroupSheet();
 }
 function groupForms(){
   return `<div class="stack section">
-    <form class="card stack" id="f-create"><h3>Crear un grupo</h3>
+    <form class="card stack" id="f-join"><h3>🔑 Unirme con un código</h3>
+      <p class="small muted" style="margin:0">Pedile el código (6 letras) o el link a quien armó el grupo.</p>
+      <input class="input code-in" id="g-code" maxlength="200" placeholder="ABCDEF" autocapitalize="characters" autocomplete="off" required>
+      <button class="btn ice" type="submit">Unirme</button></form>
+    <form class="card stack" id="f-create"><h3>+ Crear un grupo</h3>
       <input class="input" id="g-name" maxlength="40" placeholder="Ej: Los del fútbol" required>
       <button class="btn" type="submit">Crear grupo</button></form>
-    <form class="card stack" id="f-join"><h3>Unirme con un código</h3>
-      <input class="input" id="g-code" maxlength="6" placeholder="Código de 6 letras" style="text-transform:uppercase;letter-spacing:.15em" autocapitalize="characters" required>
-      <button class="btn ice" type="submit">Unirme</button></form>
   </div>`;
+}
+// Acepta el código solo o el link de invitación entero (…?g=ABCDEF).
+function parseGroupCode(raw){
+  raw = String(raw || '').trim();
+  try { const u = new URL(raw); const g = u.searchParams.get('g'); if (g) return g.toUpperCase(); } catch(e){}
+  const m = raw.toUpperCase().match(/[A-Z]{6}/);
+  return m ? m[0] : '';
+}
+async function joinByCode(code){
+  const g = await rpc('api_join_group', { ...P(), p_code: code });
+  S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); S.group = null;
+  closeSheet(); go('grupo'); vibrate([30, 60, 30]); toast(`Te sumaste a ${g.name} 🔥`);
+}
+function joinGroupSheet(){
+  const el = openSheet(`<h2>🔑 Unirme a un grupo</h2>
+    <p class="muted">Poné el código de 6 letras o pegá el link de invitación.</p>
+    <div class="stack section">
+      <input class="input code-in big" id="j-code" maxlength="200" placeholder="ABCDEF" autocapitalize="characters" autocomplete="off" autofocus>
+      ${navigator.clipboard && navigator.clipboard.readText ? '<button class="btn ghost" id="j-paste">Pegar el link</button>' : ''}
+      <button class="btn ice" id="j-go">Unirme</button>
+    </div>`);
+  const inp = $('#j-code', el), go_ = $('#j-go', el);
+  const tryJoin = async () => {
+    const code = parseGroupCode(inp.value);
+    if (code.length !== 6){ toast('El código son 6 letras'); return; }
+    go_.disabled = true; go_.textContent = 'Uniéndote…';
+    try { await joinByCode(code); } catch(err){ toast(err.message, 3500); go_.disabled = false; go_.textContent = 'Unirme'; }
+  };
+  // Cuando se completan las 6 letras (o se pega el link), se une solo.
+  inp.oninput = () => { if (parseGroupCode(inp.value).length === 6 && (inp.value.trim().length === 6 || /g=/.test(inp.value))) tryJoin(); };
+  go_.onclick = tryJoin;
+  const pb = $('#j-paste', el); if (pb) pb.onclick = async () => { try { inp.value = (await navigator.clipboard.readText()).trim(); inp.oninput(); } catch(e){ toast('Mantené apretado el cuadro y tocá Pegar'); } };
+  setTimeout(() => inp.focus(), 250);
+}
+function createGroupSheet(){
+  const el = openSheet(`<h2>+ Crear un grupo</h2>
+    <p class="muted">Después te damos el link para invitar a tus amigos.</p>
+    <form class="stack section" id="f-create2">
+      <input class="input" id="g-name2" maxlength="40" placeholder="Ej: Los del fútbol" required>
+      <button class="btn" type="submit">Crear grupo</button></form>`);
+  $('#f-create2', el).onsubmit = async (e) => {
+    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    try {
+      const g = await rpc('api_create_group', { ...P(), p_name: $('#g-name2', el).value });
+      S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); closeSheet(); S.group = null;
+      go('grupo'); setTimeout(() => shareInvite(g), 400);
+    } catch(err){ toast(err.message); b.disabled = false; }
+  };
+  setTimeout(() => $('#g-name2', el).focus(), 250);
 }
 function bindGroupForms(root=document){
   $('#f-create', root).onsubmit = async (e) => {
@@ -1991,12 +2050,11 @@ function bindGroupForms(root=document){
     } catch(err){ toast(err.message); b.disabled = false; }
   };
   $('#f-join', root).onsubmit = async (e) => {
-    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
-    try {
-      const g = await rpc('api_join_group', { ...P(), p_code: $('#g-code', root).value });
-      S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); closeSheet(); S.group = null;
-      go('grupo'); toast(`Te sumaste a ${g.name} 🔥`);
-    } catch(err){ toast(err.message, 3500); b.disabled = false; }
+    e.preventDefault(); const b = e.target.querySelector('button');
+    const code = parseGroupCode($('#g-code', root).value);
+    if (code.length !== 6){ toast('El código son 6 letras'); return; }
+    b.disabled = true;
+    try { await joinByCode(code); } catch(err){ toast(err.message, 3500); b.disabled = false; }
   };
 }
 function inviteLink(code){ return `${appBase()}?g=${code}`; }
