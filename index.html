@@ -388,6 +388,8 @@ nav.tabs button.on{color:var(--fire)}
 .welcome .logo{width:92px;height:114px;margin-bottom:18px}
 .welcome h1{font-size:44px}
 
+.net{position:fixed;top:calc(var(--safe-t) + 8px);left:50%;transform:translateX(-50%);z-index:85;background:var(--ink);color:var(--bg);font-weight:800;font-size:13px;padding:7px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.2);white-space:nowrap;cursor:pointer}
+.net.sync{background:var(--ice-dark);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(150px + var(--safe-b));transform:translateX(-50%);background:var(--toast);color:var(--toast-ink);padding:12px 18px;border-radius:14px;font-weight:700;z-index:80;max-width:88vw;text-align:center;animation:up .2s}
 .spinner{width:28px;height:28px;border:4px solid var(--line);border-top-color:var(--fire);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -506,13 +508,19 @@ const ERRORS = {
 };
 async function rpc(fn, args={}){
   let res;
+  const ctl = 'AbortController' in window ? new AbortController() : null;
+  const timer = ctl ? setTimeout(() => ctl.abort(), 12000) : null;
   try {
     res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
       method: 'POST',
       headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify(args)
+      body: JSON.stringify(args), signal: ctl ? ctl.signal : undefined
     });
-  } catch(e){ throw new Error('Sin conexión. Revisá tu internet y probá de nuevo.'); }
+  } catch(e){
+    const err = new Error('Sin conexión. Revisá tu internet y probá de nuevo.'); err.offline = true;
+    setNet(false); throw err;
+  } finally { clearTimeout(timer); }
+  setNet(true);
   const txt = await res.text();
   let data = null; try { data = txt ? JSON.parse(txt) : null; } catch(e){}
   if (!res.ok){
@@ -522,6 +530,67 @@ async function rpc(fn, args={}){
   }
   return data;
 }
+
+/* ============ Sin señal: bandeja de salida y caché ============ */
+// Lo que se anota sin señal queda acá (en orden) y se sube solo cuando vuelve la conexión.
+const OUTBOX_KEY = 'fueguitos_outbox';
+const outboxGet = () => { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); } catch(e){ return []; } };
+const outboxSet = (a) => { try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(a)); return true; } catch(e){ return false; } };
+let netOnline = navigator.onLine !== false, flushing = false;
+function setNet(on){ if (netOnline !== on){ netOnline = on; renderNet(); if (on) flushOutbox(); } }
+function enqueue(fn, args, label){
+  const box = outboxGet();
+  box.push({ fn, args, label, t: Date.now() });
+  if (!outboxSet(box)){
+    // Sin lugar (una foto muy pesada): se guarda sin la foto.
+    if (args && args.p_photo){ box[box.length - 1].args = { ...args, p_photo: null }; if (outboxSet(box)){ toast('Sin señal: la foto no entró, pero se anotó igual.', 3500); renderNet(); return; } }
+    toast('No hay lugar para guardar sin señal. Probá cuando vuelva la conexión.', 4000); return;
+  }
+  renderNet();
+}
+// Llamada que, si no hay señal, se guarda para después. Si ya hay cosas esperando, se pone en la fila para respetar el orden.
+// `withDay`: si queda en la fila, se guarda el día real en que se hizo (corte a las 5 AM, como el servidor).
+const localToday = () => { const d = new Date(Date.now() - 5 * 36e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+async function rpcQ(fn, args, label, withDay){
+  const queued = () => { enqueue(fn, withDay ? { ...args, p_day: localToday() } : args, label); return { queued: true }; };
+  if (outboxGet().length){ const q = queued(); flushOutbox(); return q; }
+  try { return await rpc(fn, args); }
+  catch(e){ if (e.offline) return queued(); throw e; }
+}
+async function flushOutbox(){
+  if (flushing || !S.token) return;
+  let box = outboxGet(); if (!box.length) return;
+  flushing = true; renderNet();
+  let sent = 0;
+  while (box.length){
+    const it = box[0];
+    try { await rpc(it.fn, it.args); sent++; }
+    catch(e){
+      if (e.offline) break;
+      toast(`No se pudo subir "${it.label}": ${e.message}`, 4000); // error real (ej. duelo terminado): se descarta
+    }
+    box.shift(); outboxSet(box);
+  }
+  flushing = false; renderNet();
+  if (sent){
+    toast(`☁️ Listo: se subió lo que anotaste sin señal (${sent}).`, 3000);
+    try { await loadMe(); if (S.groupId && S.group) await loadGroup(); if (S.groupId) await loadDuels(S.groupId); renderMain(); } catch(e){}
+  }
+}
+function renderNet(){
+  let el = document.getElementById('net');
+  const n = outboxGet().length;
+  if (netOnline && !n){ if (el) el.remove(); return; }
+  if (!el){ el = document.createElement('div'); el.id = 'net'; el.setAttribute('role', 'status'); document.body.appendChild(el); el.onclick = () => flushOutbox(); }
+  el.className = netOnline ? 'net sync' : 'net';
+  el.textContent = !netOnline ? `☁️ Sin señal${n ? ` · ${n} por subir` : ''}` : flushing ? `☁️ Subiendo ${n}…` : `☁️ ${n} por subir · tocá para reintentar`;
+}
+window.addEventListener('online', () => setNet(true));
+window.addEventListener('offline', () => setNet(false));
+setInterval(() => { if (outboxGet().length) flushOutbox(); }, 30000);
+// Caché para abrir la app sin señal.
+const cacheSet = (k, v) => { try { localStorage.setItem('fueguitos_c_' + k, JSON.stringify(v)); } catch(e){} };
+const cacheGet = (k) => { try { return JSON.parse(localStorage.getItem('fueguitos_c_' + k) || 'null'); } catch(e){ return null; } };
 
 /* ============ Estado ============ */
 const S = {
@@ -541,6 +610,7 @@ const P = () => ({ p_token: S.token });
 
 async function loadMe(){
   S.me = await rpc('api_me', P());
+  cacheSet('me', S.me);
   rpc('api_history', P()).then(h => { S.history = h || []; if (S.tab === 'hoy' || S.tab === 'perfil') renderMain(); }).catch(()=>{});
 }
 async function loadGroup(){
@@ -549,7 +619,8 @@ async function loadGroup(){
   if (!groups.find(g => g.id === S.groupId)) S.groupId = groups[0].id;
   LS.set('racha_group', S.groupId);
   S.groupLoading = true;
-  try { S.group = await rpc('api_group', { ...P(), p_group: S.groupId }); }
+  try { S.group = await rpc('api_group', { ...P(), p_group: S.groupId }); cacheSet('group_' + S.groupId, S.group); }
+  catch(e){ const c = e.offline && cacheGet('group_' + S.groupId); if (c) S.group = c; else throw e; }
   finally { S.groupLoading = false; }
 }
 
@@ -570,9 +641,12 @@ async function boot(){
     await loadMe();
   } catch(e){
     if (!S.token){ renderWelcome(); return; }
-    renderOffline(e.message); return;
+    const c = e.offline && cacheGet('me');
+    if (!c){ renderOffline(e.message); return; }
+    S.me = c; setNet(false);
   }
   await afterLogin();
+  flushOutbox();
   maybeInstallGuide();
   syncPush().then(() => { if (IS_NATIVE && S.me && !S.onboarding) renderMain(); });
   autoHealth();
@@ -1027,6 +1101,7 @@ function go(tab){
 }
 function renderMain(){
   syncWidget();
+  if (S.me) cacheSet('me', S.me);
   if (!$('#main')) return;
   if (S.tab === 'hoy') renderHoy();
   else if (S.tab === 'grupo') renderGrupo();
@@ -1217,8 +1292,10 @@ function openCheckinSheet(){
     try {
       const extra = sport ? readDetail(el, det) : null;
       if (extra && extra.error){ toast(extra.error); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; return; }
-      const r = await rpc('api_checkin', { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null });
+      const r0 = await rpcQ('api_checkin', { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null }, 'anotación del día', true);
+      const r = r0.queued ? localCheckin([...S.sel]) : r0;
       S.me.habits = r.habits; S.sel.clear(); closeSheet(); renderMain();
+      if (r0.queued) toast('Sin señal: quedó anotado en tu celu y se sube solo cuando vuelva la conexión ☁️', 4000);
       if (extra) saveDetail(sport, extra);
       const fresh = (r.results || []).filter(x => !x.already);
       if (fresh.length) celebrate(fresh); else toast('Listo');
@@ -1227,6 +1304,20 @@ function openCheckinSheet(){
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; }
   };
 }
+// Anotación local (sin señal): mismas cuentas que el servidor, para ver el fueguito al instante.
+function localCheckin(ids){
+  const results = [];
+  S.me.habits = S.me.habits.map(h => {
+    if (!ids.includes(h.id) || h.done_today) return h;
+    const x = { ...h, done_today: true, streak: h.streak + 1, left_for_ice: h.left_for_ice - 1 };
+    let earned = false;
+    if (x.left_for_ice <= 0){ x.left_for_ice = h.ice_every; if (x.ice < x.max_ice){ x.ice++; earned = true; } }
+    results.push({ habit_id: h.id, name: h.name, emoji: h.emoji, streak: x.streak, ice: x.ice, left_for_ice: x.left_for_ice, earned_ice: earned });
+    return x;
+  });
+  return { habits: S.me.habits, results };
+}
+
 /* ============ Detalle opcional de la actividad ============ */
 const isSport = (h) => /deporte|entren|gym|gimnas|ejerc|correr|running|fútbol|futbol|bici|nata/i.test(h.name);
 const ACT = { correr: ['🏃', 'Correr', true], caminar: ['🚶', 'Caminar', true], bici: ['🚴', 'Bici', true], nadar: ['🏊', 'Nadar', true],
@@ -1261,9 +1352,9 @@ function readDetail(el, det){
 }
 async function saveDetail(h, x){
   try {
-    await rpc('api_activity_add', { ...P(), p_habit: h.id, p_kind: x.kind, p_km: x.km, p_minutes: x.minutes, p_note: null });
+    await rpcQ('api_activity_add', { ...P(), p_habit: h.id, p_kind: x.kind, p_km: x.km, p_minutes: x.minutes, p_note: null }, 'detalle de la actividad', true);
     if (x.ex && x.kg != null){
-      const r = await rpc('api_lift_add', { ...P(), p_exercise: x.ex, p_kg: x.kg, p_reps: x.reps, p_note: null });
+      const r = await rpcQ('api_lift_add', { ...P(), p_exercise: x.ex, p_kg: x.kg, p_reps: x.reps, p_note: null }, 'marca del gym');
       S.lifts = null;
       if (r && r.pr && r.prev != null) setTimeout(() => toast(`🏆 ¡Récord nuevo en ${x.ex}! ${kgTxt(x.kg)} (antes ${kgTxt(r.prev)})`, 4000), 1800);
     }
@@ -1552,7 +1643,8 @@ async function renderDuels(G){
   await loadDuels(gid);
   if (S.tab === 'grupo' && S.gsub === 'duelos' && S.groupId === gid) paint();
 }
-async function loadDuels(gid){ try { S.duels[gid] = await rpc('api_duels', { ...P(), p_group: gid }); } catch(e){ S.duels[gid] = S.duels[gid] || []; } }
+async function loadDuels(gid){ try { S.duels[gid] = await rpc('api_duels', { ...P(), p_group: gid }); cacheSet('duels_' + gid, S.duels[gid]); } catch(e){ S.duels[gid] = S.duels[gid] || cacheGet('duels_' + gid) || []; } }
+const saveDuelsCache = (gid) => cacheSet('duels_' + gid, S.duels[gid]);
 // Palitos del truco: grupos de 5 (cuatro rayas y una cruzada). Más de 40 se muestran como número.
 function tallySVG(n){
   if (n > 40) return `<span class="dscore">${n}</span>`;
@@ -1606,8 +1698,13 @@ function duelCard(d){
 }
 async function duelPoint(G, id, winner, note){
   try {
-    await rpc('api_duel_add', { ...P(), p_duel: id, p_winner: winner || null, p_note: note || null }); vibrate(30);
-    await loadDuels(G.group.id);
+    const r = await rpcQ('api_duel_add', { ...P(), p_duel: id, p_winner: winner || null, p_note: note || null }, 'partido');
+    vibrate(30);
+    if (r.queued){
+      const d0 = (S.duels[G.group.id] || []).find(x => x.id === id);
+      if (d0){ const w0 = d0.players.find(u => u.id === winner); if (w0) w0.wins++; else d0.draws++; d0.games++;
+        d0.last.unshift({ id: 'local' + Date.now(), winner: winner || null, note: note || null, at: new Date().toISOString() }); saveDuelsCache(G.group.id); }
+    } else await loadDuels(G.group.id);
     const d = S.duels[G.group.id].find(x => x.id === id); renderGrupo();
     if (d){ const w = d.players.find(u => u.id === winner); toast(w ? `+1 ${w.nick} · lleva ${w.wins}` : '🤝 Empate'); }
   } catch(e){ toast(e.message); }
@@ -1623,11 +1720,27 @@ function duelScore(G, id, uid, delta, setTo){
   const box = $('#gsub'); if (box && S.gsub === 'duelos'){ const card = box.querySelector(`[data-duel="${id}"]`); if (card) card.outerHTML = duelCard(d); bindDuelCards(G); }
   duelQueue = duelQueue.then(async () => {
     try {
-      const r = await rpc('api_duel_points', { ...P(), p_duel: id, p_user: uid, p_delta: setTo != null ? null : delta, p_set: setTo != null ? setTo : null });
+      const r = await rpcQ('api_duel_points', { ...P(), p_duel: id, p_user: uid, p_delta: setTo != null ? null : delta, p_set: setTo != null ? setTo : null }, `punto de ${d.activity}`);
+      if (r.queued){
+        if (d.target && u.points >= d.target){ const w = localCloseRound(d); renderGrupo(); partidaTerminada(d, w); }
+        saveDuelsCache(G.group.id); return;
+      }
       if (r.won){ await loadDuels(G.group.id); renderGrupo(); partidaTerminada(d, r.winner); }
     } catch(e){ toast(e.message); await loadDuels(G.group.id); renderGrupo(); }
   });
 }
+// Cierre de partida local (misma regla que el servidor): gana el que más, o el que menos; empate si igualan.
+function localCloseRound(d){
+  const sorted = [...d.players].sort((x, y) => d.lowest_wins ? (x.points || 0) - (y.points || 0) : (y.points || 0) - (x.points || 0));
+  const tie = sorted.length > 1 && (sorted[0].points || 0) === (sorted[1].points || 0);
+  const w = tie ? null : sorted[0];
+  if (w) w.wins++;
+  d.games++; if (!w) d.draws++;
+  d.last.unshift({ id: 'local' + Date.now(), winner: w ? w.id : null, note: sorted.map(u => `${u.nick} ${u.points || 0}`).join(' · '), at: new Date().toISOString() });
+  d.players.forEach(u => u.points = 0);
+  return w ? w.id : null;
+}
+
 function roundSheet(G, id){
   const d = (S.duels[G.group.id] || []).find(x => x.id === id); if (!d) return;
   const el = openSheet(`<h2>✍️ Anotar ronda</h2>
@@ -1656,8 +1769,17 @@ function roundSheet(G, id){
     if (!Object.keys(scores).length){ toast('Anotá los puntos de al menos uno'); return; }
     e.target.disabled = true;
     try {
-      const r = await rpc('api_duel_round', { ...P(), p_duel: id, p_scores: scores });
-      closeSheet(); await loadDuels(G.group.id); renderGrupo();
+      const r = await rpcQ('api_duel_round', { ...P(), p_duel: id, p_scores: scores }, `ronda de ${d.activity}`);
+      closeSheet();
+      if (r.queued){
+        d.players.forEach(u => { if (scores[u.id]) u.points = (u.points || 0) + scores[u.id]; });
+        let w = null, closed = false;
+        if (d.target && d.players.some(u => u.points >= d.target)){ w = localCloseRound(d); closed = true; }
+        saveDuelsCache(G.group.id); renderGrupo();
+        if (closed) partidaTerminada(d, w); else { vibrate(20); toast('Ronda anotada ✍️ (se sube cuando haya señal)'); }
+        return;
+      }
+      await loadDuels(G.group.id); renderGrupo();
       if (r.closed) partidaTerminada(d, r.winner); else { vibrate(20); toast('Ronda anotada ✍️'); }
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
@@ -1669,8 +1791,11 @@ function partidaTerminada(d, winner){
 }
 async function closeRound(G, id){
   const d = (S.duels[G.group.id] || []).find(x => x.id === id); if (!d) return;
-  try { const r = await rpc('api_duel_close', { ...P(), p_duel: id }); await loadDuels(G.group.id); renderGrupo(); partidaTerminada(d, r.winner); }
-  catch(e){ toast(e.message); }
+  try {
+    const r = await rpcQ('api_duel_close', { ...P(), p_duel: id }, `fin de partida de ${d.activity}`);
+    if (r.queued){ const w = localCloseRound(d); saveDuelsCache(G.group.id); renderGrupo(); partidaTerminada(d, w); return; }
+    await loadDuels(G.group.id); renderGrupo(); partidaTerminada(d, r.winner);
+  } catch(e){ toast(e.message); }
 }
 
 function bindDuelCards(G){
