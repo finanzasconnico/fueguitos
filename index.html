@@ -122,6 +122,9 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
+button.week.pair{width:100%;text-align:left;display:block;margin:0;font:inherit;color:inherit}
+.week.pair .big{font-size:20px;font-weight:800}
+.cue{margin-top:2px}
 .gst .big{font-size:24px;font-weight:800;line-height:1.1}
 .habit.done .progress>i{background:var(--ok)}
 .nightq .btn{flex:1;min-height:40px}
@@ -524,6 +527,7 @@ function beep(freq=880, dur=0.18, times=1){
 const ERRORS = {
   SESION_INVALIDA: 'Tu sesión no existe más. Volvé a entrar con tu apodo.',
   CODIGO_INVALIDO: 'Ese código no existe. Revisalo con quien te invitó.',
+  GRUPO_LLENO: 'Esa racha de a dos ya tiene a sus dos personas.',
   FOTO_MUY_GRANDE: 'La foto es muy pesada. Probá con otra.',
   SOLO_ADMIN: 'Solo quien administra el grupo puede hacer esto.',
   NO_PERMITIDO: 'No tenés acceso a eso.',
@@ -1156,7 +1160,7 @@ function dayRing(hs){
   const part = req.reduce((a, h) => a + (h.done_today ? 1 : h.goal ? Math.min(h.count_today || 0, h.goal) / h.goal : 0), 0) / req.length;
   const C = 2 * Math.PI * 20, full = done === req.length;
   return `<div class="ring ${full ? 'full' : ''}" role="img" aria-label="Hoy: ${done} de ${req.length} hábitos">
-    <svg viewBox="0 0 48 48" aria-hidden="true"><circle class="bg" cx="24" cy="24" r="20"/><circle class="fg" cx="24" cy="24" r="20" stroke-dasharray="${(C * part).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 24 24)"/></svg>
+    <svg viewBox="0 0 48 48" aria-hidden="true"><circle class="bg" cx="24" cy="24" r="20"/><circle class="fg" cx="24" cy="24" r="20" stroke-opacity="${part > 0 ? 1 : 0}" stroke-dasharray="${(C * part).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 24 24)"/></svg>
     <b>${full ? '✓' : `${done}/${req.length}`}</b></div>`;
 }
 
@@ -1203,6 +1207,17 @@ function calendarSheet(h){
   paint();
 }
 
+function pairCards(){
+  const ps = (S.me.groups || []).filter(g => g.pair); if (!ps.length) return '';
+  const me = S.me.user.nick;
+  return `<div class="section"><div class="section-title"><h2>Rachas de a dos</h2></div><div class="stack">${ps.map(g => {
+    const st = g.streak || {}, miss = st.missing || [], o = g.other;
+    const msg = !o ? 'Esperando que se sume. Tocá para mandarle el link.' : st.today_ok ? 'Hoy cumplieron los dos ✅'
+      : miss.length === 2 ? 'Hoy faltan los dos' : miss.includes(me) ? 'Hoy te falta a vos' : miss.length ? `Hoy le falta a ${esc(o)}` : 'Hoy todavía no anotó ninguno';
+    return `<button class="week pair" data-pair="${g.id}"><div class="row between" style="align-items:center"><b>👯 Vos y ${esc(o || '…')}</b><span class="big">🔥 ${st.streak || 0}</span></div><div class="small" style="margin-top:2px">${msg}</div></button>`;
+  }).join('')}</div></div>`;
+}
+
 function renderHoy(){
   const me = S.me, hs = me.habits;
   const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
@@ -1228,6 +1243,7 @@ function renderHoy(){
       <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
       <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
     </div>
+    ${pairCards()}
     ${planCard(true)}
     ${hoyNudge()}
     ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Si un amigo ya armó el grupo, pedile el código. Si no, armalo vos y pasales el link.</p><div class="grid2"><button class="btn sm ice" style="width:100%" id="to-join">🔑 Unirme</button><button class="btn sm" style="width:100%" id="to-group">+ Crear grupo</button></div></div>` : ''}
@@ -1265,6 +1281,11 @@ function renderHoy(){
   $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
   $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
   const tg = $('#to-group'); if (tg) tg.onclick = createGroupSheet;
+  document.querySelectorAll('[data-pair]').forEach(b => b.onclick = () => {
+    const g = S.me.groups.find(x => x.id === b.dataset.pair);
+    if (!g.other){ shareInvite(g); return; }
+    S.groupId = g.id; LS.set('racha_group', g.id); S.group = null; go('grupo');
+  });
   const tj = $('#to-join'); if (tj) tj.onclick = () => joinGroupSheet();
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
@@ -1347,7 +1368,7 @@ function nightCard(h){
   return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}" data-hid="${h.id}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
       <div class="meta">${status}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
       ${h.done_today ? `${goalLine(h)}<button type="button" class="undo" data-undo="${h.id}">Deshacer</button>`
         : no ? `<div class="goal">Esta noche hay revancha 🌙</div><button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>`
@@ -1364,7 +1385,7 @@ function countCard(h){
   return `<div class="habit count ${done ? 'done' : ''}" data-hid="${h.id}">
     <div class="flamebox ${done ? '' : 'off'}">${flameSVG(done)}<div class="n">${h.streak}</div></div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
       <div class="meta"><span class="pill ${done ? 'ok' : 'fire'}">${n}/${h.goal}${u}</span><span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
       <div class="progress" style="margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="${h.goal}" aria-valuenow="${n}"><i style="width:${Math.round(n / h.goal * 100)}%"></i></div>
       ${done ? `${goalLine(h)}${less}`
@@ -1403,7 +1424,7 @@ function habitCard(h){
   return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''} ${lateNow ? 'late' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
       <div class="meta">${status}${h.deadline ? `<span class="pill">⏰ antes de las ${h.deadline}</span>` : ''}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
       ${h.deadline && !h.done_today && !lateNow ? (isEarly(h) ? `<div class="goal">Se anota desde las ${opensAt(h)}</div>` : '<div class="goal near">Un toque y queda anotado</div>') : goalLine(h)}
       ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
@@ -1442,7 +1463,7 @@ function quitCard(h){
   return `<button class="habit quit ${ok ? 'done' : 'failed'}" data-habit="${h.id}" aria-label="${esc(h.name)}: ${ok ? 'vas bien hoy' : 'hoy caíste'}. Tocá para cambiarlo">
     <div class="flamebox ${ok ? '' : 'off'}">${flameSVG(ok)}<div class="n">${h.streak}</div></div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
       <div class="meta">${ok ? '<span class="pill ok">Vas bien hoy</span>' : '<span class="pill fire">Hoy caíste</span>'}<span class="pill">🏆 Récord ${h.best || 0}</span><span class="pill">📅 ${h.total_clean || 0} en total</span></div>
       <span class="small muted">${ok ? 'Se suma solo. Si caés, tocalo.' : 'Mañana arrancás de nuevo. Lo logrado no se borra.'}</span>
       ${APP_RX.test(h.name) ? `<span class="undo" role="button" tabindex="0" data-appblock="${h.id}">¿Cómo frenar ${esc(appName(h.name))}?</span>` : ''}
@@ -1689,6 +1710,7 @@ async function refreshGroup(){
     try { await loadGroup(); renderMain(); } catch(e){}
   }, 45000);
 }
+const gName = (g) => { const m = ((S.me && S.me.groups) || []).find(x => x.id === g.id) || g; return m.pair ? `Vos y ${m.other || '…'}` : g.name; };
 function renderGrupo(){
   const gs = S.me.groups;
   if (!gs.length){
@@ -1699,8 +1721,8 @@ function renderGrupo(){
     bindGroupForms(); return;
   }
   const G = S.group;
-  const chips = `<div class="chips">${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${esc(g.emoji || '🔥')} ${esc(g.name)}</button>`).join('')}</div>`;
-  const gActions = `<div class="gacts"><button class="btn sm ghost" id="g-join">🔑 Unirme</button><button class="btn sm ghost" id="g-new">+ Crear grupo</button></div>`;
+  const chips = `<div class="chips">${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}</div>`;
+  const gActions = `<div class="gacts"><button class="btn sm ghost" id="g-join">🔑 Unirme</button><button class="btn sm ghost" id="g-new">+ Crear</button></div>`;
   if (!G || G.group.id !== S.groupId){
     $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
     bindChips(); return;
@@ -1708,7 +1730,7 @@ function renderGrupo(){
   const members = [...G.members].sort((a,b) => sumStreak(b) - sumStreak(a));
   const doneCount = members.filter(m => m.habits.some(h => h.done_today)).length;
   $('#main').innerHTML = `
-    <div class="top"><div class="row" style="gap:12px;align-items:center;min-width:0">${groupAvatar(G.group, 56)}<div style="min-width:0"><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1 class="gname">${esc(G.group.name)}</h1></div></div>
+    <div class="top"><div class="row" style="gap:12px;align-items:center;min-width:0">${groupAvatar(G.group, 56)}<div style="min-width:0"><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1 class="gname">${esc(gName(G.group))}</h1></div></div>
       <div class="row" style="gap:8px">${G.group.is_admin ? '<button class="btn sm ghost" id="g-edit" aria-label="Editar grupo">Editar</button>' : ''}<button class="btn sm ice" id="invite">Invitar</button></div></div>
     ${G.group.descr ? `<p class="gdescr">${esc(G.group.descr)}</p>` : ''}
     ${(G.group.rule_days && G.group.rule_days.length) || G.group.rule_rest ? `<p class="gdescr">📅 ${esc(ruleText(G.group.rule_days, G.group.rule_rest))}</p>` : ''}
@@ -1750,17 +1772,26 @@ function renderGrupo(){
   });
 }
 // Racha del grupo: suma un día cuando cumplen todos (hielito y descanso también valen).
-function groupStreak(g){
+function challengeCard(c){
+  if (!c) return '';
+  const ok = c.done >= c.target, pct = Math.min(100, Math.round(c.done / c.target * 100));
+  return `<div class="week gst">
+    <div class="row between" style="align-items:flex-end"><div><div class="small muted" style="font-weight:700">Desafío de ${MONTHS[c.month - 1]}</div><div class="big" style="font-size:20px">${ok ? '🏆 ¡Cumplido!' : `${c.done} de ${c.target} días`}</div></div><span class="small muted" style="font-weight:700">${c.days_left === 0 ? 'Último día' : `Quedan ${c.days_left} ${c.days_left === 1 ? 'día' : 'días'}`}</span></div>
+    <div class="progress" style="margin-top:8px"><i style="width:${pct}%;${ok ? 'background:var(--ok)' : ''}"></i></div>
+    <div class="small muted" style="margin-top:6px">Entre todos: 20 días anotados por cada uno en el mes.</div></div>`;
+}
+function groupStreak(g, pair){
   if (!g) return '';
   const n = g.streak, miss = g.missing || [];
   return `<div class="week gst">
-    <div class="row between" style="align-items:flex-end"><div><div class="small muted" style="font-weight:700">Racha del grupo</div><div class="big">🔥 ${n} ${n === 1 ? 'día' : 'días'}</div></div>${g.best > n ? `<span class="small muted" style="font-weight:700">🏆 récord ${g.best}</span>` : ''}</div>
+    <div class="row between" style="align-items:flex-end"><div><div class="small muted" style="font-weight:700">${pair ? 'Racha de a dos' : 'Racha del grupo'}</div><div class="big">🔥 ${n} ${n === 1 ? 'día' : 'días'}</div></div>${g.best > n ? `<span class="small muted" style="font-weight:700">🏆 récord ${g.best}</span>` : ''}</div>
     <div class="small" style="margin-top:4px">${g.today_ok ? 'Hoy ya cumplieron todos ✅' : miss.length ? `Hoy ${miss.length === 1 ? 'falta' : 'faltan'}: <b>${esc(miss.join(', '))}</b>` : 'Hoy todavía no anotó nadie.'}</div>
-    <div class="small muted" style="margin-top:2px">Suma un día cuando todos anotan algo. Hielito y descanso también valen.</div></div>`;
+    <div class="small muted" style="margin-top:2px">${pair ? 'Suma un día cuando anotan los dos.' : 'Suma un día cuando todos anotan algo.'} Hielito y descanso también valen.</div></div>`;
 }
 function grupoRacha(G, members){
   return `
-    ${groupStreak(G.streak)}
+    ${groupStreak(G.streak, G.group.pair)}
+    ${challengeCard(G.challenge)}
     <div class="week" id="week">${weekStrip(S.week[G.group.id])}</div>
     <div class="board">${members.map(memberRow).join('')}</div>
 
@@ -2699,20 +2730,32 @@ function offerGroupRule(g){
 }
 
 function createGroupSheet(){
-  const el = openSheet(`<h2>+ Crear un grupo</h2>
-    <p class="muted">Después te damos el link para invitar a tus amigos.</p>
+  let pair = false;
+  const el = openSheet(`<h2>+ Crear</h2>
+    <div class="grid2" style="margin-top:10px">
+      <button type="button" class="fmt on" data-gt="0"><b>👥 Grupo</b><span class="small">Con tus amigos, de a muchos.</span></button>
+      <button type="button" class="fmt" data-gt="1"><b>👯 Racha de a dos</b><span class="small">Con una sola persona, aunque no esté en tus grupos.</span></button></div>
+    <p class="muted" id="g-help">Después te damos el link para invitar a tus amigos.</p>
     <form class="stack section" id="f-create2">
       <input class="input" id="g-name2" maxlength="40" placeholder="Ej: Los del fútbol" required>
-      <details class="more"><summary>📅 Regla de deporte del grupo (opcional)</summary><div class="stack" style="margin-top:10px">${rulesFields(null, 0)}
+      <details class="more" id="g-rules"><summary>📅 Regla de deporte del grupo (opcional)</summary><div class="stack" style="margin-top:10px">${rulesFields(null, 0)}
         <label class="row small" style="gap:8px"><input type="checkbox" id="g-mine" checked> Usarla yo también</label></div></details>
-      <button class="btn" type="submit">Crear grupo</button></form>`);
+      <button class="btn" type="submit" id="g-submit">Crear grupo</button></form>`);
   bindRules(el);
+  el.querySelectorAll('[data-gt]').forEach(b => b.onclick = () => {
+    pair = b.dataset.gt === '1';
+    el.querySelectorAll('[data-gt]').forEach(x => x.classList.toggle('on', x === b));
+    $('#g-name2', el).style.display = $('#g-rules', el).style.display = pair ? 'none' : '';
+    $('#g-name2', el).required = !pair;
+    $('#g-help', el).textContent = pair ? 'Te damos un link para mandarle. Cada día que anotan los dos, la racha suma.' : 'Después te damos el link para invitar a tus amigos.';
+    $('#g-submit', el).textContent = pair ? 'Crear racha de a dos' : 'Crear grupo';
+  });
   $('#f-create2', el).onsubmit = async (e) => {
     e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
     try {
-      const g = await rpc('api_create_group', { ...P(), p_name: $('#g-name2', el).value });
+      const g = await rpc('api_create_group', { ...P(), p_name: pair ? 'Racha de a dos' : $('#g-name2', el).value, p_pair: pair });
       const r = readRules(el); if (r.days.length === 7) r.days = [];
-      if (r.days.length || r.rest){
+      if (!pair && (r.days.length || r.rest)){
         await rpc('api_set_group_rules', { ...P(), p_group: g.id, p_days: r.days, p_rest: r.rest });
         const sp = S.me.habits.find(isSport);
         if (sp && $('#g-mine', el).checked) await rpc('api_set_habit_rules', { ...P(), p_habit: sp.id, p_days: r.days, p_rest: r.rest });
@@ -2736,9 +2779,11 @@ function bindGroupForms(root=document){
 function inviteLink(code){ return `${appBase()}?g=${code}`; }
 function shareInvite(g){
   const link = inviteLink(g.code);
-  const text = `Sumate a "${g.name}" en Fueguitos 🔥 Anotamos deporte y lectura todos los días y nos cuidamos la racha.`;
+  const pair = g.pair || ((S.me.groups || []).find(x => x.id === g.id) || {}).pair;
+  const text = pair ? '¿Hacemos una racha de a dos en Fueguitos? 🔥 Cada día que anotamos los dos, suma. Si uno falla, se corta para los dos.'
+    : `Sumate a "${g.name}" en Fueguitos 🔥 Anotamos deporte y lectura todos los días y nos cuidamos la racha.`;
   const el = openSheet(`
-    <h2>Invitar a ${esc(g.name)}</h2>
+    <h2>${pair ? 'Invitá a tu racha de a dos' : `Invitar a ${esc(g.name)}`}</h2>
     <p class="muted">Mandales este link. Ponen su apodo y quedan adentro.</p>
     <div class="card section" style="text-align:center"><div class="small muted">Código del grupo</div><div style="font-size:40px;font-weight:800;letter-spacing:.18em">${esc(g.code)}</div></div>
     <div class="stack section">
@@ -2826,7 +2871,9 @@ function habitEditor(h, groupId = null, after){
       <label class="field"><span>Cómo aparece en el mensaje de WhatsApp</span><input class="input" id="h-wpp" maxlength="20" placeholder="Ej: Agua" value="${esc(h ? h.wpp_label : '')}"><div class="hint">Queda así: <b id="h-prev"></b></div></label>
       <div class="field"><span>Días que cuenta</span><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
         <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div>
-      <details class="more" id="h-more" ${h && (h.goal || h.next_day || h.deadline) ? 'open' : ''}><summary>＋ Más opciones: cantidad, de la noche, hora límite</summary><div class="stack">
+      <details class="more" id="h-more" ${h && (h.goal || h.next_day || h.deadline || h.cue) ? 'open' : ''}><summary>＋ Más opciones: cuándo, cantidad, de la noche, hora límite</summary><div class="stack">
+      <label class="field"><span>¿Cuándo lo hacés? (opcional)</span><input class="input" id="h-cue" maxlength="40" placeholder="Ej: después del café" value="${esc(h && h.cue ? h.cue : '')}">
+        <div class="hint">Atarlo a algo que ya hacés ayuda a no olvidarte. Aparece en la tarjeta y en el aviso.</div></label>
       <div class="field" id="h-goal-box"><span>¿Tiene cantidad por día? (opcional)</span>
         <div class="row" style="gap:10px"><input class="input" id="h-goal" type="number" inputmode="numeric" min="2" max="200" placeholder="8" style="max-width:90px" value="${h && h.goal ? h.goal : ''}"><input class="input" id="h-unit" maxlength="12" placeholder="vasos" value="${esc(h && h.unit ? h.unit : '')}"></div>
         <div class="hint">Ej: 8 vasos de agua, 10 páginas. Sumás de a uno con un toque, o todo de una.</div>
@@ -2908,7 +2955,7 @@ function habitEditor(h, groupId = null, after){
     try {
       const saved = await rpc('api_save_habit', { ...P(), p_group: h ? (h.group_id || null) : groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
         p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind, p_deadline: kind === 'hacer' && !$('#h-next', el).checked ? ($('#h-dl', el).value || null) : null, p_next: kind === 'hacer' && $('#h-next', el).checked,
-        p_goal: kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2 ? Math.round(+$('#h-goal', el).value) : null, p_unit: $('#h-unit', el).value.trim() || null, p_remind: $('#h-remind', el).checked });
+        p_goal: kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2 ? Math.round(+$('#h-goal', el).value) : null, p_unit: $('#h-unit', el).value.trim() || null, p_remind: $('#h-remind', el).checked, p_cue: $('#h-cue', el).value.trim() || null });
       // Un hábito nuevo queda activado para quien lo creó.
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
       if (!h && kind === 'evitar'){
@@ -3310,6 +3357,30 @@ function runMed(){
 }
 
 /* ============ PERFIL ============ */
+async function yearSheet(){
+  let y; try { y = await rpc('api_year', P()); } catch(e){ toast(e.message); return; }
+  const km = Math.round(+y.km * 10) / 10, fmtKm = String(km).replace('.', ',');
+  const boxes = [[y.total, 'fueguitos'], [y.best, 'mejor racha'], km ? [fmtKm, 'km'] : [y.ice, 'hielitos usados']];
+  const lines = [
+    y.top ? `🥇 Tu hábito más constante: <b>${esc(y.top.emoji)} ${esc(y.top.name)}</b> (${y.top.n} veces)` : '',
+    y.month ? `📆 Tu mejor mes: <b>${MONTHS[y.month.m - 1]}</b> (${y.month.n} días)` : '',
+    y.clean ? `🚫 <b>${y.clean.n} días</b> de ${esc(y.clean.name.toLowerCase())}` : '',
+    +y.minutes ? `⏱️ <b>${y.minutes >= 90 ? `${Math.round(y.minutes / 60)} horas` : `${y.minutes} minutos`}</b> de actividad anotada` : '',
+    y.first ? `🌱 Arrancaste el ${fmtDay(y.first).toLowerCase()}` : ''].filter(Boolean);
+  const el = openSheet(!y.days ? `<h2>🎉 Tu ${y.year} en Fueguitos</h2><p class="muted">Todavía no hay fueguitos este año. El primero lo prendés hoy.</p><div class="section"><button class="btn" data-close-sheet>Dale</button></div>`
+    : `<div class="small muted" style="font-weight:800;letter-spacing:.06em">TU ${y.year} EN FUEGUITOS</div>
+    <h2 style="margin-top:4px">🔥 ${y.days} ${y.days === 1 ? 'día' : 'días'} prendiste el fueguito</h2>
+    <div class="calstats">${boxes.map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('')}</div>
+    <div class="stack section small" style="gap:8px">${lines.map(l => `<div>${l}</div>`).join('')}</div>
+    <div class="stack section"><button class="btn green" id="yr-wa">Compartir por WhatsApp</button><button class="btn ghost" data-close-sheet>Listo</button></div>`);
+  el.querySelector('[data-close-sheet]').onclick = closeSheet;
+  const wa = $('#yr-wa', el); if (wa) wa.onclick = () => {
+    const t = [`Mi ${y.year} en Fueguitos 🔥`, `${y.days} días con fueguito · ${y.total} en total`, `Mejor racha: ${y.best} días`,
+      y.top ? `Más constante: ${y.top.name} ${y.top.emoji} (${y.top.n})` : '', km ? `${fmtKm} km` : '', PUBLIC_URL].filter(Boolean).join('\n');
+    location.href = 'https://wa.me/?text=' + encodeURIComponent(t);
+  };
+}
+
 function renderPerfil(){
   const me = S.me;
   const best = me.habits.reduce((a,h) => Math.max(a, h.best ?? h.streak), 0);
@@ -3323,6 +3394,8 @@ function renderPerfil(){
     <div class="section"><div class="section-title"><h2>Mi progreso</h2></div>
       <div class="card" id="prog">${progressBlock()}</div>
     </div>
+
+    <div class="section"><button class="week pair" id="year"><b>🎉 Tu ${me.today.slice(0, 4)} en Fueguitos</b><div class="small muted" style="margin-top:2px">Tus números del año, listos para compartir</div></button></div>
 
     <div class="section"><div class="section-title"><h2>Mis hábitos</h2><button class="link" id="h-new">+ Crear hábito</button></div>
       <div class="card">${habitToggleRows(me.available, true)}</div>
@@ -3382,6 +3455,7 @@ function renderPerfil(){
   `;
   bindHabitToggles(renderPerfil);
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
+  $('#year').onclick = yearSheet;
   $('#prof').onsubmit = async (e) => {
     e.preventDefault();
     try { await rpc('api_update_profile', { ...P(), p_nick: $('#p-nick').value, p_email: $('#p-mail').value, p_tz: null }); S.me = await rpc('api_me', P()); renderPerfil(); toast('Datos guardados'); }
