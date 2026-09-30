@@ -122,6 +122,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
+.hrow.bench>div:first-child{opacity:.6}
 button.week.pair{width:100%;text-align:left;display:block;margin:0;font:inherit;color:inherit}
 .week.pair .big{font-size:20px;font-weight:800}
 .cue{margin-top:2px}
@@ -1727,7 +1728,7 @@ function renderGrupo(){
     $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
     bindChips(); return;
   }
-  const members = [...G.members].sort((a,b) => sumStreak(b) - sumStreak(a));
+  const members = G.members.filter(m => !m.bench).sort((a,b) => sumStreak(b) - sumStreak(a));
   const doneCount = members.filter(m => m.habits.some(h => h.done_today)).length;
   $('#main').innerHTML = `
     <div class="top"><div class="row" style="gap:12px;align-items:center;min-width:0">${groupAvatar(G.group, 56)}<div style="min-width:0"><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1 class="gname">${esc(gName(G.group))}</h1></div></div>
@@ -1760,6 +1761,12 @@ function renderGrupo(){
   const ra = $('#rec-add'); if (ra) ra.onclick = () => recordSheet(null);
   document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
   const ha = $('#hab-add'); if (ha) ha.onclick = () => groupHabitAdd(G);
+  const bb = $('#bench-back'); if (bb) bb.onclick = () => benchBackSheet(G);
+  document.querySelectorAll('[data-back]').forEach(b => b.onclick = async () => {
+    const m = G.members.find(x => x.id === b.dataset.back); b.disabled = true;
+    try { await rpc('api_bench_approve', { ...P(), p_group: G.group.id, p_user: m.id }); await loadGroup(); renderGrupo(); toast(`¡${m.nick} volvió al grupo! 🎉`, 3500); }
+    catch(e){ toast(e.message); b.disabled = false; }
+  });
   const afterG = async () => { await loadGroup(); renderGrupo(); };
   document.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => { const h = G.habits.find(x => x.id === b.dataset.hedit); habitEditor({ ...h, group_id: G.group.id }, G.group.id, afterG); });
   document.querySelectorAll('[data-hact]').forEach(b => b.onclick = () => openActivateSheet(G.habits.find(x => x.id === b.dataset.hact), false, () => afterG()));
@@ -1788,12 +1795,40 @@ function groupStreak(g, pair){
     <div class="small" style="margin-top:4px">${g.today_ok ? 'Hoy ya cumplieron todos ✅' : miss.length ? `Hoy ${miss.length === 1 ? 'falta' : 'faltan'}: <b>${esc(miss.join(', '))}</b>` : 'Hoy todavía no anotó nadie.'}</div>
     <div class="small muted" style="margin-top:2px">${pair ? 'Suma un día cuando anotan los dos.' : 'Suma un día cuando todos anotan algo.'} Hielito y descanso también valen.</div></div>`;
 }
+/* ============ La banca: más de 7 días sin fueguito ============ */
+function benchBanner(G){
+  if (!G.group.me_bench) return '';
+  const me = G.members.find(m => m.is_me) || {};
+  return `<div class="banner ice">🪑 <span>${me.bench_request ? 'Pediste volver. Falta que alguien del grupo te deje entrar.' : 'Estás en la banca: hace más de una semana que no prendés un fueguito. Tus rachas siguen, pero no contás para la racha del grupo.'}</span></div>
+    ${me.bench_request ? '' : '<button class="btn" id="bench-back" style="width:100%;margin-bottom:12px">Quiero volver</button>'}`;
+}
+function benchBlock(G){
+  const b = G.members.filter(m => m.bench); if (!b.length) return '';
+  return `<div class="section"><div class="section-title"><h2>🪑 En la banca</h2><span class="small muted">Más de 7 días sin fueguito</span></div>
+    <div class="card">${b.map(m => `<div class="hrow bench"><div><div style="font-weight:800">${esc(m.nick)}${m.is_me ? ' (vos)' : ''}</div>
+      <div class="small muted">${m.bench_days} días sin fueguito${m.bench_request ? ' · 🙋 pide volver' : ''}</div></div>
+      ${!m.is_me && !G.group.me_bench && m.bench_request ? `<button class="btn sm" data-back="${m.id}">Dejalo volver</button>` : ''}</div>`).join('')}</div></div>`;
+}
+function benchBackSheet(G){
+  const el = openSheet(`<div style="text-align:center"><div style="font-size:56px;line-height:1">🤨</div>
+      <h2 style="margin-top:8px">¿Realmente querés volver a mejorar tu vida?</h2>
+      <p class="muted">Si decís que sí, le avisamos al grupo y alguien te tiene que abrir la puerta.</p></div>
+    <div class="stack section"><button class="btn" id="bb-yes">Sí, estoy listo 💪</button><button class="btn ghost" id="bb-no">No, sigo en el sillón 🛋️</button></div>`);
+  $('#bb-no', el).onclick = () => { closeSheet(); toast('Dale, disfrutá el sillón 🛋️ Acá te esperamos.', 3500); };
+  $('#bb-yes', el).onclick = async (e) => {
+    e.target.disabled = true;
+    try { await rpc('api_bench_request', { ...P(), p_group: G.group.id }); closeSheet(); await loadGroup(); renderGrupo(); toast('Listo, le avisamos al grupo. Ahora a esperar que te abran la puerta 🚪', 4000); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
 function grupoRacha(G, members){
   return `
+    ${benchBanner(G)}
     ${groupStreak(G.streak, G.group.pair)}
     ${challengeCard(G.challenge)}
     <div class="week" id="week">${weekStrip(S.week[G.group.id])}</div>
     <div class="board">${members.map(memberRow).join('')}</div>
+    ${benchBlock(G)}
 
     <div class="section">
       <div class="section-title"><h2>Fotos de hoy</h2><span class="small muted">Duran 24 h</span></div>
