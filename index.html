@@ -3260,7 +3260,8 @@ function progressBlock(){
     <div class="tiles">
       <div class="tile"><div class="tl">Récord</div><div class="tv">${nf(best)} ${o.unit}</div></div>
       ${o.unit !== 'kg' ? `<div class="tile"><div class="tl">Últimos 30 días</div><div class="tv">${nf(tot30)} ${o.unit}</div></div>` : ''}
-      ${delta !== null ? `<div class="tile"><div class="tl">Desde el primero</div><div class="tv">${delta > 0 ? '+' : ''}${nf(delta)} ${o.unit}</div></div>` : ''}
+      ${o.unit === 'kg' && delta !== null ? `<div class="tile"><div class="tl">Desde el primero</div><div class="tv">${delta > 0 ? '+' : ''}${nf(delta)} ${o.unit}</div></div>`
+        : `<div class="tile"><div class="tl">${o.unit === 'km' ? 'Salidas' : 'Sesiones'}</div><div class="tv">${o.pts.length}</div></div>`}
     </div>
     <h3 style="margin:14px 0 6px;font-size:15px">${esc(o.title)}</h3>
     ${o.pts.length > 1 ? lineChart(o.pts, o.unit) : `<p class="muted small" style="margin:0">Con una marca más ya ves la línea de progreso.</p>`}
