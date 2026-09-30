@@ -98,6 +98,31 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.failed{border-color:var(--fire)}
 .habit.late{opacity:.6}
 .nightq{display:flex;gap:8px;margin-top:8px}
+.habits .flamebox{cursor:pointer}
+.ring{position:relative;width:58px;height:58px;flex:none;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;width:100%;height:100%}
+.ring circle{fill:none;stroke-width:5;stroke-linecap:round}
+.ring .bg{stroke:var(--line)}
+.ring .fg{stroke:var(--fire);transition:stroke-dasharray .4s}
+.ring.full .fg{stroke:var(--ok)}
+.ring b{font-size:14px;font-weight:800}
+.ring.full b{color:var(--ok);font-size:20px}
+.calstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.calstats div{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 6px;text-align:center}
+.calstats b{display:block;font-size:22px;font-weight:800}
+.calstats span{font-size:12px;font-weight:700;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;margin-top:10px}
+.cal em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
+.cal span{aspect-ratio:1;display:grid;place-items:center;border-radius:12px;font-weight:700;font-size:14px;border:2px solid transparent}
+.cal span.fut{color:var(--muted);opacity:.5}
+.cal span.hecho,.calkey.hecho{background:var(--fire);color:#fff}
+.cal span.hielo,.calkey.hielo{background:var(--heat-ice)}
+.cal span.descanso,.calkey.descanso{background:var(--line)}
+.cal span.miss,.calkey.miss{border:2px dashed var(--line);color:var(--muted)}
+.cal span.today{box-shadow:0 0 0 2px var(--ink)}
+.calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
+.gst{margin-bottom:12px}
+.gst .big{font-size:24px;font-weight:800;line-height:1.1}
 .habit.done .progress>i{background:var(--ok)}
 .nightq .btn{flex:1;min-height:40px}
 button.undo{background:none;border:0;padding:0;display:block;margin-top:8px;font-family:inherit;cursor:pointer}
@@ -1124,6 +1149,60 @@ function renderMain(){
 }
 
 /* ============ HOY ============ */
+// Anillo del día: cuánto de lo de hoy ya cerraste (los de cantidad suman de a poco).
+function dayRing(hs){
+  const req = hs.filter(h => h.required_today); if (!req.length) return '';
+  const done = req.filter(h => h.done_today).length;
+  const part = req.reduce((a, h) => a + (h.done_today ? 1 : h.goal ? Math.min(h.count_today || 0, h.goal) / h.goal : 0), 0) / req.length;
+  const C = 2 * Math.PI * 20, full = done === req.length;
+  return `<div class="ring ${full ? 'full' : ''}" role="img" aria-label="Hoy: ${done} de ${req.length} hábitos">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><circle class="bg" cx="24" cy="24" r="20"/><circle class="fg" cx="24" cy="24" r="20" stroke-dasharray="${(C * part).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 24 24)"/></svg>
+    <b>${full ? '✓' : `${done}/${req.length}`}</b></div>`;
+}
+
+// Calendario del mes de un hábito, con racha, récord y % cumplido del último mes.
+function calendarSheet(h){
+  const today = S.me.today, by = {};
+  const hist = (S.history || []).filter(x => x.habit_id === h.id);
+  hist.forEach(x => { if (by[x.day] !== 'hecho') by[x.day] = x.kind; });
+  if (h.done_today) by[today] = 'hecho'; else if (by[today] === 'hecho') delete by[today];
+  const first = hist.reduce((a, x) => x.day < a ? x.day : a, today);
+  let req = 0, ok = 0;
+  for (let i = 0; i < 30; i++){
+    const d = addDays(today, -i); if (d < first) break;
+    const k = by[d];
+    if (k === 'hecho'){ ok++; req++; }
+    else if (k === 'descanso') continue;
+    else if (i > 0 && (k || h.days.includes(parseDay(d).getDay()))) req++;
+  }
+  const pct = req ? Math.round(ok / req * 100) : null;
+  let cur = parseDay(today); cur.setDate(1);
+  const minMonth = parseDay(addDays(today, -125)); minMonth.setDate(1);
+  const el = openSheet(`<h2>${esc(h.emoji)} ${esc(h.name)}</h2>
+    <div class="calstats"><div><b>${h.streak}</b><span>🔥 racha</span></div><div><b>${h.best || h.streak}</b><span>🏆 récord</span></div><div><b>${pct === null ? '–' : pct + '%'}</b><span>✅ último mes</span></div></div>
+    <div class="row between section" style="align-items:center"><button class="link" id="cal-prev" aria-label="Mes anterior">‹ Anterior</button><b id="cal-title"></b><button class="link" id="cal-next" aria-label="Mes siguiente">Siguiente ›</button></div>
+    <div class="cal" id="cal"></div>
+    <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey miss"></span> No se hizo</p>
+    <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
+  const paint = () => {
+    const y = cur.getFullYear(), m = cur.getMonth(), n = new Date(y, m + 1, 0).getDate();
+    $('#cal-title', el).textContent = `${MONTHS[m][0].toUpperCase()}${MONTHS[m].slice(1)} ${y}`;
+    let html = DAYS.map(d => `<em>${d}</em>`).join('') + '<span class="no"></span>'.repeat(cur.getDay());
+    for (let d = 1; d <= n; d++){
+      const day = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, k = by[day];
+      const miss = !k && day < today && day >= first && h.days.includes(new Date(y, m, d).getDay());
+      html += `<span class="${k === 'hecho' ? 'hecho' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''}">${d}</span>`;
+    }
+    $('#cal', el).innerHTML = html;
+    $('#cal-prev', el).style.visibility = cur > minMonth ? '' : 'hidden';
+    $('#cal-next', el).style.visibility = (y * 12 + m) < (parseDay(today).getFullYear() * 12 + parseDay(today).getMonth()) ? '' : 'hidden';
+  };
+  $('#cal-prev', el).onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() - 1, 1); paint(); };
+  $('#cal-next', el).onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); paint(); };
+  el.querySelector('[data-close-sheet]').onclick = closeSheet;
+  paint();
+}
+
 function renderHoy(){
   const me = S.me, hs = me.habits;
   const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
@@ -1136,13 +1215,14 @@ function renderHoy(){
   $('#main').innerHTML = `
     <div class="top">
       <div><div class="date">${fmtDay(me.today)}</div><h1>Hola, ${esc(me.user.nick)}</h1></div>
+      ${dayRing(hs)}
     </div>
     <div class="quote"><span class="qmark" aria-hidden="true">“</span><p>${esc(fraseDelDia(me.today))}</p></div>
     ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
-      `<p class="muted" style="margin:0 0 14px">Tocá lo que hiciste hoy y anotalo. Si anotás después de las 12, hasta las 5 AM cuenta para hoy.</p>`}
+      `<p class="muted" style="margin:0 0 14px">Tocá lo que hiciste hoy y anotalo. Si anotás después de las 12, hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>`}
     <div class="habits">${hs.map(habitCard).join('')}</div>
     <div class="section grid2">
       <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
@@ -1167,6 +1247,9 @@ function renderHoy(){
     renderHoy(); renderBar();
   });
   const byId = (id) => hs.find(x => x.id === id);
+  document.querySelectorAll('.habits .flamebox').forEach(f => f.onclick = (e) => {
+    e.stopPropagation(); const c = f.closest('[data-habit],[data-hid]'); if (c) calendarSheet(byId(c.dataset.habit || c.dataset.hid));
+  });
   document.querySelectorAll('[data-count]').forEach(b => b.onclick = () => countTap(byId(b.dataset.count), +b.dataset.d));
   document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightYes)));
   document.querySelectorAll('[data-night-no]').forEach(b => b.onclick = () => {
@@ -1261,7 +1344,7 @@ const saidNo = (h) => LS.get('fueguitos_no_' + h.id) === S.me.today;
 function nightCard(h){
   const no = !h.done_today && saidNo(h);
   const status = h.done_today ? '<span class="pill ok">Anoche cumpliste</span>' : no ? '<span class="pill">Anoche no se pudo</span>' : '<span class="pill fire">¿Anoche cumpliste?</span>';
-  return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}">
+  return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}" data-hid="${h.id}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
@@ -1278,7 +1361,7 @@ function nightCard(h){
 function countCard(h){
   const done = h.done_today, n = done ? h.goal : Math.min(h.count_today || 0, h.goal), u = h.unit ? ' ' + esc(h.unit) : '';
   const less = `<button type="button" class="undo" data-count="${h.id}" data-d="-1">Restar uno</button>`;
-  return `<div class="habit count ${done ? 'done' : ''}">
+  return `<div class="habit count ${done ? 'done' : ''}" data-hid="${h.id}">
     <div class="flamebox ${done ? '' : 'off'}">${flameSVG(done)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
@@ -1666,8 +1749,18 @@ function renderGrupo(){
     await rpc('api_leave_group', { ...P(), p_group: G.group.id }); S.me = await rpc('api_me', P()); S.group = null; S.groupId = null; LS.del('racha_group'); refreshGroup(); toast('Saliste del grupo');
   });
 }
+// Racha del grupo: suma un día cuando cumplen todos (hielito y descanso también valen).
+function groupStreak(g){
+  if (!g) return '';
+  const n = g.streak, miss = g.missing || [];
+  return `<div class="week gst">
+    <div class="row between" style="align-items:flex-end"><div><div class="small muted" style="font-weight:700">Racha del grupo</div><div class="big">🔥 ${n} ${n === 1 ? 'día' : 'días'}</div></div>${g.best > n ? `<span class="small muted" style="font-weight:700">🏆 récord ${g.best}</span>` : ''}</div>
+    <div class="small" style="margin-top:4px">${g.today_ok ? 'Hoy ya cumplieron todos ✅' : miss.length ? `Hoy ${miss.length === 1 ? 'falta' : 'faltan'}: <b>${esc(miss.join(', '))}</b>` : 'Hoy todavía no anotó nadie.'}</div>
+    <div class="small muted" style="margin-top:2px">Suma un día cuando todos anotan algo. Hielito y descanso también valen.</div></div>`;
+}
 function grupoRacha(G, members){
   return `
+    ${groupStreak(G.streak)}
     <div class="week" id="week">${weekStrip(S.week[G.group.id])}</div>
     <div class="board">${members.map(memberRow).join('')}</div>
 
