@@ -96,6 +96,10 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.sel{border-color:var(--fire);background:var(--fire-soft)}
 .habit.done{border-color:var(--ok-line)}
 .habit.failed{border-color:var(--fire)}
+.habit.late{opacity:.6}
+.nightq{display:flex;gap:8px;margin-top:8px}
+.nightq .btn{flex:1;min-height:40px}
+button.undo{background:none;border:0;padding:0;display:block;font-family:inherit;cursor:pointer}
 .goal{font-size:13px;font-weight:700;color:var(--muted);margin-top:6px}
 .goal.near{color:var(--fire-ink)}
 .check.x{background:var(--fire);border-color:var(--fire)}
@@ -850,9 +854,12 @@ async function quickToggle(h){
     if (!h.done_today){
       const r = await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: null });
       S.me.habits = r.habits; renderMain();
+      if ((r.results || [])[0] && r.results[0].early){ toast(`Todavía es temprano: se anota desde las ${opensAt(h)}.`, 3500); return; }
+      if ((r.results || [])[0] && r.results[0].late){ toast(`Se pasó la hora (${h.deadline}). Hoy no cuenta, mañana hay revancha 💪`, 4000); return; }
       const x = (r.results || [])[0] || {}, hh = S.me.habits.find(y => y.id === h.id) || h;
       vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120);
-      show(`<div class="bigtick">✓</div><h2>${esc(h.name)} anotado</h2><p class="lbl">Día ${hh.streak} 🔥${x.earned_ice ? ' · ¡ganaste un hielito! 🧊' : ''}</p>
+      const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      show(`<div class="bigtick">✓</div><h2>${h.next_day ? `¡Anoche cumpliste! ${esc(h.emoji)}` : `${esc(h.name)} anotado${h.deadline ? ` a las ${hora}` : ''}`}</h2><p class="lbl">Día ${hh.streak} 🔥${x.earned_ice ? ' · ¡ganaste un hielito! 🧊' : ''}</p>
         <div class="btns"><button class="btn" id="t-ok">Listo</button><button class="btn ghost" id="t-undo">Me equivoqué, desanotar</button></div>`);
     } else {
       show(`<div class="bigtick">✓</div><h2>${esc(h.name)} ya está anotado hoy</h2><p class="lbl">Día ${h.streak} 🔥</p>
@@ -1120,7 +1127,7 @@ function renderHoy(){
   const me = S.me, hs = me.habits;
   const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
   const allDone = req.length > 0 && req.every(h => h.done_today);
-  const pend = req.filter(h => !h.done_today), corte = hastaCorte();
+  const pend = req.filter(h => !h.done_today && !(h.deadline && isLate(h)) && !(h.next_day && saidNo(h))), corte = hastaCorte();
   const ices = (S.history || []).filter(x => x.kind === 'hielo' && x.day >= addDays(me.today, -3));
   const rests = (S.history || []).filter(x => x.kind === 'descanso' && x.day >= addDays(me.today, -3));
   const restMsg = rests.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
@@ -1150,9 +1157,21 @@ function renderHoy(){
     if (e.target.closest('[data-appblock]')){ appBlockSheet(h); return; }
     if (h.kind === 'evitar'){ quitSheet(h); return; }
     if (h.done_today){ toast(`${h.name} ya está anotado hoy ✅`); return; }
+    if (h.deadline){
+      if (isLate(h)){ toast(`Hoy ya se pasó la hora (${h.deadline}). Mañana hay revancha 💪`, 3500); return; }
+      if (isEarly(h)){ toast(`Todavía es temprano: se anota desde las ${opensAt(h)} hasta las ${h.deadline}.`, 3500); return; }
+      quickToggle(h); return; // con hora límite se anota con un toque
+    }
     S.sel.has(h.id) ? S.sel.delete(h.id) : S.sel.add(h.id);
     renderHoy(); renderBar();
   });
+  const byId = (id) => hs.find(x => x.id === id);
+  document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightYes)));
+  document.querySelectorAll('[data-night-no]').forEach(b => b.onclick = () => {
+    const h = byId(b.dataset.nightNo); LS.set('fueguitos_no_' + h.id, S.me.today); renderHoy();
+    toast(h.ice > 0 ? 'Anotado. Esta noche se usa un hielito y la racha sigue 🧊' : 'Gracias por la honestidad. Esta noche hay revancha 🌙', 3800);
+  });
+  document.querySelectorAll('[data-night-reset]').forEach(b => b.onclick = () => { LS.del('fueguitos_no_' + b.dataset.nightReset); renderHoy(); });
   document.querySelectorAll('[data-undo]').forEach(b => b.onclick = async (e) => {
     e.stopPropagation();
     try { const hj = await rpc('api_undo_checkin', { ...P(), p_habit: b.dataset.undo }); S.me.habits = hj; renderHoy(); toast('Anotación deshecha'); }
@@ -1235,16 +1254,36 @@ function hoyNudge(){
   return '';
 }
 
-function habitCard(h){
-  if (h.kind === 'evitar') return quitCard(h);
-  const sel = S.sel.has(h.id);
-  const status = h.done_today ? `<span class="pill ok">Anotado hoy</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
-  return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
+// Hábitos de la noche (dormirme temprano): no se anotan de noche, se confirman al día siguiente.
+const saidNo = (h) => LS.get('fueguitos_no_' + h.id) === S.me.today;
+function nightCard(h){
+  const no = !h.done_today && saidNo(h);
+  const status = h.done_today ? '<span class="pill ok">Anoche cumpliste</span>' : no ? '<span class="pill">Anoche no se pudo</span>' : '<span class="pill fire">¿Anoche cumpliste?</span>';
+  return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
       <div class="meta">${status}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
-      ${goalLine(h)}
+      ${h.done_today ? `${goalLine(h)}<button type="button" class="undo" data-undo="${h.id}">Deshacer</button>`
+        : no ? `<div class="goal">Esta noche hay revancha 🌙</div><button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>`
+        : `<div class="nightq"><button type="button" class="btn sm green" data-night-yes="${h.id}">Sí ✓</button><button type="button" class="btn sm ghost" data-night-no="${h.id}">No</button></div>`}
+    </div>
+    <div class="check" aria-hidden="true">${h.done_today ? '✓' : ''}</div>
+  </div>`;
+}
+
+function habitCard(h){
+  if (h.kind === 'evitar') return quitCard(h);
+  if (h.next_day) return nightCard(h);
+  const sel = S.sel.has(h.id);
+  const lateNow = h.deadline && !h.done_today && isLate(h);
+  const status = h.done_today ? `<span class="pill ok">Anotado hoy</span>` : lateNow ? `<span class="pill">Se pasó la hora</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
+  return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''} ${lateNow ? 'late' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
+    <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
+    <div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="meta">${status}${h.deadline ? `<span class="pill">⏰ antes de las ${h.deadline}</span>` : ''}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
+      ${h.deadline && !h.done_today && !lateNow ? (isEarly(h) ? `<div class="goal">Se anota desde las ${opensAt(h)}</div>` : '<div class="goal near">Un toque y queda anotado</div>') : goalLine(h)}
       ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
     </div>
     <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
@@ -1259,6 +1298,22 @@ function goalLine(h){
   const next = HITO_LIST.find(x => x > st);
   return next ? `<div class="goal">🎯 Próximo: ${next} días${best > st ? ` · 🏆 récord ${best}` : ''}</div>` : '';
 }
+
+// ¿Ya pasó la hora límite? Misma cuenta que el servidor: minutos desde las 5 AM.
+const dayMin = (hh, mm) => ((hh * 60 + mm - 300 + 1440) % 1440);
+function isLate(h){
+  if (!h.deadline) return false;
+  const [hh, mm] = h.deadline.split(':').map(Number), now = new Date();
+  return dayMin(now.getHours(), now.getMinutes()) >= dayMin(hh, mm);
+}
+
+// Se puede anotar desde 4 horas antes de la hora límite (dormir antes de las 12 → desde las 20).
+function isEarly(h){
+  if (!h.deadline) return false;
+  const [hh, mm] = h.deadline.split(':').map(Number), now = new Date();
+  return dayMin(now.getHours(), now.getMinutes()) < dayMin(hh, mm) - 240;
+}
+const opensAt = (h) => { const [hh, mm] = h.deadline.split(':').map(Number); const st = dayMin(hh, mm) - 240 <= 0 ? 300 : ((hh * 60 + mm - 240) + 1440) % 1440; return `${String(Math.floor(st / 60)).padStart(2, '0')}:${String(st % 60).padStart(2, '0')}`; };
 
 function quitCard(h){
   const ok = !h.failed_today;
@@ -2614,7 +2669,7 @@ function habitEditor(h, groupId = null, after){
   let days = h ? [...h.days] : [0,1,2,3,4,5,6];
   let autoIce = !h;
   let kind = h ? (h.kind || 'hacer') : 'hacer';
-  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🚭','🍺','🍬','📱','🙏','🚶','🏋️','🦉','🗣️','🎹','🧹','💊','🦷','🌅','🍎'];
+  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','🌙','✍️','🎸','🧠','📵','🚭','🍺','🍬','📱','🙏','🚶','🏋️','🦉','🗣️','🎹','🧹','💊','🦷','🌅','🍎'];
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
       ${h ? `<p class="small muted" style="margin:0">${kind === 'evitar' ? '🚫 Hábito para dejar algo: se tilda solo cada día.' : '✅ Hábito para hacer algo.'}</p>` : `<div class="field"><span>¿Qué tipo de hábito?</span><div class="grid2">
@@ -2626,6 +2681,11 @@ function habitEditor(h, groupId = null, after){
       <label class="field"><span>Cómo aparece en el mensaje de WhatsApp</span><input class="input" id="h-wpp" maxlength="20" placeholder="Ej: Agua" value="${esc(h ? h.wpp_label : '')}"><div class="hint">Queda así: <b id="h-prev"></b></div></label>
       <div class="field"><span>Días que cuenta</span><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
         <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div>
+      <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo confirmo a la mañana siguiente</label>
+        <div class="hint">Para no agarrar el celu antes de dormir. Al otro día la app te pregunta "¿Anoche cumpliste?" y contestás con un toque.</div></div>
+      <div class="field" id="h-dl-box"><span>¿Tiene hora límite? (opcional)</span>
+        <div class="row" style="gap:10px"><input class="input" id="h-dl" type="time" style="max-width:150px" value="${esc(h && h.deadline ? h.deadline : '')}"><button type="button" class="link small" id="h-dl-x">Sin hora</button></div>
+        <div class="hint">Ej: "Levantarme antes de las 7" → 07:00. Se anota con un toque, en las 4 horas previas a esa hora, y te avisamos 30 min antes.</div></div>
       <div class="grid2" id="h-ices">
         <div class="field"><span>Hielo cada</span>${stepper('h-ice', h ? h.ice_every : 14, 1, 90)}<div class="hint">días anotados</div></div>
         <div class="field"><span>Máximo de hielos</span>${stepper('h-max', h ? h.max_ice : 2, 0, 5)}</div>
@@ -2638,7 +2698,8 @@ function habitEditor(h, groupId = null, after){
   bindSteppers(el);
   const paintKind = () => {
     el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind));
-    $('#h-ices', el).style.display = $('#h-rule', el).style.display = kind === 'evitar' ? 'none' : '';
+    $('#h-ices', el).style.display = $('#h-rule', el).style.display = $('#h-next-box', el).style.display = kind === 'evitar' ? 'none' : '';
+    $('#h-dl-box', el).style.display = kind === 'evitar' || $('#h-next', el).checked ? 'none' : '';
     $('#h-noice', el).style.display = kind === 'evitar' ? '' : 'none';
     $('#h-name', el).placeholder = kind === 'evitar' ? 'Ej: Sin Instagram, dejar de fumar' : 'Ej: Tomar agua';
     if (kind === 'evitar' && !h && !$('#h-emoji', el).dataset.touched) $('#h-emoji', el).value = '🚫';
@@ -2655,13 +2716,24 @@ function habitEditor(h, groupId = null, after){
   el.querySelectorAll('[data-em]').forEach(b => b.onclick = () => { $('#h-emoji', el).value = b.dataset.em; $('#h-emoji', el).dataset.touched = '1'; paint(); });
   ['#h-name','#h-wpp','#h-emoji'].forEach(s => $(s, el).oninput = paint);
   el.querySelector('[data-stepper="h-ice"]').addEventListener('click', () => { autoIce = false; setTimeout(paint); });
+  $('#h-dl-x', el).onclick = () => { $('#h-dl', el).value = ''; };
+  $('#h-next', el).onchange = (e) => { e.target.dataset.touched = '1'; paintKind(); };
+  // Sugerencias según el nombre: dormir → se confirma a la mañana; levantarse → 07:00.
+  $('#h-name', el).addEventListener('input', (e) => {
+    if (h || $('#h-dl', el).value || kind !== 'hacer') return;
+    const v = e.target.value;
+    const em = $('#h-emoji', el), nx = $('#h-next', el);
+    if (/dorm|acost|cama/i.test(v)){ if (!nx.dataset.touched && !nx.checked){ nx.checked = true; paintKind(); } if (!em.dataset.touched) em.value = '🌙'; }
+    else if (nx.checked) return;
+    else if (/levant|despert|madrug/i.test(v)){ $('#h-dl', el).value = '07:00'; if (!em.dataset.touched) em.value = '🌅'; }
+  });
   paint(); paintKind();
   $('#h-save', el).onclick = async (e) => {
     const name = $('#h-name', el).value.trim(); if (!name){ toast('Ponele un nombre'); return; }
     e.target.disabled = true;
     try {
       const saved = await rpc('api_save_habit', { ...P(), p_group: h ? (h.group_id || null) : groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
-        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind });
+        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind, p_deadline: kind === 'hacer' && !$('#h-next', el).checked ? ($('#h-dl', el).value || null) : null, p_next: kind === 'hacer' && $('#h-next', el).checked });
       // Un hábito nuevo queda activado para quien lo creó.
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
       if (!h && kind === 'evitar'){
