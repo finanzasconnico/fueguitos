@@ -95,6 +95,8 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit{display:grid;grid-template-columns:74px 1fr auto;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:12px 14px 12px 10px;text-align:left;width:100%;position:relative;transition:border-color .12s,background .12s}
 .habit.sel{border-color:var(--fire);background:var(--fire-soft)}
 .habit.done{border-color:var(--ok-line)}
+.habit.failed{border-color:var(--fire)}
+.check.x{background:var(--fire);border-color:var(--fire)}
 .flamebox{position:relative;width:74px;height:78px;display:grid;place-items:center}
 .flamebox svg{width:58px;height:72px}
 .flamebox .n{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-weight:800;font-size:22px;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.18)}
@@ -1114,7 +1116,7 @@ function renderMain(){
 /* ============ HOY ============ */
 function renderHoy(){
   const me = S.me, hs = me.habits;
-  const req = hs.filter(h => h.required_today);
+  const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
   const allDone = req.length > 0 && req.every(h => h.done_today);
   const pend = req.filter(h => !h.done_today), corte = hastaCorte();
   const ices = (S.history || []).filter(x => x.kind === 'hielo' && x.day >= addDays(me.today, -3));
@@ -1143,6 +1145,7 @@ function renderHoy(){
   document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
     if (e.target.closest('[data-undo]')) return;
     const h = hs.find(x => x.id === b.dataset.habit);
+    if (h.kind === 'evitar'){ quitSheet(h); return; }
     if (h.done_today){ toast(`${h.name} ya está anotado hoy ✅`); return; }
     S.sel.has(h.id) ? S.sel.delete(h.id) : S.sel.add(h.id);
     renderHoy(); renderBar();
@@ -1230,6 +1233,7 @@ function hoyNudge(){
 }
 
 function habitCard(h){
+  if (h.kind === 'evitar') return quitCard(h);
   const sel = S.sel.has(h.id);
   const status = h.done_today ? `<span class="pill ok">Anotado hoy</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
   return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
@@ -1242,6 +1246,43 @@ function habitCard(h){
     <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
   </button>`;
 }
+function quitCard(h){
+  const ok = !h.failed_today;
+  return `<button class="habit quit ${ok ? 'done' : 'failed'}" data-habit="${h.id}" aria-label="${esc(h.name)}: ${ok ? 'vas bien hoy' : 'hoy caíste'}. Tocá para cambiarlo">
+    <div class="flamebox ${ok ? '' : 'off'}">${flameSVG(ok)}<div class="n">${h.streak}</div></div>
+    <div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="meta">${ok ? '<span class="pill ok">Vas bien hoy</span>' : '<span class="pill fire">Hoy caíste</span>'}<span class="pill">🏆 Récord ${h.best || 0}</span><span class="pill">📅 ${h.total_clean || 0} en total</span></div>
+      <span class="small muted">${ok ? 'Se suma solo. Si caés, tocalo.' : 'Mañana arrancás de nuevo. Lo logrado no se borra.'}</span>
+    </div>
+    <div class="check ${ok ? '' : 'x'}" aria-hidden="true">${ok ? '✓' : '✕'}</div>
+  </button>`;
+}
+// Tocar un hábito de "dejar algo": marcar que caíste o deshacerlo.
+function quitSheet(h){
+  const ok = !h.failed_today;
+  const el = openSheet(ok ? `<div style="text-align:center"><div style="font-size:52px;line-height:1">${esc(h.emoji)}</div>
+      <h2 style="margin-top:8px">${esc(h.name)}</h2><p class="muted">Llevás <b>${h.streak} ${h.streak === 1 ? 'día' : 'días'}</b> contando hoy. ¿Caíste hoy?</p></div>
+      <div class="stack section"><button class="btn green" id="q-no">No, sigo firme 💪</button><button class="btn ghost" id="q-yes">Sí, hoy caí</button>
+      <p class="hint" style="text-align:center;margin:0">Si caés, la racha vuelve a cero, pero tu récord (${h.best || 0}) y tus ${h.total_clean || 0} días en total quedan.</p></div>`
+    : `<h2>${esc(h.emoji)} ${esc(h.name)}</h2><p class="muted">Marcaste que hoy caíste.</p>
+      <div class="stack section"><button class="btn" id="q-undo">Me equivoqué, no caí</button><button class="btn ghost" id="q-close">Dejarlo así</button></div>`);
+  const send = async (failed) => {
+    closeSheet();
+    const r = await rpcQ('api_habit_fail', { ...P(), p_habit: h.id, p_failed: failed }, failed ? `caída en ${h.name}` : `deshacer caída en ${h.name}`, true).catch(e => { toast(e.message); return null; });
+    if (!r) return;
+    if (r.queued){ S.me.habits = S.me.habits.map(x => x.id !== h.id ? x : { ...x, failed_today: failed, done_today: !failed, streak: failed ? 0 : x.streak + 1, total_clean: Math.max(0, (x.total_clean || 0) + (failed ? -1 : 1)) }); }
+    else S.me.habits = r;
+    renderMain();
+    const hh = S.me.habits.find(x => x.id === h.id) || h;
+    toast(failed ? `Gracias por ser honesto. ${(hh.total_clean || 0) > 0 ? `Una caída no borra tus ${hh.total_clean} ${hh.total_clean === 1 ? 'día' : 'días'} sin. ` : ''}Mañana arrancás de nuevo, vos podés 💪` : '¡Bien ahí! Sigue la racha 🔥', failed ? 5000 : 2400);
+  };
+  const no = $('#q-no', el); if (no) no.onclick = () => { closeSheet(); vibrate(20); toast(`¡Eso! ${h.streak} ${h.streak === 1 ? 'día' : 'días'} ${esc(h.name).toLowerCase().startsWith('sin') ? '' : 'firme'} 🔥`); };
+  const yes = $('#q-yes', el); if (yes) yes.onclick = () => send(true);
+  const un = $('#q-undo', el); if (un) un.onclick = () => send(false);
+  const c = $('#q-close', el); if (c) c.onclick = closeSheet;
+}
+
 function wppText(hs = S.me.habits){
   return hs.map(h => `${h.wpp_label} día ${h.streak}${h.emoji}🔥\nHielo disponible ${h.ice}🧊\n${h.left_for_ice}⌛`).join('\n\n');
 }
@@ -2378,7 +2419,7 @@ function rulesFields(days, rest){
   const on = new Set(days && days.length ? days : [0, 1, 2, 3, 4, 5, 6]);
   return `<div class="field"><span>Días que tocan</span><div class="days rules-days">${WEEK.map(d => `<button type="button" class="day ${on.has(d) ? 'on' : ''}" data-rd="${d}" aria-label="${DAY_NAMES[d]}">${DAYS[d]}</button>`).join('')}</div>
       <div class="hint">Si entrenás un día que no te toca, suma igual. Si faltás ese día, no pasa nada.</div></div>
-    <div class="field"><span>Descansos por semana</span><div class="chips" style="margin:0">${[0, 1, 2].map(n => `<button type="button" class="chip ${(rest || 0) === n ? 'on' : ''}" data-rr="${n}">${n === 0 ? 'Ninguno' : n === 1 ? '1 día' : '2 días'}</button>`).join('')}</div>
+    <div class="field rest-field"><span>Descansos por semana</span><div class="chips" style="margin:0">${[0, 1, 2].map(n => `<button type="button" class="chip ${(rest || 0) === n ? 'on' : ''}" data-rr="${n}">${n === 0 ? 'Ninguno' : n === 1 ? '1 día' : '2 días'}</button>`).join('')}</div>
       <div class="hint">Si faltás un día que te toca, el primero de la semana cuenta como descanso y la racha sigue (sin gastar hielito).</div></div>`;
 }
 function bindRules(el){
@@ -2398,6 +2439,7 @@ function rulesSheet(h, after){
   const el = openSheet(`<h2>${esc(h.emoji)} Mis días de ${esc(h.name)}</h2>
     <p class="muted">Elegí qué días te tocan. Vale de hoy en adelante: lo que ya pasó no cambia.</p>
     <div class="stack section">${rulesFields(h.days, h.rest_per_week)}
+      ${h.kind === 'evitar' ? '<style>#layer .rest-field{display:none}</style><p class="hint" style="margin:0">En los hábitos para dejar algo no hay descansos.</p>' : ''}
       ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
       <button class="btn" id="ru-save">Guardar</button></div>`);
   bindRules(el);
@@ -2524,24 +2566,37 @@ function groupHabitAdd(G){
 function habitEditor(h, groupId = null, after){
   let days = h ? [...h.days] : [0,1,2,3,4,5,6];
   let autoIce = !h;
-  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🙏','🚶','🏋️','🦉','🗣️','🎹','🧹','💊','🦷','🌅','🍎'];
+  let kind = h ? (h.kind || 'hacer') : 'hacer';
+  const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','✍️','🎸','🧠','📵','🚭','🍺','🍬','📱','🙏','🚶','🏋️','🦉','🗣️','🎹','🧹','💊','🦷','🌅','🍎'];
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
-      <label class="field"><span>Nombre</span><input class="input" id="h-name" maxlength="30" placeholder="Ej: Tomar agua" value="${esc(h ? h.name : '')}"></label>
+      ${h ? `<p class="small muted" style="margin:0">${kind === 'evitar' ? '🚫 Hábito para dejar algo: se tilda solo cada día.' : '✅ Hábito para hacer algo.'}</p>` : `<div class="field"><span>¿Qué tipo de hábito?</span><div class="grid2">
+        <button type="button" class="fmt" data-hk="hacer"><b>✅ Hacer algo</b><span class="small">Lo anotás cuando lo hacés. Ej: leer, tomar agua.</span></button>
+        <button type="button" class="fmt" data-hk="evitar"><b>🚫 Dejar algo</b><span class="small">Se tilda solo. Lo destildás si caíste. Ej: Instagram, fumar.</span></button></div></div>`}
+      <label class="field"><span>Nombre</span><input class="input" id="h-name" maxlength="30" placeholder="${kind === 'evitar' ? 'Ej: Sin Instagram' : 'Ej: Tomar agua'}" value="${esc(h ? h.name : '')}"></label>
       <div class="field"><span>Emoji</span><input class="input" id="h-emoji" maxlength="4" style="width:80px;text-align:center;font-size:24px" value="${esc(h ? h.emoji : '🔥')}">
         <div class="emojis">${EM.map(e => `<button type="button" data-em="${e}">${e}</button>`).join('')}</div></div>
       <label class="field"><span>Cómo aparece en el mensaje de WhatsApp</span><input class="input" id="h-wpp" maxlength="20" placeholder="Ej: Agua" value="${esc(h ? h.wpp_label : '')}"><div class="hint">Queda así: <b id="h-prev"></b></div></label>
       <div class="field"><span>Días que cuenta</span><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
         <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div>
-      <div class="grid2">
+      <div class="grid2" id="h-ices">
         <div class="field"><span>Hielo cada</span>${stepper('h-ice', h ? h.ice_every : 14, 1, 90)}<div class="hint">días anotados</div></div>
         <div class="field"><span>Máximo de hielos</span>${stepper('h-max', h ? h.max_ice : 2, 0, 5)}</div>
       </div>
       <p class="hint" id="h-rule"></p>
+      <p class="banner fire" id="h-noice" style="display:none;margin:0">🚫 Para dejar algo no hay hielitos: la idea es cortar del todo. Si caés, la racha vuelve a cero, pero tu récord y el total de días quedan.</p>
       <button class="btn" id="h-save">${h ? 'Guardar cambios' : 'Crear hábito'}</button>
       ${h ? '<button class="link danger" id="h-del">Eliminar hábito</button>' : ''}
     </div>`);
   bindSteppers(el);
+  const paintKind = () => {
+    el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind));
+    $('#h-ices', el).style.display = $('#h-rule', el).style.display = kind === 'evitar' ? 'none' : '';
+    $('#h-noice', el).style.display = kind === 'evitar' ? '' : 'none';
+    $('#h-name', el).placeholder = kind === 'evitar' ? 'Ej: Sin Instagram, dejar de fumar' : 'Ej: Tomar agua';
+    if (kind === 'evitar' && !h && !$('#h-emoji', el).dataset.touched) $('#h-emoji', el).value = '🚫';
+  };
+  el.querySelectorAll('[data-hk]').forEach(b => b.onclick = () => { kind = b.dataset.hk; paintKind(); paint(); });
   const paint = () => {
     el.querySelectorAll('[data-day]').forEach(b => b.classList.toggle('on', days.includes(+b.dataset.day)));
     if (autoIce) $('#h-ice', el).textContent = Math.max(1, days.length * 2);
@@ -2550,18 +2605,19 @@ function habitEditor(h, groupId = null, after){
     $('#h-rule', el).textContent = `${days.length} veces por semana → un hielo cada ${$('#h-ice', el).textContent} días (el doble del hábito semanal).`;
   };
   el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { const d = +b.dataset.day; days = days.includes(d) ? days.filter(x => x !== d) : [...days, d]; if (!days.length) days = [d]; paint(); });
-  el.querySelectorAll('[data-em]').forEach(b => b.onclick = () => { $('#h-emoji', el).value = b.dataset.em; paint(); });
+  el.querySelectorAll('[data-em]').forEach(b => b.onclick = () => { $('#h-emoji', el).value = b.dataset.em; $('#h-emoji', el).dataset.touched = '1'; paint(); });
   ['#h-name','#h-wpp','#h-emoji'].forEach(s => $(s, el).oninput = paint);
   el.querySelector('[data-stepper="h-ice"]').addEventListener('click', () => { autoIce = false; setTimeout(paint); });
-  paint();
+  paint(); paintKind();
   $('#h-save', el).onclick = async (e) => {
     const name = $('#h-name', el).value.trim(); if (!name){ toast('Ponele un nombre'); return; }
     e.target.disabled = true;
     try {
       const saved = await rpc('api_save_habit', { ...P(), p_group: h ? (h.group_id || null) : groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
-        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent });
+        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind });
       // Un hábito nuevo queda activado para quien lo creó.
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
+      if (!h && kind === 'evitar') setTimeout(() => toast('Listo: se tilda solo cada día. Si caés, tocalo en Hoy.', 4000), 3900);
       S.me = await rpc('api_me', P()); if (S.group) await loadGroup().catch(() => {}); closeSheet();
       after ? await after() : renderMain();
       toast(h ? 'Hábito actualizado' : groupId ? 'Hábito creado y compartido con el grupo. Ya lo tenés activado.' : 'Hábito creado y activado. Si querés, compartilo con tu grupo.', 3800);
