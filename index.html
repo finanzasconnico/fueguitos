@@ -189,6 +189,14 @@ details.more[open] summary{margin-bottom:8px}
 .dside.lead .dscore{color:var(--fire-ink)}
 .dvs{font-size:26px;font-weight:800;color:var(--muted)}
 .dplus{min-height:36px;padding:0 16px}
+.prow2{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-top:2px solid var(--line)}
+.prow2.lead .dscore{color:var(--fire-ink)}
+.pts{min-width:52px;text-align:right;padding:2px 4px;border-radius:10px}
+.pts:active{background:var(--fire-soft)}
+.pm{display:flex;gap:6px}.pm .btn{min-width:44px;min-height:40px;padding:0 10px;font-size:18px}
+.tallies{display:inline-flex;flex-wrap:wrap;gap:4px;max-width:118px;justify-content:flex-end}
+.tally{width:22px;height:24px;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.dend{background:var(--fire-soft);color:var(--fire-ink);border-radius:12px;padding:8px 12px;font-size:15px;margin-bottom:8px}
 .drow{display:grid;grid-template-columns:20px auto 1fr auto auto;align-items:center;gap:10px;padding:8px 0;border-top:2px solid var(--line)}
 .drow .dpos{font-weight:800;color:var(--muted);text-align:center}
 .drow .dnick{text-align:left}
@@ -484,6 +492,7 @@ const ERRORS = {
   SIN_HIELO: 'No tenés hielitos en ese hábito para regalar.',
   HIELO_LLENO: 'Ya tiene todos los hielitos que se pueden tener.',
   YA_REGALASTE: 'Hoy ya regalaste un hielito. Mañana podés de nuevo.',
+  DUELO_TERMINADO: 'Este duelo ya terminó. Mirá quién ganó 🏆',
   YA_SE_JUGO_SIGUIENTE: 'Ese resultado ya definió el partido siguiente. Borrá primero el de la ronda siguiente.'
 };
 async function rpc(fn, args={}){
@@ -836,7 +845,8 @@ function habitToggleRows(av, full){
       <div>
         <div style="font-weight:800;font-size:17px">${esc(h.emoji)} ${esc(h.name)}</div>
         <div class="small muted">${daysLabel(h.days)} · hielo cada ${h.ice_every} días${origin ? ` · ${origin}` : ''}</div>
-        ${mine ? `<button class="link small" data-adjust="${h.id}">Corregir racha (${mine.streak} 🔥 · ${mine.ice} 🧊 · ${mine.left_for_ice} ⌛)</button>` : ''}
+        ${mine && (mine.custom_days || mine.rest_per_week) ? `<div class="small" style="font-weight:700">📅 Tus días: ${esc(ruleText(mine.days, mine.rest_per_week))}</div>` : ''}
+        ${mine ? `<div class="row" style="gap:14px"><button class="link small" data-rules="${h.id}">📅 Mis días</button><button class="link small" data-adjust="${h.id}">Corregir racha</button></div>` : ''}
         ${full && h.mine ? `<div class="row" style="gap:14px;margin-top:2px"><button class="link small" data-hown="${h.id}">Editar</button>${S.me.groups.length ? `<button class="link small" data-hshare="${h.id}">${h.group_id ? 'Compartir en otro grupo' : 'Compartir con el grupo'}</button>` : ''}${h.group_id ? `<button class="link small danger" data-hunshare="${h.id}">Dejar de compartir</button>` : ''}</div>` : ''}
       </div>
       <button class="toggle ${h.active ? 'on' : ''}" role="switch" aria-checked="${h.active}" aria-label="${esc(h.name)}" data-toggle="${h.id}"></button>
@@ -857,6 +867,7 @@ function bindHabitToggles(rerender){
     try { await rpc('api_share_habit', { ...P(), p_habit: b.dataset.hunshare, p_group: null }); S.me = await rpc('api_me', P()); S.group = null; rerender(); toast('Ya no está compartido. Quienes lo activaron lo siguen teniendo.', 3500); }
     catch(e){ toast(e.message); }
   });
+  document.querySelectorAll('[data-rules]').forEach(b => b.onclick = () => rulesSheet(S.me.habits.find(x => x.id === b.dataset.rules), rerender));
   document.querySelectorAll('[data-adjust]').forEach(b => b.onclick = () => {
     const h = S.me.available.find(x => x.id === b.dataset.adjust);
     openActivateSheet(h, true, rerender);
@@ -1023,6 +1034,8 @@ function renderHoy(){
   const allDone = req.length > 0 && req.every(h => h.done_today);
   const pend = req.filter(h => !h.done_today), corte = hastaCorte();
   const ices = (S.history || []).filter(x => x.kind === 'hielo' && x.day >= addDays(me.today, -3));
+  const rests = (S.history || []).filter(x => x.kind === 'descanso' && x.day >= addDays(me.today, -3));
+  const restMsg = rests.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
   const iceMsg = ices.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
   $('#main').innerHTML = `
     <div class="top">
@@ -1030,6 +1043,7 @@ function renderHoy(){
     </div>
     <div class="quote"><span class="qmark" aria-hidden="true">“</span><p>${esc(fraseDelDia(me.today))}</p></div>
     ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
+    ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
       `<p class="muted" style="margin:0 0 14px">Tocá lo que hiciste hoy y anotalo. Si anotás después de las 12, hasta las 5 AM cuenta para hoy.</p>`}
@@ -1332,6 +1346,7 @@ function renderGrupo(){
     <div class="top"><div class="row" style="gap:12px;align-items:center;min-width:0">${groupAvatar(G.group, 56)}<div style="min-width:0"><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1 class="gname">${esc(G.group.name)}</h1></div></div>
       <div class="row" style="gap:8px">${G.group.is_admin ? '<button class="btn sm ghost" id="g-edit" aria-label="Editar grupo">Editar</button>' : ''}<button class="btn sm ice" id="invite">Invitar</button></div></div>
     ${G.group.descr ? `<p class="gdescr">${esc(G.group.descr)}</p>` : ''}
+    ${(G.group.rule_days && G.group.rule_days.length) || G.group.rule_rest ? `<p class="gdescr">📅 ${esc(ruleText(G.group.rule_days, G.group.rule_rest))}</p>` : ''}
     <button class="achs" id="achs">${achStrip(S.ach[G.group.id])}</button>
     ${gs.length > 1 ? chips : ''}
 
@@ -1522,28 +1537,55 @@ async function renderDuels(G){
       ${!duels ? '<div class="spinner"></div>' : duels.length ? `<div class="stack">${duels.map(duelCard).join('')}</div>` :
         `<div class="empty">¿Ping pong con un amigo, FIFA en la Play, pulseadas? Armá un duelo y llevá el marcador de por vida.</div>`}`;
     $('#d-new', box).onclick = () => duelCreator(G);
-    box.querySelectorAll('[data-dw]').forEach(b => b.onclick = (e) => { e.stopPropagation(); duelPoint(G, b.dataset.dw, b.dataset.u); });
-    box.querySelectorAll('[data-duel]').forEach(b => b.onclick = () => duelDetail(G, b.dataset.duel));
+    bindDuelCards(G);
   };
   paint();
   await loadDuels(gid);
   if (S.tab === 'grupo' && S.gsub === 'duelos' && S.groupId === gid) paint();
 }
 async function loadDuels(gid){ try { S.duels[gid] = await rpc('api_duels', { ...P(), p_group: gid }); } catch(e){ S.duels[gid] = S.duels[gid] || []; } }
-function duelCard(d){
-  const ps = [...d.players].sort((x, y) => y.wins - x.wins);
-  const top = ps[0].wins, lead = ps.filter(p => p.wins === top).length === 1 && top > 0 ? ps[0].id : null;
-  const head = `<div class="row between" style="margin-bottom:8px"><b>${esc(d.emoji)} ${esc(d.activity)}</b><span class="small muted">${d.games} ${d.games === 1 ? 'partido' : 'partidos'}${d.draws ? ` · ${d.draws} empates` : ''}</span></div>`;
-  const av = (u, size) => `<span class="avatar" style="background:${avColor(u.nick)};width:${size}px;height:${size}px">${esc(u.nick.slice(0,1).toUpperCase())}</span>`;
-  if (d.players.length === 2){
-    const [a, b] = d.players;
-    const side = (u) => `<div class="dside ${lead === u.id ? 'lead' : ''}">${av(u, 40)}<span class="dnick">${esc(u.nick)}</span><span class="dscore">${u.wins}</span>
-      <button class="btn sm ghost dplus" data-dw="${d.id}" data-u="${u.id}" aria-label="Ganó ${esc(u.nick)}">+1</button></div>`;
-    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}<div class="dgrid">${side(a)}<span class="dvs">–</span>${side(b)}</div></div>`;
+// Palitos del truco: grupos de 5 (cuatro rayas y una cruzada). Más de 40 se muestran como número.
+function tallySVG(n){
+  if (n > 40) return `<span class="dscore">${n}</span>`;
+  const groups = Math.ceil(n / 5) || 0; let out = '';
+  for (let g = 0; g < groups; g++){
+    const k = Math.min(5, n - g * 5);
+    let lines = '';
+    for (let i = 0; i < Math.min(k, 4); i++) lines += `<line x1="${3 + i * 5}" y1="3" x2="${3 + i * 5}" y2="21"/>`;
+    if (k === 5) lines += '<line x1="0" y1="18" x2="21" y2="6"/>';
+    out += `<svg class="tally" viewBox="0 0 22 24" aria-hidden="true">${lines}</svg>`;
   }
-  return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}
-    ${ps.map((u, i) => `<div class="drow ${lead === u.id ? 'lead' : ''}"><span class="dpos">${i + 1}</span>${av(u, 30)}<span class="dnick">${esc(u.nick)}</span><span class="dscore sm">${u.wins}</span>
-      <button class="btn sm ghost dplus" data-dw="${d.id}" data-u="${u.id}" aria-label="Ganó ${esc(u.nick)}">+1</button></div>`).join('')}</div>`;
+  return `<span class="tallies" aria-label="${n} puntos">${out || '<span class="muted small">—</span>'}</span>`;
+}
+// Quién gana un duelo: más partidos ganados y, si empatan, más puntos.
+const duelLeader = (d) => { const ps = [...d.players].sort((x, y) => y.wins - x.wins || (y.points || 0) - (x.points || 0)); const top = ps[0];
+  return (ps.length < 2 || top.wins > ps[1].wins || (top.points || 0) > (ps[1].points || 0)) && (top.wins || top.points) ? top : null; };
+const shortD = (iso) => { const x = parseDay(String(iso).slice(0, 10)); return `${x.getDate()}/${x.getMonth() + 1}`; };
+function duelCard(d){
+  const av = (u, size) => `<span class="avatar" style="background:${avColor(u.nick)};width:${size}px;height:${size}px">${esc(u.nick.slice(0,1).toUpperCase())}</span>`;
+  const lead = duelLeader(d);
+  const meta = [d.mode === 'puntos' && d.target ? `a ${d.target}` : '', d.ends_on ? (d.ended ? `terminó el ${shortD(d.ends_on)}` : `hasta el ${shortD(d.ends_on)}`) : ''].filter(Boolean).join(' · ');
+  const head = `<div class="row between" style="margin-bottom:8px;gap:8px"><b>${esc(d.emoji)} ${esc(d.activity)}</b><span class="small muted" style="text-align:right">${meta ? esc(meta) + ' · ' : ''}${d.games} ${d.games === 1 ? 'partido' : 'partidos'}</span></div>`;
+  const ended = d.ended ? `<div class="dend">🏁 ${lead ? `Ganó <b>${esc(lead.nick)}</b>` : 'Terminó empatado'}</div>` : '';
+  if (d.mode === 'puntos'){
+    const ps = [...d.players].sort((x, y) => (y.points || 0) - (x.points || 0) || y.wins - x.wins);
+    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}
+      ${ps.map(u => `<div class="prow2 ${lead && lead.id === u.id ? 'lead' : ''}">
+        ${av(u, 30)}<div style="min-width:0"><div class="dnick" style="text-align:left">${esc(u.nick)}</div>${d.target ? `<div class="small muted">🏆 ${u.wins} ${u.wins === 1 ? 'partida' : 'partidas'}</div>` : ''}</div>
+        <button class="pts" data-pset="${d.id}" data-u="${u.id}" aria-label="Puntos de ${esc(u.nick)}: ${u.points}. Tocá para corregir">${d.tally ? tallySVG(u.points || 0) : `<span class="dscore">${u.points || 0}</span>`}</button>
+        ${d.ended ? '' : `<div class="pm"><button class="btn sm ghost" data-pd="${d.id}" data-u="${u.id}" data-delta="-1" aria-label="Restar 1 a ${esc(u.nick)}">−</button><button class="btn sm" data-pd="${d.id}" data-u="${u.id}" data-delta="1" aria-label="Sumar 1 a ${esc(u.nick)}">+1</button></div>`}
+      </div>`).join('')}</div>`;
+  }
+  if (d.players.length === 2){
+    const [x, y] = d.players;
+    const side = (u) => `<div class="dside ${lead && lead.id === u.id ? 'lead' : ''}">${av(u, 40)}<span class="dnick">${esc(u.nick)}</span><span class="dscore">${u.wins}</span>
+      ${d.ended ? '' : `<button class="btn sm ghost dplus" data-dw="${d.id}" data-u="${u.id}" aria-label="Ganó ${esc(u.nick)}">+1</button>`}</div>`;
+    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}<div class="dgrid">${side(x)}<span class="dvs">–</span>${side(y)}</div></div>`;
+  }
+  const ps = [...d.players].sort((x, y) => y.wins - x.wins);
+  return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}
+    ${ps.map((u, i) => `<div class="drow ${lead && lead.id === u.id ? 'lead' : ''}"><span class="dpos">${i + 1}</span>${av(u, 30)}<span class="dnick">${esc(u.nick)}</span><span class="dscore sm">${u.wins}</span>
+      ${d.ended ? '<span></span>' : `<button class="btn sm ghost dplus" data-dw="${d.id}" data-u="${u.id}" aria-label="Ganó ${esc(u.nick)}">+1</button>`}</div>`).join('')}</div>`;
 }
 async function duelPoint(G, id, winner, note){
   try {
@@ -1553,30 +1595,89 @@ async function duelPoint(G, id, winner, note){
     if (d){ const w = d.players.find(u => u.id === winner); toast(w ? `+1 ${w.nick} · lleva ${w.wins}` : '🤝 Empate'); }
   } catch(e){ toast(e.message); }
 }
+// Puntos: se actualiza en pantalla al instante y se manda en orden (para tocar +1 rápido varias veces).
+let duelQueue = Promise.resolve();
+function duelScore(G, id, uid, delta, setTo){
+  const d = (S.duels[G.group.id] || []).find(x => x.id === id), u = d && d.players.find(x => x.id === uid);
+  if (!u) return;
+  u.points = setTo != null ? Math.max(0, setTo) : Math.max(0, (u.points || 0) + delta);
+  vibrate(12);
+  const box = $('#gsub'); if (box && S.gsub === 'duelos'){ const card = box.querySelector(`[data-duel="${id}"]`); if (card) card.outerHTML = duelCard(d); bindDuelCards(G); }
+  duelQueue = duelQueue.then(async () => {
+    try {
+      const r = await rpc('api_duel_points', { ...P(), p_duel: id, p_user: uid, p_delta: setTo != null ? null : delta, p_set: setTo != null ? setTo : null });
+      if (r.won){
+        vibrate([60, 60, 160]); beep(660, .12); setTimeout(() => beep(990, .2), 140);
+        toast(`🏆 ¡Ganó ${u.nick} la partida! Arranca otra.`, 3500);
+        await loadDuels(G.group.id); renderGrupo();
+      }
+    } catch(e){ toast(e.message); await loadDuels(G.group.id); renderGrupo(); }
+  });
+}
+function bindDuelCards(G){
+  const box = $('#gsub'); if (!box) return;
+  box.querySelectorAll('[data-dw]').forEach(b => b.onclick = (e) => { e.stopPropagation(); duelPoint(G, b.dataset.dw, b.dataset.u); });
+  box.querySelectorAll('[data-pd]').forEach(b => b.onclick = (e) => { e.stopPropagation(); duelScore(G, b.dataset.pd, b.dataset.u, +b.dataset.delta); });
+  box.querySelectorAll('[data-pset]').forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    const d = S.duels[G.group.id].find(x => x.id === b.dataset.pset), u = d.players.find(x => x.id === b.dataset.u);
+    if (d.ended) return;
+    const el = openSheet(`<h2>Puntos de ${esc(u.nick)}</h2><div class="stack section">
+      <input class="input score" id="ps-v" type="number" inputmode="numeric" min="0" max="100000" value="${u.points || 0}" style="max-width:none">
+      <div class="grid2">${[5, 10].map(n => `<button class="btn ghost sm" style="width:100%" data-add="${n}">+${n}</button>`).join('')}</div>
+      <button class="btn" id="ps-ok">Guardar</button></div>`);
+    el.querySelectorAll('[data-add]').forEach(x => x.onclick = () => { const i = $('#ps-v', el); i.value = (+i.value || 0) + +x.dataset.add; });
+    $('#ps-ok', el).onclick = () => { const v = Math.max(0, parseInt($('#ps-v', el).value, 10) || 0); closeSheet(); duelScore(G, d.id, u.id, 0, v); };
+  });
+  box.querySelectorAll('[data-duel]').forEach(b => b.onclick = () => duelDetail(G, b.dataset.duel));
+}
 function duelCreator(G){
-  const picked = new Set(); let emoji = '🏓';
+  const picked = new Set(); let emoji = '🏓', mode = 'partidos', target = null, tally = false, until = null;
   const others = (G.members || []).filter(m => !m.is_me);
   if (!others.length){ toast('Primero sumá a alguien al grupo'); return; }
   const el = openSheet(`<h2>Nuevo duelo</h2><div class="stack section">
     <div class="field"><span>Contra quién (uno o varios)</span><div class="chips" style="flex-wrap:wrap;margin:0">${others.map(m => `<button type="button" class="chip" data-rv="${m.id}">${esc(m.nick)}</button>`).join('')}</div></div>
-    <label class="field"><span>De qué</span><input class="input" id="dv-a" maxlength="40" placeholder="Ej: Ping pong, FIFA, truco, pulseada"></label>
+    <label class="field"><span>De qué</span><input class="input" id="dv-a" maxlength="40" placeholder="Ej: Truco, ping pong, FIFA, cartas del viaje"></label>
     <div class="field"><span>Emoji</span><div class="emojis">${D_EMOJI.map(e => `<button type="button" data-de="${e}">${e}</button>`).join('')}</div></div>
-    <p class="hint" style="margin:0">Cada partido sumás +1 al que ganó. Vos ya estás adentro.</p>
+    <div class="field"><span>¿Cómo se cuenta?</span><div class="grid2">
+      <button type="button" class="fmt" data-dm="partidos"><b>Por partidos</b><span class="small">Anotás quién ganó cada uno</span></button>
+      <button type="button" class="fmt" data-dm="puntos"><b>Por puntos</b><span class="small">Cada uno suma puntos con +1 / −1</span></button></div></div>
+    <div id="dv-pts"></div>
+    <div class="field"><span>¿Hasta cuándo?</span><div class="chips" style="margin:0"><button type="button" class="chip" data-du="no">Sin fin</button><button type="button" class="chip" data-du="si">Hasta una fecha</button></div>
+      <input class="input" type="date" id="dv-end" style="margin-top:8px;display:none" min="${S.me.today}"><div class="hint">Ideal para un viaje: al terminar se cierra y muestra quién ganó.</div></div>
     <button class="btn" id="dv-go">Arrancar duelo</button></div>`);
   const paint = () => {
     el.querySelectorAll('[data-rv]').forEach(b => b.classList.toggle('on', picked.has(b.dataset.rv)));
     el.querySelectorAll('[data-de]').forEach(b => b.classList.toggle('on', b.dataset.de === emoji));
+    el.querySelectorAll('[data-dm]').forEach(b => b.classList.toggle('on', b.dataset.dm === mode));
+    el.querySelectorAll('[data-du]').forEach(b => b.classList.toggle('on', (b.dataset.du === 'si') === (until !== null)));
+    $('#dv-end', el).style.display = until !== null ? '' : 'none';
+    $('#dv-pts', el).innerHTML = mode === 'puntos' ? `<div class="stack" style="margin-top:0">
+      <div class="field"><span>Se juega a</span><div class="chips" style="flex-wrap:wrap;margin:0">${[[null, 'Sin meta'], [11, '11'], [15, '15'], [21, '21'], [30, '30']].map(([v, l]) => `<button type="button" class="chip ${target === v ? 'on' : ''}" data-dt="${v === null ? '' : v}">${l}</button>`).join('')}</div>
+        <div class="hint">${target ? `Cuando alguien llega a ${target}, gana la partida y el marcador vuelve a cero.` : 'Sin meta, los puntos se van acumulando (ej: todo el viaje).'}</div></div>
+      <label class="row small" style="gap:8px"><input type="checkbox" id="dv-tally" ${tally ? 'checked' : ''}> Mostrar con palitos (como en el truco)</label></div>` : '';
+    el.querySelectorAll('[data-dt]').forEach(b => b.onclick = () => { target = b.dataset.dt ? +b.dataset.dt : null; if (target && target <= 30 && /truco/i.test($('#dv-a', el).value)) tally = true; paint(); });
+    const t = $('#dv-tally', el); if (t) t.onchange = () => { tally = t.checked; };
   };
   el.querySelectorAll('[data-rv]').forEach(b => b.onclick = () => { picked.has(b.dataset.rv) ? picked.delete(b.dataset.rv) : picked.add(b.dataset.rv); paint(); });
   el.querySelectorAll('[data-de]').forEach(b => b.onclick = () => { emoji = b.dataset.de; paint(); });
+  el.querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { mode = b.dataset.dm; paint(); });
+  el.querySelectorAll('[data-du]').forEach(b => b.onclick = () => { until = b.dataset.du === 'si' ? ($('#dv-end', el).value || '') : null; paint(); if (until !== null) $('#dv-end', el).focus(); });
+  // Si escriben "truco", se sugiere puntos a 30 con palitos.
+  $('#dv-a', el).oninput = (e) => { if (/truco/i.test(e.target.value) && mode === 'partidos' && !el.dataset.sugerido){ el.dataset.sugerido = '1'; mode = 'puntos'; target = 30; tally = true; emoji = '🃏'; paint(); } };
   paint();
   $('#dv-go', el).onclick = async (e) => {
     const a = $('#dv-a', el).value.trim();
     if (!picked.size){ toast('Elegí contra quién'); return; }
     if (!a){ toast('Poné de qué es el duelo'); return; }
+    const end = until !== null ? $('#dv-end', el).value : null;
+    if (until !== null && !end){ toast('Elegí la fecha de fin'); return; }
     e.target.disabled = true;
-    try { await rpc('api_duel_create', { ...P(), p_group: G.group.id, p_players: [...picked], p_activity: a, p_emoji: emoji }); await loadDuels(G.group.id); closeSheet(); renderGrupo(); toast('¡Duelo armado! ⚔️'); }
-    catch(err){ toast(err.message); e.target.disabled = false; }
+    try {
+      await rpc('api_duel_create', { ...P(), p_group: G.group.id, p_players: [...picked], p_activity: a, p_emoji: emoji,
+        p_mode: mode, p_target: mode === 'puntos' ? target : null, p_tally: mode === 'puntos' && tally, p_ends_on: end });
+      await loadDuels(G.group.id); closeSheet(); renderGrupo(); toast('¡Duelo armado! ⚔️');
+    } catch(err){ toast(err.message); e.target.disabled = false; }
   };
 }
 function duelDetail(G, id){
@@ -1585,7 +1686,8 @@ function duelDetail(G, id){
   const ps = [...d.players].sort((x, y) => y.wins - x.wins);
   const el = openSheet(`<h2>${esc(d.emoji)} ${esc(d.activity)}</h2>
     <p class="dbig">${ps.map(u => `${esc(u.nick)} <b>${u.wins}</b>`).join(' · ')}</p>
-    <div class="stack section">
+    ${d.ended ? `<div class="dend section">🏁 Terminó el ${shortD(d.ends_on)}${duelLeader(d) ? ` · Ganó <b>${esc(duelLeader(d).nick)}</b>` : ''}</div>` : ''}
+    <div class="stack section" ${d.ended || (d.mode === 'puntos' && d.target) ? 'hidden' : ''}>
       <label class="field"><span>Resultado del partido (opcional)</span><input class="input" id="dd-n" maxlength="60" placeholder="Ej: 21-18"></label>
       <div class="field"><span>¿Quién ganó?</span><div class="grid2">${d.players.map(u => `<button class="btn sm" style="width:100%" data-dd="${u.id}">${esc(u.nick)}</button>`).join('')}</div></div>
       <button class="btn ghost sm" style="width:100%" data-dd="">Empate</button>
@@ -1992,6 +2094,7 @@ function groupEditor(G){
       <div class="field"><span>Emoji del grupo</span>
         ${won.length ? `<div class="small" style="font-weight:700;margin:2px 0 4px">✨ Ganados con logros</div><div class="emojis">${won.map(e => `<button type="button" data-ge="${e}">${e}</button>`).join('')}</div><div class="small" style="font-weight:700;margin:10px 0 4px">Básicos</div>` : ''}
         <div class="emojis">${G_EMOJI.map(e => `<button type="button" data-ge="${e}">${e}</button>`).join('')}</div></div>
+      <details class="more" ${G.group.rule_days || G.group.rule_rest ? 'open' : ''}><summary>📅 Regla de deporte del grupo</summary><div class="stack" style="margin-top:10px">${rulesFields(G.group.rule_days, G.group.rule_rest)}</div></details>
       <label class="field"><span>Descripción (opcional)</span><textarea class="input" id="ge-d" maxlength="200" placeholder="Ej: Racha de deporte y lectura. El que corta la racha paga el asado 🥩">${esc(G.group.descr || '')}</textarea></label>
       <div class="card small"><b>Código para invitar:</b> <span style="letter-spacing:.15em;font-weight:800">${esc(G.group.code)}</span><br><span class="muted">Para sacar a alguien, tocá "Sacar del grupo" debajo de su nombre en la tabla.</span></div>
       <button class="btn" id="ge-save">Guardar</button>
@@ -2004,13 +2107,14 @@ function groupEditor(G){
     catch(err){ toast('No se pudo leer esa foto'); }
   };
   const pd = $('#ge-phdel', el); if (pd) pd.onclick = () => { photo = null; photoChanged = true; $('#ge-av', el).innerHTML = groupAvatar({ emoji }, 64); pd.remove(); };
-  paint();
+  paint(); bindRules(el);
   $('#ge-save', el).onclick = async (e) => {
     const n = $('#ge-n', el).value.trim(); if (!n){ toast('Ponele un nombre'); return; }
     e.target.disabled = true;
     try {
       await rpc('api_update_group', { ...P(), p_group: G.group.id, p_name: n, p_emoji: emoji, p_descr: $('#ge-d', el).value });
       if (photoChanged) await rpc('api_set_group_photo', { ...P(), p_group: G.group.id, p_photo: photo });
+      const rr = readRules(el); if (rr.days.length === 7) rr.days = []; await rpc('api_set_group_rules', { ...P(), p_group: G.group.id, p_days: rr.days, p_rest: rr.rest });
       S.me = await rpc('api_me', P()); await loadGroup(); closeSheet(); renderGrupo(); toast('Grupo actualizado');
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
@@ -2026,9 +2130,9 @@ function groupForms(){
       <p class="small muted" style="margin:0">Pedile el código (6 letras) o el link a quien armó el grupo.</p>
       <input class="input code-in" id="g-code" maxlength="200" placeholder="ABCDEF" autocapitalize="characters" autocomplete="off" required>
       <button class="btn ice" type="submit">Unirme</button></form>
-    <form class="card stack" id="f-create"><h3>+ Crear un grupo</h3>
-      <input class="input" id="g-name" maxlength="40" placeholder="Ej: Los del fútbol" required>
-      <button class="btn" type="submit">Crear grupo</button></form>
+    <div class="card stack"><h3>+ Crear un grupo</h3>
+      <p class="small muted" style="margin:0">Le ponés nombre, elegís la regla de deporte y te damos el link para invitar.</p>
+      <button class="btn" type="button" id="f-create-btn">Crear grupo</button></div>
   </div>`;
 }
 // Acepta el código solo o el link de invitación entero (…?g=ABCDEF).
@@ -2042,6 +2146,7 @@ async function joinByCode(code){
   const g = await rpc('api_join_group', { ...P(), p_code: code });
   S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); S.group = null;
   closeSheet(); go('grupo'); vibrate([30, 60, 30]); toast(`Te sumaste a ${g.name} 🔥`);
+  const full = S.me.groups.find(x => x.id === g.id); if (full) setTimeout(() => offerGroupRule(full), 700);
 }
 function joinGroupSheet(){
   const el = openSheet(`<h2>🔑 Unirme a un grupo</h2>
@@ -2064,16 +2169,77 @@ function joinGroupSheet(){
   const pb = $('#j-paste', el); if (pb) pb.onclick = async () => { try { inp.value = (await navigator.clipboard.readText()).trim(); inp.oninput(); } catch(e){ toast('Mantené apretado el cuadro y tocá Pegar'); } };
   setTimeout(() => inp.focus(), 250);
 }
+/* ============ Reglas de días y descansos ============ */
+const WEEK = [1, 2, 3, 4, 5, 6, 0];
+const ruleText = (days, rest) => `${days && days.length ? daysLabel(days) : 'Todos los días'}${rest ? ` · ${rest} ${rest === 1 ? 'descanso' : 'descansos'} por semana` : ''}`;
+// Campos reutilizables (grupo y personal). Devuelve el html; `readRules(el)` lee lo elegido.
+function rulesFields(days, rest){
+  const on = new Set(days && days.length ? days : [0, 1, 2, 3, 4, 5, 6]);
+  return `<div class="field"><span>Días que tocan</span><div class="days rules-days">${WEEK.map(d => `<button type="button" class="day ${on.has(d) ? 'on' : ''}" data-rd="${d}" aria-label="${DAY_NAMES[d]}">${DAYS[d]}</button>`).join('')}</div>
+      <div class="hint">Si entrenás un día que no te toca, suma igual. Si faltás ese día, no pasa nada.</div></div>
+    <div class="field"><span>Descansos por semana</span><div class="chips" style="margin:0">${[0, 1, 2].map(n => `<button type="button" class="chip ${(rest || 0) === n ? 'on' : ''}" data-rr="${n}">${n === 0 ? 'Ninguno' : n === 1 ? '1 día' : '2 días'}</button>`).join('')}</div>
+      <div class="hint">Si faltás un día que te toca, el primero de la semana cuenta como descanso y la racha sigue (sin gastar hielito).</div></div>`;
+}
+function bindRules(el){
+  el.querySelectorAll('[data-rd]').forEach(b => b.onclick = () => {
+    b.classList.toggle('on');
+    if (!el.querySelector('[data-rd].on')){ b.classList.add('on'); toast('Tiene que quedar al menos un día'); }
+  });
+  el.querySelectorAll('[data-rr]').forEach(b => b.onclick = () => { el.querySelectorAll('[data-rr]').forEach(x => x.classList.toggle('on', x === b)); });
+}
+function readRules(el){
+  const days = [...el.querySelectorAll('[data-rd].on')].map(b => +b.dataset.rd).sort();
+  const rest = +((el.querySelector('[data-rr].on') || {}).dataset || {}).rr || 0;
+  return { days, rest };
+}
+// Mis días para un hábito activo.
+function rulesSheet(h, after){
+  const el = openSheet(`<h2>${esc(h.emoji)} Mis días de ${esc(h.name)}</h2>
+    <p class="muted">Elegí qué días te tocan. Vale de hoy en adelante: lo que ya pasó no cambia.</p>
+    <div class="stack section">${rulesFields(h.days, h.rest_per_week)}
+      ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
+      <button class="btn" id="ru-save">Guardar</button></div>`);
+  bindRules(el);
+  const save = async (days, rest) => {
+    try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: days, p_rest: rest }); closeSheet(); (after || renderMain)(); toast(`Listo: ${ruleText(days, rest)}`); }
+    catch(e){ toast(e.message); }
+  };
+  $('#ru-save', el).onclick = () => { const r = readRules(el); save(r.days, r.rest); };
+  const rs = $('#ru-reset', el); if (rs) rs.onclick = () => save([], h.rest_per_week || 0);
+}
+// Al unirse a un grupo con regla, se ofrece usarla para el hábito de deporte.
+function offerGroupRule(g){
+  const h = S.me.habits.find(isSport);
+  if (!h || (!(g.rule_days && g.rule_days.length) && !g.rule_rest)) return;
+  const el = openSheet(`<h2>📅 La regla de ${esc(g.name)}</h2>
+    <p class="muted">Este grupo entrena: <b>${esc(ruleText(g.rule_days, g.rule_rest))}</b>. ¿La usás para tu ${esc(h.name)}?</p>
+    <div class="stack section"><button class="btn" id="gr-yes">Sí, usar esta regla</button><button class="btn ghost" id="gr-no">Mantener la mía</button></div>`);
+  $('#gr-yes', el).onclick = async () => {
+    try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: g.rule_days || [], p_rest: g.rule_rest || 0 }); closeSheet(); renderMain(); toast('Regla aplicada ✅'); }
+    catch(e){ toast(e.message); }
+  };
+  $('#gr-no', el).onclick = closeSheet;
+}
+
 function createGroupSheet(){
   const el = openSheet(`<h2>+ Crear un grupo</h2>
     <p class="muted">Después te damos el link para invitar a tus amigos.</p>
     <form class="stack section" id="f-create2">
       <input class="input" id="g-name2" maxlength="40" placeholder="Ej: Los del fútbol" required>
+      <details class="more"><summary>📅 Regla de deporte del grupo (opcional)</summary><div class="stack" style="margin-top:10px">${rulesFields(null, 0)}
+        <label class="row small" style="gap:8px"><input type="checkbox" id="g-mine" checked> Usarla yo también</label></div></details>
       <button class="btn" type="submit">Crear grupo</button></form>`);
+  bindRules(el);
   $('#f-create2', el).onsubmit = async (e) => {
     e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
     try {
       const g = await rpc('api_create_group', { ...P(), p_name: $('#g-name2', el).value });
+      const r = readRules(el); if (r.days.length === 7) r.days = [];
+      if (r.days.length || r.rest){
+        await rpc('api_set_group_rules', { ...P(), p_group: g.id, p_days: r.days, p_rest: r.rest });
+        const sp = S.me.habits.find(isSport);
+        if (sp && $('#g-mine', el).checked) await rpc('api_set_habit_rules', { ...P(), p_habit: sp.id, p_days: r.days, p_rest: r.rest });
+      }
       S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); closeSheet(); S.group = null;
       go('grupo'); setTimeout(() => shareInvite(g), 400);
     } catch(err){ toast(err.message); b.disabled = false; }
@@ -2081,14 +2247,7 @@ function createGroupSheet(){
   setTimeout(() => $('#g-name2', el).focus(), 250);
 }
 function bindGroupForms(root=document){
-  $('#f-create', root).onsubmit = async (e) => {
-    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
-    try {
-      const g = await rpc('api_create_group', { ...P(), p_name: $('#g-name', root).value });
-      S.groupId = g.id; LS.set('racha_group', g.id); S.me = await rpc('api_me', P()); closeSheet(); S.group = null;
-      go('grupo'); setTimeout(() => shareInvite(g), 400);
-    } catch(err){ toast(err.message); b.disabled = false; }
-  };
+  $('#f-create-btn', root).onclick = createGroupSheet;
   $('#f-join', root).onsubmit = async (e) => {
     e.preventDefault(); const b = e.target.querySelector('button');
     const code = parseGroupCode($('#g-code', root).value);
@@ -2851,7 +3010,7 @@ function bindChart(ch){
 function heatmap(){
   const today = S.me.today, weeks = 18;
   const byDay = {};
-  (S.history || []).forEach(x => { byDay[x.day] = byDay[x.day] || { d: 0, i: 0 }; x.kind === 'hecho' ? byDay[x.day].d++ : byDay[x.day].i++; });
+  (S.history || []).forEach(x => { byDay[x.day] = byDay[x.day] || { d: 0, i: 0 }; if (x.kind === 'hecho') byDay[x.day].d++; else if (x.kind === 'hielo') byDay[x.day].i++; });
   const t = parseDay(today);
   // columnas = semanas (domingo arriba)
   const first = addDays(today, -t.getDay() - (weeks-1)*7);
