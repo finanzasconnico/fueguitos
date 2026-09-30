@@ -143,7 +143,7 @@ details.more[open] summary{margin-bottom:8px}
 .wrow{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;font-size:15px}
 .wrow b{font-size:20px;font-variant-numeric:tabular-nums}
 .gav{display:inline-grid;place-items:center;border-radius:18px;background:var(--fire-soft);object-fit:cover;flex:none}
-.gname{overflow-wrap:anywhere}
+.gname{overflow-wrap:break-word;hyphens:auto;font-size:clamp(24px,7.5vw,30px)}
 .achs{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px 14px;margin:0 0 14px}
 .achemo{flex:1;font-size:20px;letter-spacing:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .ach{display:flex;gap:12px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px 14px}
@@ -189,6 +189,15 @@ details.more[open] summary{margin-bottom:8px}
 .dside.lead .dscore{color:var(--fire-ink)}
 .dvs{font-size:26px;font-weight:800;color:var(--muted)}
 .dplus{min-height:36px;padding:0 16px}
+.serie{display:grid;gap:4px;margin-bottom:10px}
+.sp{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:4px 0}
+.sp b{font-size:26px;font-variant-numeric:tabular-nums}
+.sp.lead b{color:var(--fire-ink)}
+.cur{background:var(--bg);border-radius:14px;padding:10px 12px}
+.cur .prow2{grid-template-columns:auto 1fr auto auto;padding:8px 0}
+.rrow{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px}
+.rin{text-align:center;font-size:24px;font-weight:800;flex:1}
+.rsign{min-width:48px}
 .prow2{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-top:2px solid var(--line)}
 .prow2.lead .dscore{color:var(--fire-ink)}
 .pts{min-width:52px;text-align:right;padding:2px 4px;border-radius:10px}
@@ -1567,14 +1576,22 @@ function duelCard(d){
   const meta = [d.mode === 'puntos' && d.target ? `a ${d.target}` : '', d.ends_on ? (d.ended ? `terminó el ${shortD(d.ends_on)}` : `hasta el ${shortD(d.ends_on)}`) : ''].filter(Boolean).join(' · ');
   const head = `<div class="row between" style="margin-bottom:8px;gap:8px"><b>${esc(d.emoji)} ${esc(d.activity)}</b><span class="small muted" style="text-align:right">${meta ? esc(meta) + ' · ' : ''}${d.games} ${d.games === 1 ? 'partido' : 'partidos'}</span></div>`;
   const ended = d.ended ? `<div class="dend">🏁 ${lead ? `Ganó <b>${esc(lead.nick)}</b>` : 'Terminó empatado'}</div>` : '';
-  if (d.mode === 'puntos'){
-    const ps = [...d.players].sort((x, y) => (y.points || 0) - (x.points || 0) || y.wins - x.wins);
+  if (d.mode === 'puntos' || d.mode === 'rondas'){
+    const byWins = [...d.players].sort((x, y) => y.wins - x.wins);
+    const inPlay = d.players.some(u => u.points);
+    const order = [...d.players].sort((x, y) => d.lowest_wins ? (x.points || 0) - (y.points || 0) : (y.points || 0) - (x.points || 0));
+    const serie = `<div class="serie">${byWins.map(u => `<div class="sp ${lead && lead.id === u.id ? 'lead' : ''}">${av(u, 28)}<span class="dnick">${esc(u.nick)}</span><b>${u.wins}</b></div>`).join('')}</div>`;
+    const rule = d.mode === 'rondas' ? `${d.lowest_wins ? 'Gana el que suma menos' : 'Gana el que suma más'}${d.target ? ` · se corta en ${d.target}` : ''}` : (d.target ? `Se juega a ${d.target}` : 'Sin meta');
+    const cur = d.ended ? '' : `<div class="cur"><div class="row between"><span class="small" style="font-weight:800">Partida en curso</span><span class="small muted">${esc(rule)}</span></div>
+      ${order.map(u => `<div class="prow2">
+        ${av(u, 26)}<div class="dnick" style="text-align:left">${esc(u.nick)}</div>
+        <button class="pts" data-pset="${d.id}" data-u="${u.id}" aria-label="Puntos de ${esc(u.nick)}: ${u.points}. Tocá para corregir">${d.tally ? tallySVG(u.points || 0) : `<span class="dscore sm">${u.points || 0}</span>`}</button>
+        ${d.mode === 'puntos' ? `<div class="pm"><button class="btn sm ghost" data-pd="${d.id}" data-u="${u.id}" data-delta="-1" aria-label="Restar 1 a ${esc(u.nick)}">−</button><button class="btn sm" data-pd="${d.id}" data-u="${u.id}" data-delta="1" aria-label="Sumar 1 a ${esc(u.nick)}">+1</button></div>` : '<span></span>'}
+      </div>`).join('')}
+      <div class="row" style="gap:10px;margin-top:10px">${d.mode === 'rondas' ? `<button class="btn sm" style="flex:1" data-round="${d.id}">✍️ Anotar ronda</button>` : ''}
+        ${inPlay && (d.mode === 'rondas' || !d.target) ? `<button class="btn sm ghost" style="${d.mode === 'rondas' ? '' : 'flex:1'}" data-close-round="${d.id}">Terminar partida</button>` : ''}</div></div>`;
     return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}
-      ${ps.map(u => `<div class="prow2 ${lead && lead.id === u.id ? 'lead' : ''}">
-        ${av(u, 30)}<div style="min-width:0"><div class="dnick" style="text-align:left">${esc(u.nick)}</div>${d.target ? `<div class="small muted">🏆 ${u.wins} ${u.wins === 1 ? 'partida' : 'partidas'}</div>` : ''}</div>
-        <button class="pts" data-pset="${d.id}" data-u="${u.id}" aria-label="Puntos de ${esc(u.nick)}: ${u.points}. Tocá para corregir">${d.tally ? tallySVG(u.points || 0) : `<span class="dscore">${u.points || 0}</span>`}</button>
-        ${d.ended ? '' : `<div class="pm"><button class="btn sm ghost" data-pd="${d.id}" data-u="${u.id}" data-delta="-1" aria-label="Restar 1 a ${esc(u.nick)}">−</button><button class="btn sm" data-pd="${d.id}" data-u="${u.id}" data-delta="1" aria-label="Sumar 1 a ${esc(u.nick)}">+1</button></div>`}
-      </div>`).join('')}</div>`;
+      <div class="small muted" style="font-weight:700;margin-bottom:4px">Partidas ganadas</div>${serie}${cur}</div>`;
   }
   if (d.players.length === 2){
     const [x, y] = d.players;
@@ -1600,22 +1617,68 @@ let duelQueue = Promise.resolve();
 function duelScore(G, id, uid, delta, setTo){
   const d = (S.duels[G.group.id] || []).find(x => x.id === id), u = d && d.players.find(x => x.id === uid);
   if (!u) return;
-  u.points = setTo != null ? Math.max(0, setTo) : Math.max(0, (u.points || 0) + delta);
+  const fl = d.mode === 'rondas' ? -100000 : 0;
+  u.points = setTo != null ? Math.max(fl, setTo) : Math.max(fl, (u.points || 0) + delta);
   vibrate(12);
   const box = $('#gsub'); if (box && S.gsub === 'duelos'){ const card = box.querySelector(`[data-duel="${id}"]`); if (card) card.outerHTML = duelCard(d); bindDuelCards(G); }
   duelQueue = duelQueue.then(async () => {
     try {
       const r = await rpc('api_duel_points', { ...P(), p_duel: id, p_user: uid, p_delta: setTo != null ? null : delta, p_set: setTo != null ? setTo : null });
-      if (r.won){
-        vibrate([60, 60, 160]); beep(660, .12); setTimeout(() => beep(990, .2), 140);
-        toast(`🏆 ¡Ganó ${u.nick} la partida! Arranca otra.`, 3500);
-        await loadDuels(G.group.id); renderGrupo();
-      }
+      if (r.won){ await loadDuels(G.group.id); renderGrupo(); partidaTerminada(d, r.winner); }
     } catch(e){ toast(e.message); await loadDuels(G.group.id); renderGrupo(); }
   });
 }
+function roundSheet(G, id){
+  const d = (S.duels[G.group.id] || []).find(x => x.id === id); if (!d) return;
+  const el = openSheet(`<h2>✍️ Anotar ronda</h2>
+    <p class="muted">${esc(d.emoji)} ${esc(d.activity)} · Escribí lo que sumó cada uno en esta ronda (vacío = 0).</p>
+    <div class="stack section">${d.players.map(u => `<div class="rrow" data-ru="${u.id}">
+      <div class="row between"><b>${esc(u.nick)}</b><span class="small muted">lleva <b>${u.points || 0}</b> → <b class="rnew">${u.points || 0}</b></span></div>
+      <div class="row" style="gap:6px;margin-top:6px">
+        <button type="button" class="btn sm ghost rsign" aria-label="Cambiar a negativo">±</button>
+        <input class="input rin" type="text" inputmode="numeric" pattern="-?[0-9]*" placeholder="0" autocomplete="off">
+      </div>
+      <div class="chips" style="margin:6px 0 0">${[5, 10, 20, 50].map(n => `<button type="button" class="chip" data-radd="${n}">+${n}</button>`).join('')}</div>
+    </div>`).join('')}
+    <button class="btn" id="r-ok">Sumar ronda</button></div>`);
+  const rows = [...el.querySelectorAll('[data-ru]')];
+  const val = (r) => parseInt(r.querySelector('.rin').value, 10) || 0;
+  const upd = (r) => { const u = d.players.find(x => x.id === r.dataset.ru); r.querySelector('.rnew').textContent = (u.points || 0) + val(r); };
+  rows.forEach(r => {
+    const inp = r.querySelector('.rin');
+    inp.oninput = () => { inp.value = inp.value.replace(/(?!^-)[^0-9]/g, ''); upd(r); };
+    r.querySelector('.rsign').onclick = () => { inp.value = String(-val(r) || (inp.value.startsWith('-') ? '' : '-')); upd(r); };
+    r.querySelectorAll('[data-radd]').forEach(c => c.onclick = () => { inp.value = String(val(r) + +c.dataset.radd); upd(r); });
+  });
+  setTimeout(() => rows[0].querySelector('.rin').focus(), 250);
+  $('#r-ok', el).onclick = async (e) => {
+    const scores = {}; rows.forEach(r => { const v = val(r); if (v) scores[r.dataset.ru] = v; });
+    if (!Object.keys(scores).length){ toast('Anotá los puntos de al menos uno'); return; }
+    e.target.disabled = true;
+    try {
+      const r = await rpc('api_duel_round', { ...P(), p_duel: id, p_scores: scores });
+      closeSheet(); await loadDuels(G.group.id); renderGrupo();
+      if (r.closed) partidaTerminada(d, r.winner); else { vibrate(20); toast('Ronda anotada ✍️'); }
+    } catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+function partidaTerminada(d, winner){
+  const w = d.players.find(u => u.id === winner);
+  vibrate([60, 60, 160]); beep(660, .12); setTimeout(() => beep(990, .2), 140);
+  toast(w ? `🏆 ¡${w.nick} ganó la partida! Arranca otra.` : '🤝 Partida empatada. Arranca otra.', 3800);
+}
+async function closeRound(G, id){
+  const d = (S.duels[G.group.id] || []).find(x => x.id === id); if (!d) return;
+  try { const r = await rpc('api_duel_close', { ...P(), p_duel: id }); await loadDuels(G.group.id); renderGrupo(); partidaTerminada(d, r.winner); }
+  catch(e){ toast(e.message); }
+}
+
 function bindDuelCards(G){
   const box = $('#gsub'); if (!box) return;
+  box.querySelectorAll('[data-round]').forEach(b => b.onclick = (e) => { e.stopPropagation(); roundSheet(G, b.dataset.round); });
+  box.querySelectorAll('[data-close-round]').forEach(b => b.onclick = (e) => { e.stopPropagation(); const d = S.duels[G.group.id].find(x => x.id === b.dataset.closeRound);
+    const ps = [...d.players].sort((x, y) => d.lowest_wins ? (x.points || 0) - (y.points || 0) : (y.points || 0) - (x.points || 0));
+    confirmSheet('¿Terminar la partida?', `Queda registrada: ${ps.map(u => `${u.nick} ${u.points || 0}`).join(' · ')}. ${ps[0].points === (ps[1] || {}).points ? 'Hay empate.' : `Gana ${ps[0].nick}.`} Después arranca otra.`, 'Terminar partida', async () => { await closeRound(G, d.id); }); });
   box.querySelectorAll('[data-dw]').forEach(b => b.onclick = (e) => { e.stopPropagation(); duelPoint(G, b.dataset.dw, b.dataset.u); });
   box.querySelectorAll('[data-pd]').forEach(b => b.onclick = (e) => { e.stopPropagation(); duelScore(G, b.dataset.pd, b.dataset.u, +b.dataset.delta); });
   box.querySelectorAll('[data-pset]').forEach(b => b.onclick = (e) => {
@@ -1623,25 +1686,26 @@ function bindDuelCards(G){
     const d = S.duels[G.group.id].find(x => x.id === b.dataset.pset), u = d.players.find(x => x.id === b.dataset.u);
     if (d.ended) return;
     const el = openSheet(`<h2>Puntos de ${esc(u.nick)}</h2><div class="stack section">
-      <input class="input score" id="ps-v" type="number" inputmode="numeric" min="0" max="100000" value="${u.points || 0}" style="max-width:none">
+      <input class="input score" id="ps-v" type="number" inputmode="numeric" max="100000" value="${u.points || 0}" style="max-width:none">
       <div class="grid2">${[5, 10].map(n => `<button class="btn ghost sm" style="width:100%" data-add="${n}">+${n}</button>`).join('')}</div>
       <button class="btn" id="ps-ok">Guardar</button></div>`);
     el.querySelectorAll('[data-add]').forEach(x => x.onclick = () => { const i = $('#ps-v', el); i.value = (+i.value || 0) + +x.dataset.add; });
-    $('#ps-ok', el).onclick = () => { const v = Math.max(0, parseInt($('#ps-v', el).value, 10) || 0); closeSheet(); duelScore(G, d.id, u.id, 0, v); };
+    $('#ps-ok', el).onclick = () => { let v = parseInt($('#ps-v', el).value, 10) || 0; if (d.mode !== 'rondas') v = Math.max(0, v); closeSheet(); duelScore(G, d.id, u.id, 0, v); };
   });
   box.querySelectorAll('[data-duel]').forEach(b => b.onclick = () => duelDetail(G, b.dataset.duel));
 }
 function duelCreator(G){
-  const picked = new Set(); let emoji = '🏓', mode = 'partidos', target = null, tally = false, until = null;
+  const picked = new Set(); let emoji = '🏓', mode = 'partidos', target = null, tally = false, until = null, lowest = false;
   const others = (G.members || []).filter(m => !m.is_me);
   if (!others.length){ toast('Primero sumá a alguien al grupo'); return; }
   const el = openSheet(`<h2>Nuevo duelo</h2><div class="stack section">
     <div class="field"><span>Contra quién (uno o varios)</span><div class="chips" style="flex-wrap:wrap;margin:0">${others.map(m => `<button type="button" class="chip" data-rv="${m.id}">${esc(m.nick)}</button>`).join('')}</div></div>
     <label class="field"><span>De qué</span><input class="input" id="dv-a" maxlength="40" placeholder="Ej: Truco, ping pong, FIFA, cartas del viaje"></label>
     <div class="field"><span>Emoji</span><div class="emojis">${D_EMOJI.map(e => `<button type="button" data-de="${e}">${e}</button>`).join('')}</div></div>
-    <div class="field"><span>¿Cómo se cuenta?</span><div class="grid2">
-      <button type="button" class="fmt" data-dm="partidos"><b>Por partidos</b><span class="small">Anotás quién ganó cada uno</span></button>
-      <button type="button" class="fmt" data-dm="puntos"><b>Por puntos</b><span class="small">Cada uno suma puntos con +1 / −1</span></button></div></div>
+    <div class="field"><span>¿Cómo se anota cada partida?</span><div class="stack" style="margin-top:0">
+      <button type="button" class="fmt" data-dm="partidos"><b>🏆 Solo quién ganó</b><span class="small">Un toque al ganador. Ping pong, FIFA, pulseadas.</span></button>
+      <button type="button" class="fmt" data-dm="puntos"><b>☝️ De a un punto</b><span class="small">+1 / −1 hasta la meta, con palitos. Truco.</span></button>
+      <button type="button" class="fmt" data-dm="rondas"><b>✍️ Por rondas</b><span class="small">Escribís lo que sumó cada uno en la ronda. Carioca, Pedro, cartas.</span></button></div></div>
     <div id="dv-pts"></div>
     <div class="field"><span>¿Hasta cuándo?</span><div class="chips" style="margin:0"><button type="button" class="chip" data-du="no">Sin fin</button><button type="button" class="chip" data-du="si">Hasta una fecha</button></div>
       <input class="input" type="date" id="dv-end" style="margin-top:8px;display:none" min="${S.me.today}"><div class="hint">Ideal para un viaje: al terminar se cierra y muestra quién ganó.</div></div>
@@ -1652,19 +1716,31 @@ function duelCreator(G){
     el.querySelectorAll('[data-dm]').forEach(b => b.classList.toggle('on', b.dataset.dm === mode));
     el.querySelectorAll('[data-du]').forEach(b => b.classList.toggle('on', (b.dataset.du === 'si') === (until !== null)));
     $('#dv-end', el).style.display = until !== null ? '' : 'none';
-    $('#dv-pts', el).innerHTML = mode === 'puntos' ? `<div class="stack" style="margin-top:0">
+    $('#dv-pts', el).innerHTML = mode === 'rondas' ? `<div class="stack" style="margin-top:0">
+      <div class="field"><span>¿Quién gana la partida?</span><div class="chips" style="margin:0"><button type="button" class="chip ${!lowest ? 'on' : ''}" data-lw="0">El que suma más</button><button type="button" class="chip ${lowest ? 'on' : ''}" data-lw="1">El que suma menos</button></div>
+        <div class="hint">En la Carioca, por ejemplo, gana el que suma menos.</div></div>
+      <div class="field"><span>¿Hasta cuánto se juega?</span><div class="chips" style="flex-wrap:wrap;margin:0">${[[null, 'Sin meta'], [100, '100'], [300, '300'], [500, '500'], [1000, '1000']].map(([v, l]) => `<button type="button" class="chip ${target === v ? 'on' : ''}" data-dt="${v === null ? '' : v}">${l}</button>`).join('')}</div>
+        <div class="hint">${target ? `Cuando alguien llega a ${target}, se termina la partida y gana ${lowest ? 'el que menos tiene' : 'el que más tiene'}.` : 'Sin meta, tocás "Terminar partida" cuando terminen.'}</div></div></div>`
+      : mode === 'puntos' ? `<div class="stack" style="margin-top:0">
       <div class="field"><span>Se juega a</span><div class="chips" style="flex-wrap:wrap;margin:0">${[[null, 'Sin meta'], [11, '11'], [15, '15'], [21, '21'], [30, '30']].map(([v, l]) => `<button type="button" class="chip ${target === v ? 'on' : ''}" data-dt="${v === null ? '' : v}">${l}</button>`).join('')}</div>
         <div class="hint">${target ? `Cuando alguien llega a ${target}, gana la partida y el marcador vuelve a cero.` : 'Sin meta, los puntos se van acumulando (ej: todo el viaje).'}</div></div>
       <label class="row small" style="gap:8px"><input type="checkbox" id="dv-tally" ${tally ? 'checked' : ''}> Mostrar con palitos (como en el truco)</label></div>` : '';
     el.querySelectorAll('[data-dt]').forEach(b => b.onclick = () => { target = b.dataset.dt ? +b.dataset.dt : null; if (target && target <= 30 && /truco/i.test($('#dv-a', el).value)) tally = true; paint(); });
     const t = $('#dv-tally', el); if (t) t.onchange = () => { tally = t.checked; };
+    el.querySelectorAll('[data-lw]').forEach(b => b.onclick = () => { lowest = b.dataset.lw === '1'; paint(); });
   };
   el.querySelectorAll('[data-rv]').forEach(b => b.onclick = () => { picked.has(b.dataset.rv) ? picked.delete(b.dataset.rv) : picked.add(b.dataset.rv); paint(); });
   el.querySelectorAll('[data-de]').forEach(b => b.onclick = () => { emoji = b.dataset.de; paint(); });
-  el.querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { mode = b.dataset.dm; paint(); });
+  el.querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { mode = b.dataset.dm; target = null; tally = false; paint(); });
   el.querySelectorAll('[data-du]').forEach(b => b.onclick = () => { until = b.dataset.du === 'si' ? ($('#dv-end', el).value || '') : null; paint(); if (until !== null) $('#dv-end', el).focus(); });
   // Si escriben "truco", se sugiere puntos a 30 con palitos.
-  $('#dv-a', el).oninput = (e) => { if (/truco/i.test(e.target.value) && mode === 'partidos' && !el.dataset.sugerido){ el.dataset.sugerido = '1'; mode = 'puntos'; target = 30; tally = true; emoji = '🃏'; paint(); } };
+  $('#dv-a', el).oninput = (e) => {
+    const v = e.target.value;
+    if (el.dataset.sugerido || mode !== 'partidos') return;
+    if (/truco/i.test(v)){ el.dataset.sugerido = '1'; mode = 'puntos'; target = 30; tally = true; emoji = '🃏'; paint(); }
+    else if (/carioca/i.test(v)){ el.dataset.sugerido = '1'; mode = 'rondas'; lowest = true; target = null; emoji = '🃏'; paint(); }
+    else if (/pedro|chinch|escoba|generala|cartas/i.test(v)){ el.dataset.sugerido = '1'; mode = 'rondas'; lowest = false; target = null; emoji = '🃏'; paint(); }
+  };
   paint();
   $('#dv-go', el).onclick = async (e) => {
     const a = $('#dv-a', el).value.trim();
@@ -1675,7 +1751,7 @@ function duelCreator(G){
     e.target.disabled = true;
     try {
       await rpc('api_duel_create', { ...P(), p_group: G.group.id, p_players: [...picked], p_activity: a, p_emoji: emoji,
-        p_mode: mode, p_target: mode === 'puntos' ? target : null, p_tally: mode === 'puntos' && tally, p_ends_on: end });
+        p_mode: mode, p_target: mode === 'partidos' ? null : target, p_tally: mode === 'puntos' && tally, p_ends_on: end, p_lowest: mode === 'rondas' && lowest });
       await loadDuels(G.group.id); closeSheet(); renderGrupo(); toast('¡Duelo armado! ⚔️');
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
@@ -1687,7 +1763,7 @@ function duelDetail(G, id){
   const el = openSheet(`<h2>${esc(d.emoji)} ${esc(d.activity)}</h2>
     <p class="dbig">${ps.map(u => `${esc(u.nick)} <b>${u.wins}</b>`).join(' · ')}</p>
     ${d.ended ? `<div class="dend section">🏁 Terminó el ${shortD(d.ends_on)}${duelLeader(d) ? ` · Ganó <b>${esc(duelLeader(d).nick)}</b>` : ''}</div>` : ''}
-    <div class="stack section" ${d.ended || (d.mode === 'puntos' && d.target) ? 'hidden' : ''}>
+    <div class="stack section" ${d.ended || d.mode !== 'partidos' ? 'hidden' : ''}>
       <label class="field"><span>Resultado del partido (opcional)</span><input class="input" id="dd-n" maxlength="60" placeholder="Ej: 21-18"></label>
       <div class="field"><span>¿Quién ganó?</span><div class="grid2">${d.players.map(u => `<button class="btn sm" style="width:100%" data-dd="${u.id}">${esc(u.nick)}</button>`).join('')}</div></div>
       <button class="btn ghost sm" style="width:100%" data-dd="">Empate</button>
