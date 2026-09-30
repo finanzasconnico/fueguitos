@@ -96,6 +96,8 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.sel{border-color:var(--fire);background:var(--fire-soft)}
 .habit.done{border-color:var(--ok-line)}
 .habit.failed{border-color:var(--fire)}
+.goal{font-size:13px;font-weight:700;color:var(--muted);margin-top:6px}
+.goal.near{color:var(--fire-ink)}
 .check.x{background:var(--fire);border-color:var(--fire)}
 .flamebox{position:relative;width:74px;height:78px;display:grid;place-items:center}
 .flamebox svg{width:58px;height:72px}
@@ -1145,6 +1147,7 @@ function renderHoy(){
   document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
     if (e.target.closest('[data-undo]')) return;
     const h = hs.find(x => x.id === b.dataset.habit);
+    if (e.target.closest('[data-appblock]')){ appBlockSheet(h); return; }
     if (h.kind === 'evitar'){ quitSheet(h); return; }
     if (h.done_today){ toast(`${h.name} ya está anotado hoy ✅`); return; }
     S.sel.has(h.id) ? S.sel.delete(h.id) : S.sel.add(h.id);
@@ -1241,11 +1244,22 @@ function habitCard(h){
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
       <div class="meta">${status}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
+      ${goalLine(h)}
       ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
     </div>
     <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
   </button>`;
 }
+// Qué objetivo mostrar: el récord si está al alcance, si no, el próximo hito.
+const HITO_LIST = [3, 7, 14, 21, 30, 50, 100, 150, 200, 365, 500, 730, 1000];
+function goalLine(h){
+  const st = h.streak || 0, best = h.best || 0;
+  if (best > st && st > 0 && (st >= best / 2 || best - st <= 30)) return `<div class="goal near">🔥 Te ${best - st === 1 ? 'falta 1' : `faltan ${best - st}`} para tu récord (${best})</div>`;
+  if (best > 0 && st >= best && st > 7) return `<div class="goal near">🏆 ¡Estás en tu récord!</div>`;
+  const next = HITO_LIST.find(x => x > st);
+  return next ? `<div class="goal">🎯 Próximo: ${next} días${best > st ? ` · 🏆 récord ${best}` : ''}</div>` : '';
+}
+
 function quitCard(h){
   const ok = !h.failed_today;
   return `<button class="habit quit ${ok ? 'done' : 'failed'}" data-habit="${h.id}" aria-label="${esc(h.name)}: ${ok ? 'vas bien hoy' : 'hoy caíste'}. Tocá para cambiarlo">
@@ -1254,10 +1268,39 @@ function quitCard(h){
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
       <div class="meta">${ok ? '<span class="pill ok">Vas bien hoy</span>' : '<span class="pill fire">Hoy caíste</span>'}<span class="pill">🏆 Récord ${h.best || 0}</span><span class="pill">📅 ${h.total_clean || 0} en total</span></div>
       <span class="small muted">${ok ? 'Se suma solo. Si caés, tocalo.' : 'Mañana arrancás de nuevo. Lo logrado no se borra.'}</span>
+      ${APP_RX.test(h.name) ? `<span class="undo" role="button" tabindex="0" data-appblock="${h.id}">¿Cómo frenar ${esc(appName(h.name))}?</span>` : ''}
     </div>
     <div class="check ${ok ? '' : 'x'}" aria-hidden="true">${ok ? '✓' : '✕'}</div>
   </button>`;
 }
+const APP_RX = /insta|tiktok|tik tok|twitter|\bx\b|youtube|facebook|redes|reels|shorts|celu|pantalla|app|juego|whats/i;
+const appName = (name) => { const m = String(name).match(/instagram|tiktok|tik tok|twitter|youtube|facebook|whatsapp|reels|shorts/i); return m ? m[0].replace(/^./, c => c.toUpperCase()) : 'la app'; };
+// Instructivo: que abrir la app te traiga a Fueguitos (iPhone) o ponerle límite (Android).
+function appBlockSheet(h){
+  const app = appName(h.name);
+  openSheet(`<h2>📵 Frená ${esc(app)}</h2>
+    <p class="muted">Tu celu ya trae cómo bloquearla. Configuralo una vez y te ayuda todos los días.</p>
+    <div class="card section"><h3>iPhone: límite de uso (bloquea de verdad)</h3>
+      <ol class="small" style="padding-left:20px;margin:8px 0 0">
+        <li><b>Ajustes</b> → <b>Tiempo en pantalla</b> → <b>Límites de apps</b> → <b>Agregar límite</b>.</li>
+        <li>Buscá <b>${esc(app)}</b> y poné <b>1 minuto</b> por día.</li>
+        <li>Activá <b>Bloquear al finalizar el límite</b>. Si alguien de confianza pone el código de Tiempo en pantalla, mejor: así no lo saltás vos.</li>
+      </ol></div>
+    <div class="card section"><h3>iPhone: aviso cada vez que la abrís (opcional)</h3>
+      <ol class="small" style="padding-left:20px;margin:8px 0 0">
+        <li><b>Atajos</b> → <b>Automatización</b> → <b>+</b> → <b>App</b> → <b>${esc(app)}</b> → <b>Se abre</b> → <b>Ejecutar inmediatamente</b>.</li>
+        <li><b>Agregar acción</b> → <b>Mostrar notificación</b> → escribí algo como "📵 ¿Seguro? Estás cuidando tu racha en Fueguitos 🔥".</li>
+      </ol></div>
+    <div class="card section"><h3>Android: temporizador (bloquea de verdad)</h3>
+      <ol class="small" style="padding-left:20px;margin:8px 0 0">
+        <li><b>Ajustes</b> → <b>Bienestar digital y controles parentales</b>.</li>
+        <li>Tocá <b>${esc(app)}</b> → <b>Temporizador de la app</b> → poné el mínimo.</li>
+        <li>Cuando se cumple, el ícono queda gris hasta el día siguiente.</li>
+      </ol></div>
+    <p class="hint">Tip: sacá ${esc(app)} de la pantalla de inicio (dejala solo en la biblioteca de apps). Cuanto más difícil de abrir, menos la abrís.</p>
+    <div class="section"><button class="btn" data-close-sheet>Listo</button></div>`).querySelector('[data-close-sheet]').onclick = closeSheet;
+}
+
 // Tocar un hábito de "dejar algo": marcar que caíste o deshacerlo.
 function quitSheet(h){
   const ok = !h.failed_today;
@@ -1333,6 +1376,7 @@ function openCheckinSheet(){
     try {
       const extra = sport ? readDetail(el, det) : null;
       if (extra && extra.error){ toast(extra.error); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; return; }
+      S.prevBest = Object.fromEntries(S.me.habits.map(x => [x.id, x.best || 0]));
       const r0 = await rpcQ('api_checkin', { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null }, 'anotación del día', true);
       const r = r0.queued ? localCheckin([...S.sel]) : r0;
       S.me.habits = r.habits; S.sel.clear(); closeSheet(); renderMain();
@@ -1431,7 +1475,10 @@ function celebrate(results){
     ${flameSVG(true, 'bigflame')}
     <div class="count" id="cnt">${Math.max(0, main.streak - 1)}</div>
     <div class="lbl">${main.streak === 1 ? 'día de racha' : 'días de racha'} de ${esc(main.name)}</div>
-    <div class="hito ${HITOS[main.streak] ? 'big' : ''}">${HITOS[main.streak] || ANIMO[main.streak % ANIMO.length]}</div>
+    ${(() => { const pb = (S.prevBest || {})[main.habit_id] || 0;
+      if (pb >= 7 && main.streak > pb) return `<div class="hito big">🏆 ¡Nuevo récord personal!</div><p style="opacity:.8;margin:4px 0 0">Tu marca anterior era ${pb} días</p>`;
+      if (pb > main.streak && pb - main.streak <= 30) return `<div class="hito">${HITOS[main.streak] || ANIMO[main.streak % ANIMO.length]}</div><p style="opacity:.8;margin:4px 0 0">🔥 Te ${pb - main.streak === 1 ? 'falta 1' : `faltan ${pb - main.streak}`} para tu récord</p>`;
+      return `<div class="hito ${HITOS[main.streak] ? 'big' : ''}">${HITOS[main.streak] || ANIMO[main.streak % ANIMO.length]}</div>`; })()}
     ${results.length > 1 ? `<div class="others">${results.slice(1).map(r => `<div class="o"><span>${esc(r.emoji)} ${esc(r.name)}</span><span>${r.streak} 🔥</span></div>`).join('')}</div>` : ''}
     ${earned.length ? `<div class="gotice">🧊 ¡Ganaste un hielito en ${esc(earned.map(r => r.name).join(' y '))}!</div>` :
       `<p style="opacity:.75;margin-top:14px">⌛ ${main.left_for_ice} días para el próximo hielito</p>`}
@@ -2617,7 +2664,10 @@ function habitEditor(h, groupId = null, after){
         p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind });
       // Un hábito nuevo queda activado para quien lo creó.
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
-      if (!h && kind === 'evitar') setTimeout(() => toast('Listo: se tilda solo cada día. Si caés, tocalo en Hoy.', 4000), 3900);
+      if (!h && kind === 'evitar'){
+        if (APP_RX.test(name)) setTimeout(() => appBlockSheet({ name }), 600);
+        else setTimeout(() => toast('Listo: se tilda solo cada día. Si caés, tocalo en Hoy.', 4000), 3900);
+      }
       S.me = await rpc('api_me', P()); if (S.group) await loadGroup().catch(() => {}); closeSheet();
       after ? await after() : renderMain();
       toast(h ? 'Hábito actualizado' : groupId ? 'Hábito creado y compartido con el grupo. Ya lo tenés activado.' : 'Hábito creado y activado. Si querés, compartilo con tu grupo.', 3800);
