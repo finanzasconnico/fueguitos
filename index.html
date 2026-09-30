@@ -98,8 +98,9 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.failed{border-color:var(--fire)}
 .habit.late{opacity:.6}
 .nightq{display:flex;gap:8px;margin-top:8px}
+.habit.done .progress>i{background:var(--ok)}
 .nightq .btn{flex:1;min-height:40px}
-button.undo{background:none;border:0;padding:0;display:block;font-family:inherit;cursor:pointer}
+button.undo{background:none;border:0;padding:0;display:block;margin-top:8px;font-family:inherit;cursor:pointer}
 .goal{font-size:13px;font-weight:700;color:var(--muted);margin-top:6px}
 .goal.near{color:var(--fire-ink)}
 .check.x{background:var(--fire);border-color:var(--fire)}
@@ -1166,6 +1167,7 @@ function renderHoy(){
     renderHoy(); renderBar();
   });
   const byId = (id) => hs.find(x => x.id === id);
+  document.querySelectorAll('[data-count]').forEach(b => b.onclick = () => countTap(byId(b.dataset.count), +b.dataset.d));
   document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightYes)));
   document.querySelectorAll('[data-night-no]').forEach(b => b.onclick = () => {
     const h = byId(b.dataset.nightNo); LS.set('fueguitos_no_' + h.id, S.me.today); renderHoy();
@@ -1272,9 +1274,46 @@ function nightCard(h){
   </div>`;
 }
 
+// Hábitos con cantidad por día (8 vasos de agua): +1 con un toque, o todo de una.
+function countCard(h){
+  const done = h.done_today, n = done ? h.goal : Math.min(h.count_today || 0, h.goal), u = h.unit ? ' ' + esc(h.unit) : '';
+  const less = `<button type="button" class="undo" data-count="${h.id}" data-d="-1">Restar uno</button>`;
+  return `<div class="habit count ${done ? 'done' : ''}">
+    <div class="flamebox ${done ? '' : 'off'}">${flameSVG(done)}<div class="n">${h.streak}</div></div>
+    <div>
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>
+      <div class="meta"><span class="pill ${done ? 'ok' : 'fire'}">${n}/${h.goal}${u}</span><span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
+      <div class="progress" style="margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="${h.goal}" aria-valuenow="${n}"><i style="width:${Math.round(n / h.goal * 100)}%"></i></div>
+      ${done ? `${goalLine(h)}${less}`
+        : `<div class="nightq"><button type="button" class="btn sm" data-count="${h.id}" data-d="1" aria-label="Sumar uno a ${esc(h.name)}">+1</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="${h.goal}">Todo ✓</button></div>${n > 0 ? less : ''}`}
+    </div>
+    <div class="check" aria-hidden="true">${done ? '✓' : ''}</div>
+  </div>`;
+}
+async function countTap(h, d){
+  const prev = S.me.habits;
+  const n0 = h.done_today ? h.goal : Math.min(h.count_today || 0, h.goal), n1 = Math.max(0, Math.min(h.goal, n0 + d));
+  S.me.habits = prev.map(x => x.id === h.id ? { ...x, count_today: n1 } : x); renderHoy(); vibrate(15);
+  try {
+    const r = await rpcQ('api_count', { ...P(), p_habit: h.id, p_delta: d }, `${h.name} ${d > 0 ? '+' : ''}${d}`, true);
+    if (r.queued){
+      if (n1 >= h.goal && !h.done_today) localCheckin([h.id]);
+      else if (n1 < h.goal && h.done_today) S.me.habits = S.me.habits.map(x => x.id === h.id ? { ...x, done_today: false, streak: Math.max(0, x.streak - 1) } : x);
+      renderHoy(); return;
+    }
+    S.me.habits = r.habits; renderHoy();
+    if (r.completed){
+      const hh = r.habits.find(x => x.id === h.id) || h, x = (r.results || [])[0] || {};
+      vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120);
+      toast(`¡Meta cumplida! ${h.name}: día ${hh.streak} 🔥${x.earned_ice ? ' · ganaste un hielito 🧊' : ''}`, 3800);
+    }
+  } catch(e){ S.me.habits = prev; renderHoy(); toast(e.message, 3500); }
+}
+
 function habitCard(h){
   if (h.kind === 'evitar') return quitCard(h);
   if (h.next_day) return nightCard(h);
+  if (h.goal) return countCard(h);
   const sel = S.sel.has(h.id);
   const lateNow = h.deadline && !h.done_today && isLate(h);
   const status = h.done_today ? `<span class="pill ok">Anotado hoy</span>` : lateNow ? `<span class="pill">Se pasó la hora</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
@@ -2670,8 +2709,21 @@ function habitEditor(h, groupId = null, after){
   let autoIce = !h;
   let kind = h ? (h.kind || 'hacer') : 'hacer';
   const EM = ['🏃','🚴','🏊','⚽','📚','🧘','💧','🥗','😴','🌙','✍️','🎸','🧠','📵','🚭','🍺','🍬','📱','🙏','🚶','🏋️','🦉','🗣️','🎹','🧹','💊','🦷','🌅','🍎'];
+  // Hábitos ya armados: un toque y queda todo cargado.
+  const TPL = [
+    { e: '💧', t: 'Agua', name: 'Tomar agua', wpp: 'Agua', goal: 8, unit: 'vasos', remind: true },
+    { e: '📚', t: 'Leer', name: 'Leer', wpp: 'Lectura', goal: 10, unit: 'páginas' },
+    { e: '🌙', t: 'Dormir temprano', name: 'Dormirme antes de las 12', wpp: 'Dormir', next: true },
+    { e: '🌅', t: 'Madrugar', name: 'Levantarme antes de las 7', wpp: 'Madrugar', dl: '07:00' },
+    { e: '🧘', t: 'Meditar', name: 'Meditar', wpp: 'Meditación' },
+    { e: '💪', t: 'Flexiones', name: 'Flexiones', wpp: 'Flexiones', goal: 20, unit: 'flexiones' },
+    { e: '🦉', t: 'Duolingo', name: 'Duolingo', wpp: 'Duolingo' },
+    { e: '📵', t: 'Sin Instagram', name: 'Sin Instagram', wpp: 'Sin Instagram', kind: 'evitar' },
+    { e: '🚭', t: 'Dejar de fumar', name: 'Sin fumar', wpp: 'Sin fumar', kind: 'evitar' },
+  ];
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
+      ${h ? '' : `<div class="field"><span>Empezá con uno armado (o armá el tuyo abajo)</span><div class="chips" style="margin-bottom:0">${TPL.map((t, i) => `<button type="button" class="chip" data-tpl="${i}">${t.e} ${t.t}</button>`).join('')}</div></div>`}
       ${h ? `<p class="small muted" style="margin:0">${kind === 'evitar' ? '🚫 Hábito para dejar algo: se tilda solo cada día.' : '✅ Hábito para hacer algo.'}</p>` : `<div class="field"><span>¿Qué tipo de hábito?</span><div class="grid2">
         <button type="button" class="fmt" data-hk="hacer"><b>✅ Hacer algo</b><span class="small">Lo anotás cuando lo hacés. Ej: leer, tomar agua.</span></button>
         <button type="button" class="fmt" data-hk="evitar"><b>🚫 Dejar algo</b><span class="small">Se tilda solo. Lo destildás si caíste. Ej: Instagram, fumar.</span></button></div></div>`}
@@ -2681,11 +2733,19 @@ function habitEditor(h, groupId = null, after){
       <label class="field"><span>Cómo aparece en el mensaje de WhatsApp</span><input class="input" id="h-wpp" maxlength="20" placeholder="Ej: Agua" value="${esc(h ? h.wpp_label : '')}"><div class="hint">Queda así: <b id="h-prev"></b></div></label>
       <div class="field"><span>Días que cuenta</span><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
         <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div>
+      <details class="more" id="h-more" ${h && (h.goal || h.next_day || h.deadline) ? 'open' : ''}><summary>＋ Más opciones: cantidad, de la noche, hora límite</summary><div class="stack">
+      <div class="field" id="h-goal-box"><span>¿Tiene cantidad por día? (opcional)</span>
+        <div class="row" style="gap:10px"><input class="input" id="h-goal" type="number" inputmode="numeric" min="2" max="200" placeholder="8" style="max-width:90px" value="${h && h.goal ? h.goal : ''}"><input class="input" id="h-unit" maxlength="12" placeholder="vasos" value="${esc(h && h.unit ? h.unit : '')}"></div>
+        <div class="hint">Ej: 8 vasos de agua, 10 páginas. Sumás de a uno con un toque, o todo de una.</div>
+        <div class="row" style="gap:10px;margin-top:8px"><span class="small">💧 ¿Agua? Tu peso:</span><input class="input" id="h-kg" type="number" inputmode="numeric" placeholder="kg" style="max-width:90px"></div>
+        <div class="hint" id="h-kg-out">Te calcula los vasos por día.</div>
+        <label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" id="h-remind" ${h && h.remind_day ? 'checked' : ''}> 🔔 Avisarme durante el día si vengo atrasado (máximo 3 avisos)</label></div>
       <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo confirmo a la mañana siguiente</label>
         <div class="hint">Para no agarrar el celu antes de dormir. Al otro día la app te pregunta "¿Anoche cumpliste?" y contestás con un toque.</div></div>
       <div class="field" id="h-dl-box"><span>¿Tiene hora límite? (opcional)</span>
         <div class="row" style="gap:10px"><input class="input" id="h-dl" type="time" style="max-width:150px" value="${esc(h && h.deadline ? h.deadline : '')}"><button type="button" class="link small" id="h-dl-x">Sin hora</button></div>
         <div class="hint">Ej: "Levantarme antes de las 7" → 07:00. Se anota con un toque, en las 4 horas previas a esa hora, y te avisamos 30 min antes.</div></div>
+      </div></details>
       <div class="grid2" id="h-ices">
         <div class="field"><span>Hielo cada</span>${stepper('h-ice', h ? h.ice_every : 14, 1, 90)}<div class="hint">días anotados</div></div>
         <div class="field"><span>Máximo de hielos</span>${stepper('h-max', h ? h.max_ice : 2, 0, 5)}</div>
@@ -2698,8 +2758,9 @@ function habitEditor(h, groupId = null, after){
   bindSteppers(el);
   const paintKind = () => {
     el.querySelectorAll('[data-hk]').forEach(b => b.classList.toggle('on', b.dataset.hk === kind));
-    $('#h-ices', el).style.display = $('#h-rule', el).style.display = $('#h-next-box', el).style.display = kind === 'evitar' ? 'none' : '';
-    $('#h-dl-box', el).style.display = kind === 'evitar' || $('#h-next', el).checked ? 'none' : '';
+    $('#h-ices', el).style.display = $('#h-rule', el).style.display = $('#h-more', el).style.display = kind === 'evitar' ? 'none' : '';
+    $('#h-goal-box', el).style.display = $('#h-next', el).checked ? 'none' : '';
+    $('#h-dl-box', el).style.display = $('#h-next', el).checked || $('#h-goal', el).value ? 'none' : '';
     $('#h-noice', el).style.display = kind === 'evitar' ? '' : 'none';
     $('#h-name', el).placeholder = kind === 'evitar' ? 'Ej: Sin Instagram, dejar de fumar' : 'Ej: Tomar agua';
     if (kind === 'evitar' && !h && !$('#h-emoji', el).dataset.touched) $('#h-emoji', el).value = '🚫';
@@ -2718,11 +2779,31 @@ function habitEditor(h, groupId = null, after){
   el.querySelector('[data-stepper="h-ice"]').addEventListener('click', () => { autoIce = false; setTimeout(paint); });
   $('#h-dl-x', el).onclick = () => { $('#h-dl', el).value = ''; };
   $('#h-next', el).onchange = (e) => { e.target.dataset.touched = '1'; paintKind(); };
+  $('#h-goal', el).oninput = paintKind;
+  // Agua según el peso: regla general de 35 ml por kilo, en vasos de 250 ml.
+  $('#h-kg', el).oninput = (e) => {
+    const kg = +e.target.value; if (!(kg >= 30 && kg <= 200)){ $('#h-kg-out', el).textContent = 'Te calcula los vasos por día.'; return; }
+    const vasos = Math.max(4, Math.min(16, Math.round(kg * 35 / 250)));
+    $('#h-goal', el).value = vasos; $('#h-unit', el).value = 'vasos'; paintKind();
+    $('#h-kg-out', el).textContent = `≈ ${(vasos * .25).toFixed(1).replace('.', ',')} litros por día: ${vasos} vasos. Es una guía general, no una indicación médica.`;
+  };
+  el.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
+    const t = TPL[+b.dataset.tpl];
+    el.querySelectorAll('[data-tpl]').forEach(x => x.classList.toggle('on', x === b));
+    kind = t.kind || 'hacer'; days = [0,1,2,3,4,5,6]; autoIce = true;
+    $('#h-name', el).value = t.name; $('#h-wpp', el).value = t.wpp; $('#h-emoji', el).value = t.e; $('#h-emoji', el).dataset.touched = '1';
+    $('#h-goal', el).value = t.goal || ''; $('#h-unit', el).value = t.unit || ''; $('#h-remind', el).checked = !!t.remind;
+    $('#h-next', el).checked = !!t.next; $('#h-dl', el).value = t.dl || '';
+    $('#h-more', el).open = !!(t.goal || t.next || t.dl);
+    paintKind(); paint();
+  });
   // Sugerencias según el nombre: dormir → se confirma a la mañana; levantarse → 07:00.
   $('#h-name', el).addEventListener('input', (e) => {
     if (h || $('#h-dl', el).value || kind !== 'hacer') return;
     const v = e.target.value;
-    const em = $('#h-emoji', el), nx = $('#h-next', el);
+    const em = $('#h-emoji', el), nx = $('#h-next', el), gl = $('#h-goal', el);
+    if (/agua|hidrat/i.test(v) && !gl.value && !nx.checked){ gl.value = 8; $('#h-unit', el).value = 'vasos'; $('#h-remind', el).checked = true; $('#h-more', el).open = true; if (!em.dataset.touched) em.value = '💧'; paintKind(); return; }
+    if (/dorm|acost|cama/i.test(v)) $('#h-more', el).open = true;
     if (/dorm|acost|cama/i.test(v)){ if (!nx.dataset.touched && !nx.checked){ nx.checked = true; paintKind(); } if (!em.dataset.touched) em.value = '🌙'; }
     else if (nx.checked) return;
     else if (/levant|despert|madrug/i.test(v)){ $('#h-dl', el).value = '07:00'; if (!em.dataset.touched) em.value = '🌅'; }
@@ -2733,7 +2814,8 @@ function habitEditor(h, groupId = null, after){
     e.target.disabled = true;
     try {
       const saved = await rpc('api_save_habit', { ...P(), p_group: h ? (h.group_id || null) : groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
-        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind, p_deadline: kind === 'hacer' && !$('#h-next', el).checked ? ($('#h-dl', el).value || null) : null, p_next: kind === 'hacer' && $('#h-next', el).checked });
+        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind, p_deadline: kind === 'hacer' && !$('#h-next', el).checked ? ($('#h-dl', el).value || null) : null, p_next: kind === 'hacer' && $('#h-next', el).checked,
+        p_goal: kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2 ? Math.round(+$('#h-goal', el).value) : null, p_unit: $('#h-unit', el).value.trim() || null, p_remind: $('#h-remind', el).checked });
       // Un hábito nuevo queda activado para quien lo creó.
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
       if (!h && kind === 'evitar'){
