@@ -1,5 +1,5 @@
 // Service worker: deja la app instalable y abre rápido aunque haya mala señal.
-const CACHE = 'fueguitos-v24';
+const CACHE = 'fueguitos-v25';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png'];
 
 self.addEventListener('install', (e) => {
@@ -27,7 +27,7 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// Notificaciones push (recordatorios).
+// Notificaciones push (recordatorios, amigos y fotos).
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data && e.data.text() }; }
@@ -36,6 +36,7 @@ self.addEventListener('push', (e) => {
     icon: 'icons/icon-192.png',
     badge: 'icons/favicon.png',
     tag: d.tag || 'recordatorio',
+    ...(d.image ? { image: d.image } : {}), // Android muestra la foto en grande; iPhone la ignora
     renotify: true,
     data: { url: d.url || './' }
   }));
