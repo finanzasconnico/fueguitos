@@ -74,6 +74,8 @@ h3{font-size:17px;font-weight:700}
 .btn.ice{background:var(--ice);box-shadow:0 4px 0 var(--ice-dark)}
 .btn.ghost{background:var(--card);color:var(--ink);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
 .btn.green{background:var(--ok);box-shadow:0 4px 0 #17804E}
+.btn.danger{background:var(--danger);box-shadow:0 4px 0 #A12233}
+.link.muted{color:var(--muted);font-weight:600}
 .btn.sm{min-height:40px;font-size:15px;padding:0 14px;border-radius:12px;width:auto}
 .link{color:var(--ice-dark);font-weight:700;font-size:15px}
 .link.danger{color:var(--danger)}
@@ -774,6 +776,7 @@ function haveAccountSheet(){
       <label class="field"><span>Apodo</span><input class="input" id="lg-n" maxlength="30" autocomplete="username" placeholder="Tu apodo"></label>
       <label class="field"><span>PIN</span>${pinInput('lg-p')}</label>
       <button class="btn" type="submit">Entrar</button>
+      <button type="button" class="link small" id="lg-forgot">¿Te olvidaste el PIN?</button>
     </form>
     <details class="section more"><summary>No tengo PIN / tengo un link o invitación</summary>
       <p class="muted small">Pegá tu link de acceso (Perfil → Copiar mi link) o el link de invitación de tu grupo.</p>
@@ -796,6 +799,7 @@ function haveAccountSheet(){
     } catch(err){ toast(err.message); }
     b.disabled = false;
   };
+  $('#lg-forgot', el).onclick = () => forgotPinSheet($('#lg-n', el).value.trim());
   const p = $('#h-paste', el); if (p) p.onclick = async () => { try { $('#h-link', el).value = (await navigator.clipboard.readText()).trim(); } catch(e){ toast('Mantené apretado el cuadro y tocá Pegar'); } };
   $('#h-go', el).onclick = () => {
     const raw = $('#h-link', el).value.trim(); let k = null, g = null;
@@ -805,6 +809,75 @@ function haveAccountSheet(){
     if (k){ LS.set('racha_token', k); location.replace(location.pathname); return; }
     if (g){ S.pendingJoin = g.toUpperCase(); closeSheet(); renderWelcome(); toast('Invitación lista. Poné tu apodo 🔥'); return; }
     toast('Ese link no parece de Fueguitos. Revisalo.');
+  };
+}
+
+// Recuperar el PIN: código de 6 números al mail vinculado, y PIN nuevo en la misma cuenta.
+function forgotPinSheet(nick0){
+  const el = openSheet(`<h2>🔑 Recuperar mi PIN</h2>
+    <p class="muted">Te mandamos un código al mail que vinculaste en tu cuenta.</p>
+    <div class="stack section" id="fp-1">
+      <label class="field"><span>Apodo</span><input class="input" id="fp-n" maxlength="30" autocomplete="username" value="${esc(nick0 || '')}" placeholder="Tu apodo"></label>
+      <button class="btn" id="fp-send">Mandame el código</button></div>
+    <div class="stack section" id="fp-2" style="display:none">
+      <p class="small" id="fp-hint" style="margin:0"></p>
+      <label class="field"><span>Código del mail (6 números)</span><input class="input big" id="fp-c" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456"></label>
+      <label class="field"><span>PIN nuevo (4 números)</span>${pinInput('fp-p1')}</label>
+      <label class="field"><span>Repetilo</span>${pinInput('fp-p2')}</label>
+      <button class="btn" id="fp-ok">Guardar PIN y entrar</button>
+      <button type="button" class="link small" id="fp-again">No me llegó: mandarlo de nuevo</button></div>`);
+  const ERR = { SIN_MAIL: 'Esa cuenta no tiene un mail vinculado. Si seguís logueado en otro celu, entrá ahí, vinculá el mail en Perfil → Mis datos y cambiá el PIN.',
+    MAIL_NO_DISPONIBLE: 'Todavía no está activado el envío de mails. Probá más tarde.', DEMASIADOS: 'Ya te mandamos varios códigos. Probá de nuevo en una hora.' };
+  const send = async (b) => {
+    const n = $('#fp-n', el).value.trim(); if (!n){ toast('Poné tu apodo'); return; }
+    b.disabled = true;
+    try {
+      const r = await rpc('api_pin_reset_request', { p_nick: n });
+      if (!r.ok){ toast(ERR[r.error] || 'No se pudo mandar el código.', 5000); b.disabled = false; return; }
+      $('#fp-1', el).style.display = 'none'; $('#fp-2', el).style.display = '';
+      $('#fp-hint', el).innerHTML = `Te mandamos un código a <b>${esc(r.hint)}</b>. Vence en 15 minutos. Si no lo ves, revisá spam.`;
+      setTimeout(() => $('#fp-c', el).focus(), 200);
+    } catch(e){ toast(e.message); }
+    b.disabled = false;
+  };
+  $('#fp-send', el).onclick = (e) => send(e.target);
+  $('#fp-again', el).onclick = (e) => send(e.target);
+  $('#fp-ok', el).onclick = async (e) => {
+    const c = $('#fp-c', el).value.trim(), a = $('#fp-p1', el).value, b2 = $('#fp-p2', el).value;
+    if (!/^\d{6}$/.test(c)){ toast('El código son 6 números'); return; }
+    if (!/^\d{4}$/.test(a)){ toast('El PIN son 4 números'); return; }
+    if (a !== b2){ toast('Los dos PIN no coinciden'); return; }
+    e.target.disabled = true;
+    try {
+      const r = await rpc('api_pin_reset', { p_nick: $('#fp-n', el).value.trim(), p_code: c, p_pin: a });
+      if (r.ok){ LS.set('racha_token', r.token); toast('PIN nuevo guardado 🔐'); location.replace(location.pathname); return; }
+      toast({ CODIGO_MAL: `Ese código no es. Te quedan ${r.quedan} intentos.`, CODIGO_VENCIDO: 'El código venció. Pedí uno nuevo.', PIN_INVALIDO: 'El PIN son 4 números.' }[r.error] || 'No se pudo cambiar el PIN.', 4200);
+    } catch(err){ toast(err.message); }
+    e.target.disabled = false;
+  };
+}
+
+// Borrar la cuenta: pide el PIN (o escribir BORRAR si no tiene).
+function deleteAccountSheet(){
+  const has = S.me.user.has_pin;
+  const el = openSheet(`<h2>Borrar mi cuenta</h2>
+    <p class="muted">Se borran para siempre tus rachas, fotos, marcas y hábitos propios, y salís de todos tus grupos. Los hábitos que compartiste quedan para el grupo. <b>No se puede deshacer.</b></p>
+    <div class="stack section">
+      ${has ? `<label class="field"><span>Tu PIN, para confirmar</span>${pinInput('da-p')}</label>`
+        : `<label class="field"><span>Escribí BORRAR para confirmar</span><input class="input" id="da-p" autocomplete="off" autocapitalize="characters" placeholder="BORRAR"></label>`}
+      <button class="btn danger" id="da-go">Borrar mi cuenta para siempre</button>
+      <button class="btn ghost" id="da-no">Mejor no</button></div>`);
+  $('#da-no', el).onclick = closeSheet;
+  $('#da-go', el).onclick = async (e) => {
+    const v = $('#da-p', el).value.trim();
+    if (has && !/^\d{4}$/.test(v)){ toast('Poné los 4 números de tu PIN'); return; }
+    e.target.disabled = true;
+    try {
+      const r = await rpc('api_delete_account', { ...P(), p_pin: v });
+      if (r.ok){ LS.del('racha_token'); LS.del('racha_group'); await nat('clearSession'); toast('Cuenta borrada. Gracias por haber prendido fueguitos 🔥', 4000); setTimeout(() => location.replace(location.pathname), 1500); return; }
+      toast({ PIN_MAL: `PIN incorrecto. Te quedan ${r.quedan} intentos.`, PIN_BLOQUEADO: `Demasiados intentos. Probá en ${r.min || 15} min.`, CONFIRMAR: 'Escribí BORRAR para confirmar.' }[r.error] || 'No se pudo borrar.', 4200);
+    } catch(err){ toast(err.message); }
+    e.target.disabled = false;
   };
 }
 
@@ -3440,7 +3513,7 @@ function renderPerfil(){
     <div class="section"><div class="section-title"><h2>Mis datos</h2></div>
       <form class="card stack" id="prof">
         <label class="field"><span>Apodo</span><input class="input" id="p-nick" maxlength="30" value="${esc(me.user.nick)}"></label>
-        <label class="field"><span>Mail (opcional)</span><input class="input" id="p-mail" type="email" placeholder="Para avisos, si algún día los activamos" value="${esc(me.user.email || '')}"></label>
+        <label class="field"><span>Mail para recuperar tu PIN</span><input class="input" id="p-mail" type="email" autocomplete="email" placeholder="tu@mail.com" value="${esc(me.user.email || '')}"><div class="hint">${me.user.email ? '✅ Vinculado. ' : ''}Si te olvidás el PIN, te mandamos un código acá. No lo usamos para nada más.</div></label>
         <button class="btn sm" type="submit" style="width:100%">Guardar datos</button>
       </form>
     </div>
@@ -3486,7 +3559,8 @@ function renderPerfil(){
 `}
     </div>
 
-    <div class="section" style="text-align:center"><button class="link danger" id="logout">Cerrar sesión en este celu</button></div>
+    <div class="section" style="text-align:center"><button class="link danger" id="logout">Cerrar sesión en este celu</button>
+      <div style="margin-top:18px"><button class="link small muted" id="del-acc">Borrar mi cuenta</button></div></div>
   `;
   bindHabitToggles(renderPerfil);
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
@@ -3497,6 +3571,7 @@ function renderPerfil(){
     catch(err){ toast(err.message); }
   };
   $('#pin-set').onclick = pinSheet;
+  $('#del-acc').onclick = deleteAccountSheet;
   bindProgress();
   if (!S.acts || !S.lifts) loadProgress();
   bindRemind();
