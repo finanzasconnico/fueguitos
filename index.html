@@ -124,6 +124,25 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
+.onb h1{margin-top:6px}
+.onb .lead{font-size:17px;margin:6px 0 16px}
+.onb-dots{display:flex;gap:6px;margin-top:8px}
+.onb-dots i{width:26px;height:6px;border-radius:6px;background:var(--line)}
+.onb-dots i.on{background:var(--fire)}
+.onb-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.onb-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px;border-radius:18px;border:2px solid var(--line);background:var(--card);min-height:104px;font:inherit;color:inherit}
+.onb-card .e{font-size:30px;line-height:1}
+.onb-card b{font-size:16px;line-height:1.2}
+.onb-card .tick{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;color:transparent}
+.onb-card.on{border-color:var(--fire);background:var(--fire-soft)}
+.onb-card.on .tick{background:var(--fire);border-color:var(--fire);color:#fff}
+.onb-do{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:18px;border:2px solid var(--line);background:var(--card);text-align:left;font:inherit;color:inherit}
+.onb-do .e{font-size:28px}
+.onb-do b{flex:1;font-size:17px}
+.onb-do .tag{font-weight:800;font-size:14px;color:#fff;background:var(--fire);padding:8px 12px;border-radius:12px;white-space:nowrap}
+.onb-do.done{border-color:var(--ok-line)}
+.onb-do.done .tag{background:var(--ok)}
+.nudges{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .hrow.bench>div:first-child{opacity:.6}
 button.week.pair{width:100%;text-align:left;display:block;margin:0;font:inherit;color:inherit}
 .week.pair .big{font-size:20px;font-weight:800}
@@ -531,6 +550,7 @@ const ERRORS = {
   SESION_INVALIDA: 'Tu sesión no existe más. Volvé a entrar con tu apodo.',
   CODIGO_INVALIDO: 'Ese código no existe. Revisalo con quien te invitó.',
   GRUPO_LLENO: 'Esa racha de a dos ya tiene a sus dos personas.',
+  YA_EMPUJASTE: 'Ya le mandaste un empujón hoy. Mañana podés de nuevo.',
   FOTO_MUY_GRANDE: 'La foto es muy pesada. Probá con otra.',
   SOLO_ADMIN: 'Solo quien administra el grupo puede hacer esto.',
   NO_PERMITIDO: 'No tenés acceso a eso.',
@@ -741,7 +761,8 @@ function maybeInstallGuide(){
       ...(carry ? [`Primero tocá <b>${S.token ? 'Copiar mi cuenta' : 'Copiar mi invitación'}</b> (acá abajo).`] : []),
       iosOther ? 'Tocá <b>Compartir</b> <span class="ios-share" aria-hidden="true"></span> arriba a la derecha.' : 'Tocá <b>···</b> abajo a la derecha y después <b>Compartir</b> <span class="ios-share" aria-hidden="true"></span> (en iPhone más viejos, Compartir está abajo al medio).',
       'Bajá y elegí <b>Agregar a pantalla de inicio</b>.',
-      S.token && hasPin ? 'Abrí Fueguitos desde el ícono nuevo y entrá con tu apodo y PIN.' : carry ? 'Abrí Fueguitos desde el ícono nuevo, tocá <b>Ya tengo cuenta</b> y pegá el link abajo de todo.' : 'Abrí Fueguitos desde el ícono nuevo y creá tu cuenta ahí.'
+      S.token && hasPin ? 'Abrí Fueguitos desde el ícono nuevo y entrá con tu apodo y PIN.' : carry ? 'Abrí Fueguitos desde el ícono nuevo, tocá <b>Ya tengo cuenta</b> y pegá el link abajo de todo.' : 'Abrí Fueguitos desde el ícono nuevo y creá tu cuenta ahí.',
+      'Ahí adentro activá los <b>avisos 🔔</b>: así no perdés la racha.'
     ];
   } else {
     title = 'Instalá Fueguitos';
@@ -898,7 +919,7 @@ function pinSheet(){
     if (!/^\d{4}$/.test(a)){ toast('El PIN son 4 números'); return; }
     if (a !== b){ toast('Los dos PIN no coinciden'); return; }
     e.target.disabled = true;
-    try { await rpc('api_set_pin', { ...P(), p_pin: a }); S.me.user.has_pin = true; closeSheet(); renderMain(); toast('PIN guardado 🔐'); }
+    try { await rpc('api_set_pin', { ...P(), p_pin: a }); S.me.user.has_pin = true; closeSheet(); renderMain(); toast('PIN guardado 🔐'); if (!S.me.user.email) setTimeout(mailSheet, 900); }
     catch(err){ toast(err.message); e.target.disabled = false; }
   };
 }
@@ -1018,22 +1039,93 @@ function renderWelcome(){
   };
 }
 
-/* ============ Onboarding: elegir hábitos ============ */
+/* ============ Arranque: elegir → primer fueguito → avisos ============ */
+const ONB_TPL = [
+  { e: '💧', name: 'Tomar agua', wpp: 'Agua', goal: 8, unit: 'vasos', remind: true },
+  { e: '🌙', name: 'Dormirme antes de las 12', wpp: 'Dormir', next: true },
+  { e: '📵', name: 'Sin Instagram', wpp: 'Sin Instagram', kind: 'evitar' },
+];
 function renderOnboarding(){
-  const av = S.me.available;
-  $('#app').innerHTML = `
-  <div class="wrap" style="padding-bottom:40px">
-    <h1 style="margin-top:10px">Hola, ${esc(S.me.user.nick)} 👋</h1>
-    <p class="muted" style="font-size:17px">Elegí qué querés sostener todos los días. Si ya venías con racha en WhatsApp, la cargás y seguís desde ahí.</p>
-    <div class="card section">${habitToggleRows(av)}</div>
-    <div class="section"><button class="btn" id="go" ${S.me.habits.length ? '' : 'disabled'}>Listo, arrancar</button>
-    ${S.me.habits.length ? '' : '<p class="hint" style="text-align:center">Activá al menos un hábito para seguir.</p>'}</div>
-  </div>`;
-  bindHabitToggles(renderOnboarding);
-  $('#go').onclick = () => {
-    S.onboarding = false; renderShell();
-    if (pushState() === 'default') askPushOnce();
+  const step = S.onb || 'elegir', hs = S.me.habits;
+  const dots = ['elegir', 'primero', 'avisos'].map(k => `<i class="${k === step ? 'on' : ''}"></i>`).join('');
+  if (step === 'elegir'){
+    const av = S.me.available;
+    const tpls = ONB_TPL.map((t, i) => ({ ...t, i })).filter(t => !av.some(h => h.name.toLowerCase() === t.name.toLowerCase()));
+    const card = (key, e, name, on, sub) => `<button class="onb-card ${on ? 'on' : ''}" data-onb="${key}" aria-pressed="${on}"><span class="e" aria-hidden="true">${esc(e)}</span><b>${esc(name)}</b>${sub ? `<span class="small muted">${esc(sub)}</span>` : ''}<span class="tick" aria-hidden="true">✓</span></button>`;
+    $('#app').innerHTML = `<div class="wrap onb">
+      <div class="onb-dots" aria-label="Paso 1 de 3">${dots}</div>
+      <h1>Hola, ${esc(S.me.user.nick)} 👋</h1>
+      <p class="muted lead">¿Qué querés sostener todos los días? Tocá uno o dos. Después podés sumar más.</p>
+      <div class="onb-grid">${av.map(h => card(h.id, h.emoji, h.name, h.active, h.group_name ? `de ${h.group_name}` : '')).join('')}${tpls.map(t => card('tpl:' + t.i, t.e, t.name, false, '')).join('')}</div>
+      <button class="link" id="onb-own" style="display:block;margin:14px auto 0">+ Crear uno a mi medida</button>
+      <div class="section"><button class="btn" id="onb-next" ${hs.length ? '' : 'disabled'}>Seguir</button>
+        <p class="hint" style="text-align:center">${hs.length ? '¿Ya venías con racha en WhatsApp? La cargás después en Perfil → Corregir racha.' : 'Elegí al menos uno.'}</p></div></div>`;
+    document.querySelectorAll('[data-onb]').forEach(b => b.onclick = async () => {
+      if (b.disabled) return; b.disabled = true;
+      const key = b.dataset.onb;
+      try {
+        if (key.startsWith('tpl:')){
+          const t = ONB_TPL[+key.slice(4)];
+          const h = await rpc('api_save_habit', { ...P(), p_group: null, p_id: null, p_name: t.name, p_emoji: t.e, p_wpp: t.wpp, p_days: [0,1,2,3,4,5,6],
+            p_ice_every: 14, p_max_ice: t.kind === 'evitar' ? 0 : 2, p_kind: t.kind || 'hacer', p_next: !!t.next, p_goal: t.goal || null, p_unit: t.unit || null, p_remind: !!t.remind });
+          await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: true, p_streak: 0, p_ice: 0, p_left: h.ice_every });
+        } else {
+          const h = S.me.available.find(x => x.id === key);
+          await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: !h.active, ...(h.active ? {} : { p_streak: 0, p_ice: 0, p_left: h.ice_every }) });
+        }
+        S.me = await rpc('api_me', P()); vibrate(15); renderOnboarding();
+      } catch(e){ toast(e.message); b.disabled = false; }
+    });
+    $('#onb-own').onclick = () => habitEditor(null, null, () => renderOnboarding());
+    $('#onb-next').onclick = () => { S.onb = 'primero'; renderOnboarding(); };
+    return;
+  }
+  if (step === 'primero'){
+    const can = hs.filter(h => h.kind !== 'evitar' && !h.next_day);
+    const any = hs.some(h => h.kind !== 'evitar' && h.done_today);
+    $('#app').innerHTML = `<div class="wrap onb">
+      <div class="onb-dots" aria-label="Paso 2 de 3">${dots}</div>
+      <h1>¿Ya hiciste alguno hoy? 🔥</h1>
+      <p class="muted lead">Anotalo y prendés tu primer fueguito ahora mismo.</p>
+      <div class="stack">${can.map(h => `<button class="onb-do ${h.done_today ? 'done' : ''}" data-first="${h.id}" ${h.done_today ? 'disabled' : ''}><span class="e" aria-hidden="true">${esc(h.emoji)}</span><b>${esc(h.name)}</b><span class="tag">${h.done_today ? '✓ Anotado' : h.goal ? `Ya hice los ${h.goal} ${esc(h.unit || '')}` : 'Ya lo hice'}</span></button>`).join('')}</div>
+      ${hs.some(h => h.kind === 'evitar' || h.next_day) ? '<p class="hint">Los de dejar algo se tildan solos, y los de la noche se confirman a la mañana siguiente.</p>' : ''}
+      <div class="section"><button class="btn ${any ? '' : 'ghost'}" id="onb-next">${any ? 'Seguir' : 'Todavía no, después'}</button></div></div>`;
+    document.querySelectorAll('[data-first]').forEach(b => b.onclick = async () => {
+      const h = hs.find(x => x.id === b.dataset.first); b.disabled = true;
+      try {
+        const r = h.goal ? await rpc('api_count', { ...P(), p_habit: h.id, p_delta: h.goal }) : await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: null });
+        const x = (r.results || [])[0] || {};
+        S.me.habits = r.habits;
+        if (x.early || x.late){ toast(x.early ? `Se anota desde las ${opensAt(h)}.` : `Hoy ya se pasó la hora (${h.deadline}).`, 3500); renderOnboarding(); return; }
+        const hh = r.habits.find(y => y.id === h.id) || h;
+        vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120);
+        $('#layer').innerHTML = `<div class="tickscreen" role="dialog" aria-modal="true"><div class="bigtick">🔥</div><h2>${any ? `${esc(h.name)} anotado` : '¡Tu primer fueguito!'}</h2><p class="lbl">${esc(h.emoji)} ${esc(h.name)} · Día ${hh.streak}</p><div class="btns"><button class="btn" id="t-ok">¡Vamos!</button></div></div>`;
+        pushLayer();
+        $('#t-ok').onclick = () => { closeSheet(); renderOnboarding(); };
+      } catch(e){ toast(e.message); b.disabled = false; }
+    });
+    $('#onb-next').onclick = () => { S.onb = 'avisos'; renderOnboarding(); };
+    return;
+  }
+  // Paso 3: avisos. Si no se pueden pedir (ya están, bloqueados o el navegador no deja), se saltea.
+  const finish = () => { S.onboarding = false; S.onb = null; renderShell(); };
+  const st = pushState();
+  if (st !== 'default' && st !== 'instalar'){ finish(); return; }
+  $('#app').innerHTML = `<div class="wrap onb">
+    <div class="onb-dots" aria-label="Paso 3 de 3">${dots}</div>
+    <div style="font-size:64px;line-height:1;margin-top:10px" aria-hidden="true">🔔</div>
+    <h1>Último paso: los avisos</h1>
+    <p class="muted lead">Sin avisos, la app no te puede ayudar a sostener la racha.</p>
+    <ul class="plist"><li>Te avisamos a la noche si te falta anotar</li><li>Te enterás cuando tus amigos entrenan</li><li>Nada de spam: como mucho uno o dos por día</li></ul>
+    ${st === 'instalar' ? '<p class="banner ice" style="margin-top:14px">En iPhone los avisos solo andan con Fueguitos instalada en la pantalla de inicio. Son 3 toques.</p>' : ''}
+    <div class="stack section"><button class="btn" id="onb-push">${st === 'instalar' ? 'Ver cómo instalarla' : 'Activar avisos'}</button>
+      ${st === 'default' ? '<p class="hint" style="text-align:center;margin:0">El celu te va a preguntar: tocá <b>Permitir</b>.</p>' : ''}
+      <button class="link" id="onb-skip" style="align-self:center;margin-top:6px">Ahora no</button></div></div>`;
+  $('#onb-push').onclick = async () => {
+    if (st === 'instalar'){ finish(); LS.del('fueguitos_guia'); maybeInstallGuide(); return; }
+    await enablePush(); finish();
   };
+  $('#onb-skip').onclick = () => { LS.set('fueguitos_push_snooze', String(Date.now())); finish(); };
 }
 
 function habitToggleRows(av, full){
@@ -1365,6 +1457,8 @@ function renderHoy(){
   const tj = $('#to-join'); if (tj) tj.onclick = () => joinGroupSheet();
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
+  const nml = $('#n-mail'); if (nml) nml.onclick = mailSheet;
+  const nmn = $('#n-mail-no'); if (nmn) nmn.onclick = () => { LS.set('fueguitos_mail_snooze', String(Date.now())); renderHoy(); toast('Lo tenés en Perfil → Mis datos cuando quieras'); };
   bindPlanCard();
   const npush = $('#n-push'); if (npush) npush.onclick = async () => { if (await enablePush()) renderHoy(); };
   const nno = $('#n-push-no'); if (nno) nno.onclick = () => { LS.set('fueguitos_push_snooze', String(Date.now())); renderHoy(); toast('Te lo recordamos en unos días. También está en Perfil.'); };
@@ -1418,6 +1512,22 @@ function askPushOnce(){
   $('#ap-yes', el).onclick = async () => { closeSheet(); if (await enablePush()) renderMain(); };
   $('#ap-no', el).onclick = () => { closeSheet(); LS.set('fueguitos_push_snooze', String(Date.now())); };
 }
+const mailSnoozed = () => { const t = +(LS.get('fueguitos_mail_snooze') || 0); return Date.now() - t < 7 * 864e5; };
+function mailSheet(){
+  const el = openSheet(`<h2>📧 ¿Y si te olvidás el PIN?</h2>
+    <p class="muted">Vinculá tu mail: si algún día te lo olvidás, te mandamos un código y recuperás tu cuenta con todas tus rachas. No lo usamos para nada más.</p>
+    <div class="stack section"><input class="input" id="ml" type="email" autocomplete="email" autocapitalize="none" placeholder="tu@mail.com">
+      <button class="btn" id="ml-ok">Guardar mail</button><button class="btn ghost" id="ml-no">Ahora no</button></div>`);
+  $('#ml-no', el).onclick = () => { LS.set('fueguitos_mail_snooze', String(Date.now())); closeSheet(); renderMain(); };
+  $('#ml-ok', el).onclick = async (e) => {
+    const v = $('#ml', el).value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ toast('Revisá el mail'); return; }
+    e.target.disabled = true;
+    try { await rpc('api_update_profile', { ...P(), p_nick: S.me.user.nick, p_email: v, p_tz: null }); S.me.user.email = v; closeSheet(); renderMain(); toast('Mail vinculado ✅'); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+  setTimeout(() => $('#ml', el).focus(), 250);
+}
 const pushSnoozed = () => { const t = +(LS.get('fueguitos_push_snooze') || 0); return Date.now() - t < 3 * 864e5; };
 function hoyNudge(){
   const ps = pushState();
@@ -1431,6 +1541,10 @@ function hoyNudge(){
       <div class="row between"><h3>🔔 Para recibir avisos, instalala</h3><button class="link small" id="n-push-no">Ahora no</button></div>
       <p class="small" style="margin:6px 0 12px">En iPhone, los avisos solo funcionan con Fueguitos en la pantalla de inicio. Son 3 toques y después la abrís desde el ícono.</p>
       <button class="btn" style="width:100%" id="n-inst">Ver cómo instalarla</button></div>`;
+  if (S.me.user.has_pin && !S.me.user.email && !mailSnoozed()) return `<div class="card section nudge">
+      <div class="row between"><h3>📧 ¿Y si te olvidás el PIN?</h3><button class="link small" id="n-mail-no">Ahora no</button></div>
+      <p class="small muted" style="margin:6px 0 12px">Vinculá tu mail: si algún día te lo olvidás, te mandamos un código y recuperás tu cuenta con todas tus rachas.</p>
+      <button class="btn sm" style="width:100%" id="n-mail">Vincular mi mail</button></div>`;
   if (!S.me.user.has_pin) return `<div class="card section nudge"><h3>🔐 Creá tu PIN</h3><p class="small muted" style="margin:6px 0 12px">Con tu apodo y un PIN de 4 números entrás a tu cuenta desde cualquier celu. Si cambiás de teléfono no perdés la racha.</p><button class="btn sm" style="width:100%" id="n-pin">Crear mi PIN</button></div>`;
   if (showInstallCard()) return `<div class="card section" id="inst-card"><div class="row between"><h3>Instalá Fueguitos en tu celu</h3><button class="link small" id="inst-no" aria-label="No mostrar más">Ahora no</button></div><div class="small" style="margin-top:8px">${installHelp()}</div></div>`;
   return '';
@@ -1837,6 +1951,7 @@ function renderGrupo(){
   document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
   const ha = $('#hab-add'); if (ha) ha.onclick = () => groupHabitAdd(G);
   const bb = $('#bench-back'); if (bb) bb.onclick = () => benchBackSheet(G);
+  document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => nudgeFriend(G, G.members.find(x => x.id === b.dataset.nudge)));
   document.querySelectorAll('[data-back]').forEach(b => b.onclick = async () => {
     const m = G.members.find(x => x.id === b.dataset.back); b.disabled = true;
     try { await rpc('api_bench_approve', { ...P(), p_group: G.group.id, p_user: m.id }); await loadGroup(); renderGrupo(); toast(`¡${m.nick} volvió al grupo! 🎉`, 3500); }
@@ -1902,6 +2017,7 @@ function grupoRacha(G, members){
     ${groupStreak(G.streak, G.group.pair)}
     ${challengeCard(G.challenge)}
     <div class="week" id="week">${weekStrip(S.week[G.group.id])}</div>
+    ${nudgeBanner(G, members)}
     <div class="board">${members.map(memberRow).join('')}</div>
     ${benchBlock(G)}
 
@@ -2634,11 +2750,13 @@ function memberSheet(G, uid){
     <div class="card section">${m.habits.length ? m.habits.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
         <span class="small" style="font-weight:700">🔥 ${h.streak} · 🧊 ${h.ice}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no activó hábitos.</p>'}</div>
     <div class="stack section">
+      ${!m.is_me && !m.habits.some(h => h.done_today) ? `<button class="btn ${m.nudged ? 'ghost' : ''}" id="ms-nudge" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '👋 Ya le mandaste un empujón hoy' : '👋 Mandale un empujón'}</button>` : ''}
       ${canGift ? '<button class="btn ice" id="ms-gift">🎁 Regalarle un hielito</button>' : ''}
       ${m.is_me ? '<button class="btn ghost" id="ms-me">Ver mi perfil</button>' : ''}
     </div>
     ${canKick ? `<div style="text-align:center;margin-top:18px"><button class="link small danger" id="ms-kick">Sacar del grupo</button></div>` : ''}`);
   const gb = $('#ms-gift', el); if (gb) gb.onclick = () => giftSheet(G, uid);
+  const nb = $('#ms-nudge', el); if (nb) nb.onclick = () => { closeSheet(); nudgeFriend(G, m); };
   const me = $('#ms-me', el); if (me) me.onclick = () => { closeSheet(); go('perfil'); };
   const kb = $('#ms-kick', el); if (kb) kb.onclick = () => confirmSheet(`¿Sacar a ${m.nick}?`, 'Deja de estar en el grupo y desaparece para todos. Su racha no se toca y puede volver con el código.', 'Sacar del grupo', async () => {
     await rpc('api_kick_member', { ...P(), p_group: G.group.id, p_user: uid }); await loadGroup(); renderGrupo(); toast(`${m.nick} ya no está en el grupo`);
@@ -2646,9 +2764,28 @@ function memberSheet(G, uid){
 }
 
 const sumStreak = (m) => m.habits.reduce((a,h) => a + h.streak, 0);
+// Empujón: un aviso de tu parte. Si no tiene avisos, se ofrece mandarle un WhatsApp.
+async function nudgeFriend(G, m){
+  try {
+    const r = await rpc('api_nudge_friend', { ...P(), p_friend: m.id });
+    m.nudged = true; vibrate(20);
+    if (r.has_push){ toast(`👋 Empujón enviado. A ${m.nick} le llega un aviso.`, 3500); renderGrupo(); return; }
+    const txt = r.never ? `¡${m.nick}! Todavía no prendiste tu primer fueguito 🔥 Es un toque: ${PUBLIC_URL}` : `${m.nick}, ¡hoy te falta el fueguito! Dale que se puede 🔥 ${PUBLIC_URL}`;
+    const el = openSheet(`<h2>👋 ${esc(m.nick)} no tiene los avisos activados</h2><p class="muted">No le va a llegar el empujón al celu. ¿Se lo mandás por WhatsApp?</p>
+      <div class="stack section"><button class="btn green" id="nw-wa">Mandar por WhatsApp</button><button class="btn ghost" id="nw-no">Listo</button></div>`);
+    $('#nw-wa', el).onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt); };
+    $('#nw-no', el).onclick = () => { closeSheet(); renderGrupo(); };
+  } catch(e){ toast(e.message, 3500); }
+}
+function nudgeBanner(G, members){
+  const n = members.filter(m => m.never && !m.is_me); if (!n.length) return '';
+  return `<div class="week gst"><div class="small" style="font-weight:700">👋 Todavía no prendieron su primer fueguito</div>
+    <div class="nudges">${n.map(m => `<button class="chip" data-nudge="${m.id}" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '✓' : '👋'} ${esc(m.nick)}</button>`).join('')}</div>
+    <div class="small muted" style="margin-top:6px">Tocá un nombre y le mandás un empujón.</div></div>`;
+}
 function memberRow(m){
   return `<div class="member" role="button" tabindex="0" data-member="${m.id}" aria-label="Ver a ${esc(m.nick)}">
-    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div><div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}</div></div>
+    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div><div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}</div></div>
     <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
   </div>`;
 }
