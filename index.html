@@ -369,6 +369,10 @@ nav.tabs button.on{color:var(--fire)}
 .grab::before{content:"";position:absolute;inset:-14px -60px}
 .sheet{overscroll-behavior:contain;will-change:transform}
 .photo-drop{border:2px dashed var(--gray-flame);border-radius:20px;background:var(--card);min-height:180px;display:grid;place-items:center;overflow:hidden;position:relative}
+.photo-drop{cursor:pointer}
+.photo-drop:active{background:var(--fire-soft)}
+.pd-empty{display:flex;flex-direction:column;align-items:center;gap:4px;padding:20px;text-align:center}
+.pd-icon{font-size:44px;line-height:1;margin-bottom:4px}
 .photo-drop img{width:100%;max-height:52dvh;object-fit:cover;display:block}
 .photo-drop .x{position:absolute;top:10px;right:10px;background:rgba(27,26,46,.7);color:#fff;border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
 
@@ -1899,6 +1903,7 @@ function renderBar(){
 
 /* ============ Anotar con foto ============ */
 let photoData = null;
+const PHOTO_EMPTY = '<div class="pd-empty"><span class="pd-icon" aria-hidden="true">📷</span><b>Tocá para sumar una foto</b><span class="small muted">Sacala ahora o elegila de la galería</span></div>';
 function openCheckinSheet(){
   photoData = null;
   const hs = S.me.habits.filter(h => S.sel.has(h.id));
@@ -1910,7 +1915,7 @@ function openCheckinSheet(){
     <h2>${hs.map(h => esc(h.emoji)).join(' ')} ${allDone ? `${esc(hs.map(h => h.name).join(' + '))} ✅` : `Anotar ${esc(hs.map(h => h.name).join(' + '))}`}</h2>
     ${allDone ? '<p class="small" style="margin:4px 0 0;font-weight:700">Ya está anotado hoy. ¿Le sumás una foto o el detalle?</p>' : ''}
     <p class="muted small" style="margin:6px 0 14px">La foto es opcional. ${nG ? `Si subís una, la ve${nG > 1 ? `n tus ${nG} grupos` : ' tu grupo'} durante 24 h y después se borra sola.` : 'Cuando te sumes a un grupo, tus amigos van a ver tus fotos durante 24 h.'}</p>
-    <div class="photo-drop" id="pd"><div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div></div>
+    <div class="photo-drop" id="pd" role="button" tabindex="0" aria-label="Sacar o elegir una foto">${PHOTO_EMPTY}</div>
     <div class="grid2" style="margin-top:12px">
       <label class="btn ghost sm" style="width:100%">Sacar foto<input type="file" accept="image/*" capture="environment" id="cam" hidden></label>
       <label class="btn ghost sm" style="width:100%">Elegir de galería<input type="file" accept="image/*" id="gal" hidden></label>
@@ -1930,11 +1935,14 @@ function openCheckinSheet(){
     try {
       photoData = await compress(f);
       $('#pd', el).innerHTML = `<img src="${photoData}" alt="Tu foto"><button class="x" id="rm">Quitar</button>`;
-      $('#rm', el).onclick = () => { photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div>'; $('#confirm', el).textContent = idle; };
+      $('#rm', el).onclick = () => { photoData = null; $('#pd', el).innerHTML = PHOTO_EMPTY; $('#confirm', el).textContent = idle; };
       $('#confirm', el).textContent = 'Anotar y compartir';
     } catch(err){ photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="padding:20px">No se pudo leer esa foto. Probá con otra.</div>'; }
   };
   $('#cam', el).onchange = onFile; $('#gal', el).onchange = onFile;
+  const pick = (e) => { if (e.target.closest('#rm')) return; $('#gal', el).click(); };
+  $('#pd', el).onclick = pick;
+  $('#pd', el).onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pick(e); } };
   $('#confirm', el).onclick = async (e) => {
     const b = e.target; b.disabled = true; b.textContent = 'Anotando…';
     try {
