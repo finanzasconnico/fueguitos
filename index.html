@@ -473,6 +473,9 @@ nav.tabs button.on{color:var(--fire)}
 
 .net{position:fixed;top:calc(var(--safe-t) + 8px);left:50%;transform:translateX(-50%);z-index:85;background:var(--ink);color:var(--bg);font-weight:800;font-size:13px;padding:7px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.2);white-space:nowrap;cursor:pointer}
 .net.sync{background:var(--ice-dark);color:#fff}
+.snack{position:fixed;left:12px;right:12px;bottom:calc(92px + var(--safe-b));display:flex;align-items:center;gap:4px;background:var(--toast);color:var(--toast-ink);padding:8px 8px 8px 16px;border-radius:16px;z-index:80;animation:up .2s;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:520px;margin:0 auto}
+.snack span{flex:1;font-size:15px}
+.snack button{color:#FFB37A;font-weight:800;font-size:15px;padding:10px 10px;border-radius:10px;font-family:inherit;background:none;border:0}
 .toast{position:fixed;left:50%;bottom:calc(150px + var(--safe-b));transform:translateX(-50%);background:var(--toast);color:var(--toast-ink);padding:12px 18px;border-radius:14px;font-weight:700;z-index:80;max-width:88vw;text-align:center;animation:up .2s}
 .spinner{width:28px;height:28px;border:4px solid var(--line);border-top-color:var(--fire);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -542,6 +545,13 @@ const ICONS = {
   perfil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.2 4-6.5 8-6.5s7.2 2.3 8 6.5"/></svg>'
 };
 
+// Aviso con botones (anotado → foto / deshacer).
+function snack(html, ms = 6000){
+  document.querySelectorAll('.snack, .toast').forEach(x => x.remove());
+  const t = document.createElement('div'); t.className = 'snack'; t.setAttribute('role', 'status'); t.innerHTML = html;
+  document.body.appendChild(t); clearTimeout(snack.timer); snack.timer = setTimeout(() => t.remove(), ms);
+  return t;
+}
 function toast(msg, ms=2400){
   document.querySelectorAll('.toast').forEach(x => x.remove()); // uno a la vez, sin encimarse
   const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role','status'); t.textContent = msg;
@@ -1085,11 +1095,11 @@ const THEMES = { agua: ['💧', 'Agua'], velocidad: ['⚡', 'Velocidad'], sabidu
   noche: ['🌙', 'Noche'], idiomas: ['🗣️', 'Idiomas'], fuerza: ['🛡️', 'Fuerza'], fuego: ['🔥', 'Fuego'] };
 const CHARS = { 'p:chispita': ['🔥', 'Chispita', null, 3],
   'p:pez': ['🐠', 'Pececito', 'agua', 7], 'p:tortuga': ['🐢', 'Tortuga', 'agua', 21], 'p:delfin': ['🐬', 'Delfín', 'agua', 45], 'p:ballena': ['🐋', 'Ballena', 'agua', 66],
-  'p:canguro': ['🦘', 'Canguro', 'velocidad', 7], 'p:caballo': ['🐎', 'Caballo', 'velocidad', 21], 'p:guepardo': ['🐆', 'Guepardo', 'velocidad', 45], 'p:cohete': ['🚀', 'Cohete', 'velocidad', 66],
-  'p:raton': ['🐭', 'Ratón de biblioteca', 'sabiduria', 7], 'p:zorro': ['🦊', 'Zorro', 'sabiduria', 21], 'p:elefante': ['🐘', 'Elefante', 'sabiduria', 45], 'p:buho': ['🦉', 'Búho sabio', 'sabiduria', 66],
+  'p:liebre': ['🐇', 'Liebre', 'velocidad', 7], 'p:caballo': ['🐎', 'Caballo', 'velocidad', 21], 'p:guepardo': ['🐆', 'Guepardo', 'velocidad', 45], 'p:cohete': ['🚀', 'Cohete', 'velocidad', 66],
+  'p:raton': ['🐭', 'Ratón de biblioteca', 'sabiduria', 7], 'p:zorro': ['🦊', 'Zorro', 'sabiduria', 21], 'p:elefante': ['🐘', 'Elefante', 'sabiduria', 45], 'p:mago': ['🧙', 'Mago', 'sabiduria', 66],
   'p:caracol': ['🐌', 'Caracol', 'zen', 7], 'p:mariposa': ['🦋', 'Mariposa', 'zen', 21], 'p:panda': ['🐼', 'Panda', 'zen', 45], 'p:loto': ['🪷', 'Loto', 'zen', 66],
   'p:koala': ['🐨', 'Koala', 'noche', 7], 'p:perezoso': ['🦥', 'Perezoso', 'noche', 21], 'p:osopolar': ['🐻‍❄️', 'Oso polar', 'noche', 45], 'p:luna': ['🌝', 'Luna', 'noche', 66],
-  'p:pollito': ['🐥', 'Pollito', 'idiomas', 7], 'p:loro': ['🦜', 'Loro', 'idiomas', 21], 'p:cisne': ['🦢', 'Cisne', 'idiomas', 45], 'p:pavoreal': ['🦚', 'Pavo real', 'idiomas', 66],
+  'p:pollito': ['🐥', 'Pollito', 'idiomas', 7], 'p:loro': ['🦜', 'Loro', 'idiomas', 21], 'p:pavoreal': ['🦚', 'Pavo real', 'idiomas', 45], 'p:buho': ['🦉', 'Búho', 'idiomas', 66],
   'p:erizo': ['🦔', 'Erizo', 'fuerza', 7], 'p:lobo': ['🐺', 'Lobo', 'fuerza', 21], 'p:rino': ['🦏', 'Rinoceronte', 'fuerza', 45], 'p:leon': ['🦁', 'León', 'fuerza', 66],
   'p:salamandra': ['🦎', 'Salamandra', 'fuego', 7], 'p:dragon': ['🐉', 'Dragón', 'fuego', 21], 'p:volcan': ['🌋', 'Volcán', 'fuego', 45], 'p:sol': ['🌞', 'Sol', 'fuego', 66] };
 function flameFace(ck){
@@ -1561,7 +1571,7 @@ function renderHoy(){
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
-      `<p class="muted" style="margin:0 0 14px">Tocá lo que hiciste hoy y anotalo. Si anotás después de las 12, hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>`}
+      `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>`}
     <div class="habits">${hs.map(habitCard).join('')}</div>
     <div class="section grid2">
       <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
@@ -1578,14 +1588,13 @@ function renderHoy(){
     const h = hs.find(x => x.id === b.dataset.habit);
     if (e.target.closest('[data-appblock]')){ appBlockSheet(h); return; }
     if (h.kind === 'evitar'){ quitSheet(h); return; }
-    if (h.done_today){ toast(`${h.name} ya está anotado hoy ✅`); return; }
+    if (h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); return; } // ya anotado: sumarle foto o detalle
     if (h.deadline){
       if (isLate(h)){ toast(`Hoy ya se pasó la hora (${h.deadline}). Mañana hay revancha 💪`, 3500); return; }
       if (isEarly(h)){ toast(`Todavía es temprano: se anota desde las ${opensAt(h)} hasta las ${h.deadline}.`, 3500); return; }
-      quickToggle(h); return; // con hora límite se anota con un toque
+      quickAnotar(h); return;
     }
-    S.sel.has(h.id) ? S.sel.delete(h.id) : S.sel.add(h.id);
-    renderHoy(); renderBar();
+    quickAnotar(h);
   });
   const byId = (id) => hs.find(x => x.id === id);
   document.querySelectorAll('.habits .flamebox').forEach(f => f.onclick = (e) => {
@@ -1895,8 +1904,11 @@ function openCheckinSheet(){
   const hs = S.me.habits.filter(h => S.sel.has(h.id));
   const nG = S.me.groups.length;
   const sport = hs.find(isSport);
+  const allDone = hs.length > 0 && hs.every(h => h.done_today);
+  const idle = allDone ? 'Listo' : 'Anotar sin foto';
   const el = openSheet(`
-    <h2>${hs.map(h => esc(h.emoji)).join(' ')} Anotar ${esc(hs.map(h => h.name).join(' + '))}</h2>
+    <h2>${hs.map(h => esc(h.emoji)).join(' ')} ${allDone ? `${esc(hs.map(h => h.name).join(' + '))} ✅` : `Anotar ${esc(hs.map(h => h.name).join(' + '))}`}</h2>
+    ${allDone ? '<p class="small" style="margin:4px 0 0;font-weight:700">Ya está anotado hoy. ¿Le sumás una foto o el detalle?</p>' : ''}
     <p class="muted small" style="margin:6px 0 14px">La foto es opcional. ${nG ? `Si subís una, la ve${nG > 1 ? `n tus ${nG} grupos` : ' tu grupo'} durante 24 h y después se borra sola.` : 'Cuando te sumes a un grupo, tus amigos van a ver tus fotos durante 24 h.'}</p>
     <div class="photo-drop" id="pd"><div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div></div>
     <div class="grid2" style="margin-top:12px">
@@ -1905,8 +1917,10 @@ function openCheckinSheet(){
     </div>
     <label class="field" style="margin-top:14px"><span>Comentario (opcional)</span><input class="input" id="note" maxlength="140" placeholder="Ej: 5 km en el parque"></label>
     ${sport ? `<details class="more section" id="det" ${S.pendingActivity ? 'open' : ''}><summary>＋ Agregar detalle: distancia, tiempo o pesos (opcional)</summary><div id="det-body"></div></details>` : ''}
-    <div class="section"><button class="btn" id="confirm">Anotar sin foto</button></div>
+    <div class="section"><button class="btn" id="confirm">${idle}</button>
+      ${allDone ? `<button class="link small danger" id="ck-undo" style="display:block;margin:14px auto 0">Desanotar ${esc(hs.map(h => h.name).join(' + '))}</button>` : ''}</div>
   `);
+  const cu = $('#ck-undo', el); if (cu) cu.onclick = async () => { try { for (const h of hs) S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); S.sel.clear(); closeSheet(); renderMain(); toast('Desanotado'); } catch(e){ toast(e.message); } };
   const det = { kind: S.pendingActivity ? S.pendingActivity.kind : null, minutes: S.pendingActivity ? S.pendingActivity.minutes : null, km: S.pendingActivity ? S.pendingActivity.km : null };
   S.pendingActivity = null;
   if (sport) paintDetail(el, det);
@@ -1916,7 +1930,7 @@ function openCheckinSheet(){
     try {
       photoData = await compress(f);
       $('#pd', el).innerHTML = `<img src="${photoData}" alt="Tu foto"><button class="x" id="rm">Quitar</button>`;
-      $('#rm', el).onclick = () => { photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div>'; $('#confirm', el).textContent = 'Anotar sin foto'; };
+      $('#rm', el).onclick = () => { photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="text-align:center;padding:20px">📸<br>Sin foto por ahora</div>'; $('#confirm', el).textContent = idle; };
       $('#confirm', el).textContent = 'Anotar y compartir';
     } catch(err){ photoData = null; $('#pd', el).innerHTML = '<div class="muted" style="padding:20px">No se pudo leer esa foto. Probá con otra.</div>'; }
   };
@@ -1925,7 +1939,8 @@ function openCheckinSheet(){
     const b = e.target; b.disabled = true; b.textContent = 'Anotando…';
     try {
       const extra = sport ? readDetail(el, det) : null;
-      if (extra && extra.error){ toast(extra.error); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; return; }
+      if (extra && extra.error){ toast(extra.error); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; return; }
+      if (allDone && !photoData && !extra){ S.sel.clear(); closeSheet(); return; }
       S.prevBest = Object.fromEntries(S.me.habits.map(x => [x.id, x.best || 0]));
       const r0 = await rpcQ('api_checkin', { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null }, 'anotación del día', true);
       const r = r0.queued ? localCheckin([...S.sel]) : r0;
@@ -1933,11 +1948,34 @@ function openCheckinSheet(){
       if (r0.queued) toast('Sin señal: quedó anotado en tu celu y se sube solo cuando vuelva la conexión ☁️', 4000);
       if (extra) saveDetail(sport, extra);
       const fresh = (r.results || []).filter(x => !x.already);
-      if (fresh.length) celebrate(fresh); else toast('Listo');
+      if (fresh.length) celebrate(fresh); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
       S.group = null;
       rpc('api_history', P()).then(h => { S.history = h || []; }).catch(()=>{});
-    } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : 'Anotar sin foto'; }
+    } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; }
   };
+}
+// Anotar con un toque: queda anotado al instante; la foto y el detalle se suman después si querés.
+async function quickAnotar(h){
+  const prev = S.me.habits;
+  S.prevBest = Object.fromEntries(prev.map(x => [x.id, x.best || 0]));
+  localCheckin([h.id]); renderHoy(); vibrate([20, 40, 20]); beep(660, .1);
+  try {
+    const r0 = await rpcQ('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: null }, `anotar ${h.name}`, true);
+    let x = {};
+    if (!r0.queued){
+      x = (r0.results || [])[0] || {}; S.me.habits = r0.habits; renderHoy();
+      if (x.early || x.late){ toast(x.early ? `Todavía es temprano: se anota desde las ${opensAt(h)}.` : `Hoy ya se pasó la hora (${h.deadline}). Mañana hay revancha 💪`, 3500); return; }
+    }
+    const hh = S.me.habits.find(y => y.id === h.id) || h, pb = S.prevBest[h.id] || 0;
+    if (HITOS[hh.streak] || x.earned_ice || (pb >= 7 && hh.streak > pb)) celebrate([{ habit_id: h.id, name: h.name, emoji: h.emoji, streak: hh.streak, ice: hh.ice, left_for_ice: hh.left_for_ice, earned_ice: !!x.earned_ice }]);
+    else {
+      const sn = snack(`<span>🔥 <b>${esc(h.name)}</b> · día ${hh.streak}${r0.queued ? ' ☁️' : ''}</span><button data-sf>📸 Foto</button><button data-su>Deshacer</button>`);
+      $('[data-sf]', sn).onclick = () => { sn.remove(); S.sel = new Set([h.id]); openCheckinSheet(); };
+      $('[data-su]', sn).onclick = async () => { sn.remove(); try { S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); renderHoy(); toast(`${h.name} desanotado`); } catch(e){ toast(e.message, 3500); } };
+    }
+    S.group = null;
+    rpc('api_history', P()).then(r => { S.history = r || []; }).catch(() => {});
+  } catch(e){ S.me.habits = prev; renderHoy(); toast(e.message, 3500); }
 }
 // Anotación local (sin señal): mismas cuentas que el servidor, para ver el fueguito al instante.
 function localCheckin(ids){
