@@ -124,6 +124,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
+.btn.strava{background:#FC4C02;box-shadow:0 4px 0 #B83700}
 .ava{position:relative;display:inline-block;flex:none;border-radius:50%;overflow:visible}
 .ava svg{position:absolute;left:10%;top:8%;width:80%;height:84%}
 .ava i{position:absolute;font-style:normal;line-height:1;transform:translateX(-50%)}
@@ -734,8 +735,10 @@ async function boot(){
   S.rapido = q.get('rapido') === '1';
   S.rutina = q.get('rutina');
   if (['hoy','grupo','torneos','rutinas','perfil'].includes(q.get('tab'))) S.tab = q.get('tab');
+  if (q.get('strava')) S.stravaBack = { code: q.get('code'), state: q.get('state'), error: q.get('error') };
   // Dentro de WhatsApp/Instagram se deja el link intacto, para que "Abrir en el navegador" conserve la invitación.
   if (q.toString() && !inAppBrowser()) history.replaceState(null, '', location.pathname);
+  if (S.stravaBack && await finishStrava()) return;
 
   if (!S.token){ renderWelcome(); maybeInstallGuide(); return; }
   try {
@@ -1962,6 +1965,59 @@ function openCheckinSheet(){
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; }
   };
 }
+/* ============ Strava: los entrenamientos se anotan solos ============ */
+const STRAVA_FN = 'https://ngwrtivemyjueiysqqum.supabase.co/functions/v1/strava';
+const stravaCall = (body) => fetch(STRAVA_FN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+// Devuelve true si terminó acá (en iPhone la vuelta puede abrirse en otra ventana, sin la sesión).
+async function finishStrava(){
+  const b = S.stravaBack; S.stravaBack = null;
+  let ok = false;
+  if (b.code && b.state && !b.error){
+    try { const r = await stravaCall({ action: 'connect', state: b.state, code: b.code }); ok = !!r.ok; } catch(e){}
+  }
+  if (!S.token){
+    $('#app').innerHTML = `<div class="welcome"><div class="logo">${flameSVG(ok)}</div><h2>${ok ? '¡Strava conectado! ✅' : 'No se pudo conectar Strava'}</h2>
+      <p class="muted">${ok ? 'Ya podés cerrar esta ventana y volver a Fueguitos. Tus entrenamientos se van a anotar solos.' : 'Volvé a Fueguitos y probá de nuevo desde Perfil.'}</p></div>`;
+    return true;
+  }
+  S.tab = 'perfil'; S.strava = undefined;
+  setTimeout(() => toast(ok ? '¡Strava conectado! Tus entrenamientos se anotan solos 🏃' : b.error ? 'No diste permiso en Strava.' : 'No se pudo conectar Strava. Probá de nuevo.', 4000), 800);
+  return false;
+}
+async function loadStrava(){
+  try { S.strava = await rpc('api_strava_status', P()); } catch(e){ S.strava = null; }
+  if (S.tab === 'perfil') renderPerfil();
+}
+const fmtKm = (km) => String(Math.round(km * 10) / 10).replace('.', ',');
+function stravaBlock(){
+  const st = S.strava;
+  if (!st || !st.ready || !st.client_id) return '';
+  const last = st.last, a = last && ACT[last.kind];
+  return `<div class="section"><div class="section-title"><h2>Strava</h2></div><div class="card">
+    ${st.connected ? `<p style="margin-top:0">✅ <b>Conectado.</b> Cuando grabes un entrenamiento de 10 minutos o más, se anota Deporte solo.</p>
+        ${last ? `<p class="small" style="margin:0 0 10px">Último: ${a ? a[0] : '🏅'} ${last.km ? `${fmtKm(+last.km)} km · ` : ''}${last.minutes} min · ${fmtDay(last.day).toLowerCase()}</p>` : '<p class="small muted" style="margin:0 0 10px">Todavía no llegó ningún entrenamiento.</p>'}
+        <p class="hint" style="margin:0 0 6px">Tus km y tiempos de Strava los ves solo vos. Tus amigos ven que anotaste, como siempre.</p>
+        <button class="link small danger" id="st-off">Desconectar Strava</button>`
+      : `<p style="margin-top:0">Grabás con Strava (la app o tu reloj) y el fueguito de Deporte <b>se anota solo</b>.</p>
+        <p class="hint" style="margin:0 0 12px">Fueguitos solo lee tus entrenamientos: no publica nada en Strava. Tus km y tiempos los ves solo vos; tus amigos ven que anotaste Deporte, como siempre.</p>
+        <button class="btn sm strava" id="st-on" style="width:100%">Conectar con Strava</button>`}
+  </div></div>`;
+}
+function bindStrava(){
+  const on = $('#st-on'); if (on) on.onclick = async () => {
+    on.disabled = true;
+    try {
+      const state = await rpc('api_strava_state', P());
+      const mobile = isIOS || isAndroid;
+      const q = new URLSearchParams({ client_id: S.strava.client_id, redirect_uri: `${PUBLIC_URL}?strava=1`, response_type: 'code', approval_prompt: 'auto', scope: 'activity:read', state });
+      location.href = `https://www.strava.com/oauth/${mobile ? 'mobile/' : ''}authorize?${q}`;
+    } catch(e){ toast(e.message); on.disabled = false; }
+  };
+  const off = $('#st-off'); if (off) off.onclick = () => confirmSheet('¿Desconectar Strava?', 'Tus entrenamientos dejan de anotarse solos. Lo que ya se anotó queda.', 'Desconectar', async () => {
+    await stravaCall({ action: 'disconnect', token: S.token }); S.strava = undefined; await loadStrava(); toast('Strava desconectado');
+  });
+}
+
 // Anotar con un toque: queda anotado al instante; la foto y el detalle se suman después si querés.
 async function quickAnotar(h){
   const prev = S.me.habits;
@@ -3860,6 +3916,7 @@ function renderPerfil(){
     <div class="section"><div class="section-title"><h2>Mi progreso</h2></div>
       <div class="card" id="prog">${progressBlock()}</div>
     </div>
+    ${stravaBlock()}
 
     <div class="section"><button class="week pair" id="year"><b>🎉 Tu ${me.today.slice(0, 4)} en Fueguitos</b><div class="small muted" style="margin-top:2px">Tus números del año, listos para compartir</div></button></div>
 
@@ -3923,6 +3980,8 @@ function renderPerfil(){
   bindHabitToggles(renderPerfil);
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
   $('#year').onclick = yearSheet;
+  if (S.strava === undefined){ S.strava = null; loadStrava(); }
+  bindStrava();
   const sh = $('#shop'); if (sh) sh.onclick = () => shopSheet();
   const eg = $('#egg'); if (eg) eg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 día' : `faltan ${S.av.need - S.av.fed} días`} con fueguito para que nazca 🥚🔥`, 3000);
   $('#prof').onsubmit = async (e) => {
