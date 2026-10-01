@@ -128,6 +128,9 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .ava svg{position:absolute;left:10%;top:8%;width:80%;height:84%}
 .ava i{position:absolute;font-style:normal;line-height:1;transform:translateX(-50%)}
 .ava .ava-h{left:50%;top:-14%;font-size:.42em}
+.ava .ava-body{left:50%;top:14%;font-size:.66em}
+.shopit.lock .prev{filter:grayscale(1) brightness(.6);opacity:.45}
+.shopit.lock b{color:var(--muted)}
 .ava .ava-g{left:50%;top:50%;font-size:.3em}
 .ava .ava-x{left:86%;top:60%;font-size:.3em}
 .eggcard{display:flex;gap:12px;align-items:center;width:100%;text-align:left;margin:14px 0 0;font:inherit;color:inherit}
@@ -1078,6 +1081,17 @@ const AV_SHOP = [
   ['x', 'Accesorios', [['x:pelota', 'Pelota', 10], ['x:libro', 'Libros', 10], ['x:auris', 'Auriculares', 15], ['x:pesa', 'Pesas', 20], ['x:guitarra', 'Guitarra', 25], ['x:trofeo', 'Trofeo', 50]]],
   ['b', 'Fondo', [['b:cielo', 'Cielo', 10], ['b:bosque', 'Bosque', 15], ['b:atardecer', 'Atardecer', 15], ['b:noche', 'Noche', 20], ['b:fuego', 'Fuego', 30]]],
 ];
+const THEMES = { agua: ['💧', 'Agua'], velocidad: ['⚡', 'Velocidad'], sabiduria: ['📚', 'Sabiduría'], zen: ['🧘', 'Zen'],
+  noche: ['🌙', 'Noche'], idiomas: ['🗣️', 'Idiomas'], fuerza: ['🛡️', 'Fuerza'], fuego: ['🔥', 'Fuego'] };
+const CHARS = { 'p:chispita': ['🔥', 'Chispita', null, 3],
+  'p:pez': ['🐠', 'Pececito', 'agua', 7], 'p:tortuga': ['🐢', 'Tortuga', 'agua', 21], 'p:delfin': ['🐬', 'Delfín', 'agua', 45], 'p:ballena': ['🐋', 'Ballena', 'agua', 66],
+  'p:canguro': ['🦘', 'Canguro', 'velocidad', 7], 'p:caballo': ['🐎', 'Caballo', 'velocidad', 21], 'p:guepardo': ['🐆', 'Guepardo', 'velocidad', 45], 'p:cohete': ['🚀', 'Cohete', 'velocidad', 66],
+  'p:raton': ['🐭', 'Ratón de biblioteca', 'sabiduria', 7], 'p:zorro': ['🦊', 'Zorro', 'sabiduria', 21], 'p:elefante': ['🐘', 'Elefante', 'sabiduria', 45], 'p:buho': ['🦉', 'Búho sabio', 'sabiduria', 66],
+  'p:caracol': ['🐌', 'Caracol', 'zen', 7], 'p:mariposa': ['🦋', 'Mariposa', 'zen', 21], 'p:panda': ['🐼', 'Panda', 'zen', 45], 'p:loto': ['🪷', 'Loto', 'zen', 66],
+  'p:koala': ['🐨', 'Koala', 'noche', 7], 'p:perezoso': ['🦥', 'Perezoso', 'noche', 21], 'p:osopolar': ['🐻‍❄️', 'Oso polar', 'noche', 45], 'p:luna': ['🌝', 'Luna', 'noche', 66],
+  'p:pollito': ['🐥', 'Pollito', 'idiomas', 7], 'p:loro': ['🦜', 'Loro', 'idiomas', 21], 'p:cisne': ['🦢', 'Cisne', 'idiomas', 45], 'p:pavoreal': ['🦚', 'Pavo real', 'idiomas', 66],
+  'p:erizo': ['🦔', 'Erizo', 'fuerza', 7], 'p:lobo': ['🐺', 'Lobo', 'fuerza', 21], 'p:rino': ['🦏', 'Rinoceronte', 'fuerza', 45], 'p:leon': ['🦁', 'León', 'fuerza', 66],
+  'p:salamandra': ['🦎', 'Salamandra', 'fuego', 7], 'p:dragon': ['🐉', 'Dragón', 'fuego', 21], 'p:volcan': ['🌋', 'Volcán', 'fuego', 45], 'p:sol': ['🌞', 'Sol', 'fuego', 66] };
 function flameFace(ck){
   const [a, b] = FLAME_COLORS[ck] || FLAME_COLORS['c:naranja'];
   return `<svg viewBox="0 0 100 100" aria-hidden="true">${ck === 'c:arcoiris' ? '<defs><linearGradient id="ava-rb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF4D6D"/><stop offset=".35" stop-color="#FFB703"/><stop offset=".65" stop-color="#2EC4B6"/><stop offset="1" stop-color="#7B5CFF"/></linearGradient></defs>' : ''}
@@ -1096,55 +1110,83 @@ function eggSVG(fed){
 // El muñequito de alguien, o la letra si todavía no nació.
 function userAv(nick, av, size = 36){
   if (!av || !av.h) return `<span class="avatar" style="background:${avColor(nick)};width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px">${esc(nick.slice(0, 1).toUpperCase())}</span>`;
-  const eq = av.eq || {};
-  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}" role="img" aria-label="${esc(av.name || nick)}">${flameFace(eq.c)}${eq.h ? `<i class="ava-h">${AV_EMOJI[eq.h]}</i>` : ''}${eq.g ? `<i class="ava-g">${AV_EMOJI[eq.g]}</i>` : ''}${eq.x ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
+  const eq = av.eq || {}, ch = eq.p && eq.p !== 'p:chispita' && CHARS[eq.p];
+  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}" role="img" aria-label="${esc(av.name || nick)}">${ch ? `<i class="ava-body">${ch[0]}</i>` : flameFace(eq.c)}${eq.h ? `<i class="ava-h">${AV_EMOJI[eq.h]}</i>` : ''}${eq.g ? `<i class="ava-g">${AV_EMOJI[eq.g]}</i>` : ''}${eq.x ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
 }
 async function loadAvatar(){
   try {
     const a = await rpc('api_avatar', P()); const was = S.av; S.av = a;
     S.me.user.avatar = { h: a.hatched, eq: a.eq, name: a.name };
     if (a.just_hatched){ renderMain(); hatchSheet(); }
+    else if (a.new && a.new.length) unlockSheet(a.new);
     else if (!was || was.fed !== a.fed || was.coins !== a.coins){ if (S.tab === 'hoy') renderHoy(); if (S.tab === 'perfil') renderPerfil(); }
   } catch(e){}
 }
+// El muñequito más cercano a desbloquear.
+function nextCharLine(){
+  const pr = (S.av.progress || []).filter(x => x.next).sort((a, b) => (a.next_days - a.run) - (b.next_days - b.run))[0];
+  if (!pr) return '<div style="margin-bottom:10px"></div>';
+  const c = CHARS[pr.next];
+  return `<div class="small" style="margin-bottom:10px">Próximo: ${c[0]} <b>${esc(c[1])}</b> · ${pr.run} de ${pr.next_days} días de ${esc(pr.habit)}</div>`;
+}
 function eggCard(){
   const a = S.av; if (!a || a.hatched) return '';
-  return `<button class="week eggcard" id="egg"><span class="eggimg">${eggSVG(a.fed)}</span><span><b>🥚 Tu huevito</b><span class="small" style="display:block;margin-top:2px">Alimentalo con fueguitos: con ${a.need} nace tu muñequito.</span>
-    <span class="progress" style="margin-top:8px;display:block"><i style="width:${Math.round(a.fed / a.need * 100)}%"></i></span><span class="small muted" style="display:block;margin-top:4px">${a.fed} de ${a.need} fueguitos</span></span></button>`;
+  return `<button class="week eggcard" id="egg"><span class="eggimg">${eggSVG(a.fed)}</span><span><b>🥚 Tu huevito</b><span class="small" style="display:block;margin-top:2px">Comé un fueguito por día: en ${a.need} días distintos nace tu muñequito.</span>
+    <span class="progress" style="margin-top:8px;display:block"><i style="width:${Math.round(a.fed / a.need * 100)}%"></i></span><span class="small muted" style="display:block;margin-top:4px">${a.fed} de ${a.need} días</span></span></button>`;
+}
+function unlockSheet(ids){
+  const id = ids[ids.length - 1], c = CHARS[id]; if (!c) return;
+  const pr = (S.av.progress || []).find(x => x.theme === c[2]);
+  vibrate([40, 80, 40]); beep(659, .12); setTimeout(() => beep(988, .2), 140);
+  const el = openSheet(`<div style="text-align:center"><div class="hatch">${userAv(S.me.user.nick, { h: true, eq: { ...(S.av.eq || {}), p: id } }, 120)}</div>
+      <h2 style="margin-top:10px">¡Desbloqueaste ${esc(c[1])}! ${c[0]}</h2>
+      <p class="muted">${c[3]} días seguidos${pr ? ` de ${esc(pr.habit)}` : ''}.${c[3] >= 66 ? ' Según la ciencia, ese hábito ya es automático. 🧠' : ''}</p></div>
+    <div class="stack section"><button class="btn" id="ul-use">Usarlo de avatar</button><button class="btn ghost" id="ul-no">Después</button></div>`);
+  $('#ul-use', el).onclick = async () => { try { S.av = await rpc('api_avatar_equip', { ...P(), p_slot: 'p', p_item: id }); S.me.user.avatar = { h: true, eq: S.av.eq, name: S.av.name }; closeSheet(); renderMain(); toast(`¡${c[1]} es tu nuevo avatar!`); } catch(e){ toast(e.message); } };
+  $('#ul-no', el).onclick = () => { closeSheet(); renderMain(); };
 }
 function hatchSheet(){
   vibrate([40, 80, 40, 80, 60]); beep(523, .12); setTimeout(() => beep(659, .12), 130); setTimeout(() => beep(784, .2), 260);
   const el = openSheet(`<div style="text-align:center"><div class="hatch">${userAv(S.me.user.nick, { h: true, eq: {} }, 128)}</div>
-      <h2 style="margin-top:10px">¡Nació tu fueguito! 🎉</h2><p class="muted">Ahora es tu avatar en la app. Cada fueguito que anotás te da una moneda 🪙 para comprarle cosas. De regalo, 10 monedas.</p></div>
+      <h2 style="margin-top:10px">¡Nació tu fueguito! 🎉</h2><p class="muted">Ahora es tu avatar en la app. Cada fueguito que anotás te da una moneda 🪙 para comprarle cosas (de regalo, 10). Y si sostenés un hábito 7, 21, 45 y 66 días seguidos, desbloqueás muñequitos de su temática.</p></div>
     <div class="stack section"><label class="field"><span>¿Cómo se llama?</span><input class="input" id="hn" maxlength="20" placeholder="Ej: Chispita"></label>
       <button class="btn" id="hn-ok">Ir a la tienda</button><button class="btn ghost" id="hn-later">Después</button></div>`);
   const save = async () => { const n = $('#hn', el).value.trim(); if (n) try { S.av = await rpc('api_avatar_name', { ...P(), p_name: n }); S.me.user.avatar.name = n; } catch(e){} };
   $('#hn-ok', el).onclick = async () => { await save(); shopSheet(); };
   $('#hn-later', el).onclick = async () => { await save(); closeSheet(); renderMain(); };
 }
-function shopSheet(slot = 'c'){
+function shopSheet(slot = 'p'){
   const a = S.av; if (!a) return;
-  if (!a.hatched){ toast(`Primero tiene que nacer: te faltan ${a.need - a.fed} fueguitos 🥚`); return; }
-  const owned = new Set([...(a.owned || []), 'c:naranja']), eq = a.eq || {};
-  const cat = AV_SHOP.find(c => c[0] === slot);
+  if (!a.hatched){ toast(`Primero tiene que nacer: te faltan ${a.need - a.fed} días con fueguito 🥚`); return; }
+  const owned = new Set([...(a.owned || []), 'c:naranja', 'p:chispita']), eq = a.eq || {};
+  const myThemes = [...new Set((a.progress || []).map(x => x.theme))];
+  const runOf = (th) => Math.max(0, ...(a.progress || []).filter(x => x.theme === th).map(x => x.run));
+  const habitOf = (th) => ((a.progress || []).find(x => x.theme === th) || {}).habit || '';
+  const cat = slot === 'p' ? ['p', 'Personaje', [['p:chispita', 'Chispita', 0], ...myThemes.flatMap(th => Object.entries(CHARS).filter(([, c]) => c[2] === th).map(([id, c]) => [id, c[1], 0]))]] : AV_SHOP.find(c => c[0] === slot);
   const el = openSheet(`<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">🪙 ${a.coins}</span></div>
     <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${esc(a.name || 'Tu fueguito')}</div></div>
-    <div class="chips">${AV_SHOP.map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
-    <div class="shop">${slot !== 'c' ? `<button class="shopit ${!eq[slot] ? 'on' : ''}" data-item=""><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: undefined } }, 56)}</span><b>Sin nada</b><span class="small muted">${!eq[slot] ? 'Puesto' : 'Sacar'}</span></button>` : ''}
-      ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = (eq[slot] || (slot === 'c' ? 'c:naranja' : '')) === id;
+    <div class="chips">${[['p', 'Personaje'], ...AV_SHOP].map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
+    ${slot === 'p' ? '<p class="small muted" style="margin:0 0 10px">Cada hábito tiene su temática. Se desbloquean con 7, 21, 45 y 66 días seguidos de ese hábito, contando uno por día. A los 66 días, según la ciencia, ya es automático 🧠</p>' : ''}
+    ${slot === 'c' && eq.p && eq.p !== 'p:chispita' ? '<p class="small muted" style="margin:0 0 10px">El color es para Chispita 🔥. Los demás muñequitos ya tienen el suyo.</p>' : ''}
+    <div class="shop">${slot !== 'c' && slot !== 'p' ? `<button class="shopit ${!eq[slot] ? 'on' : ''}" data-item=""><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: undefined } }, 56)}</span><b>Sin nada</b><span class="small muted">${!eq[slot] ? 'Puesto' : 'Sacar'}</span></button>` : ''}
+      ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = (eq[slot] || (slot === 'c' ? 'c:naranja' : slot === 'p' ? 'p:chispita' : '')) === id;
+        if (slot === 'p' && !has){ const c = CHARS[id], run = runOf(c[2]);
+          return `<button class="shopit lock" data-lock="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, p: id } }, 56)}</span><b>${name}</b><span class="small">🔒 ${c[3]} días</span><span class="small muted">vas ${Math.min(run, c[3])}</span></button>`; }
         return `<button class="shopit ${on ? 'on' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${name}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `🪙 ${price}`}</span></button>`; }).join('')}</div>
     <p class="hint">Cada fueguito que anotás te da una moneda.</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   el.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
   el.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => shopSheet(b.dataset.slot));
+  el.querySelectorAll('[data-lock]').forEach(b => b.onclick = () => { const c = CHARS[b.dataset.lock], run = runOf(c[2]);
+    toast(`${c[0]} ${c[1]}: ${c[3]} días seguidos de ${habitOf(c[2])}. Vas ${run}, te ${c[3] - run === 1 ? 'falta 1' : `faltan ${c[3] - run}`} 💪`, 4000); });
   el.querySelectorAll('[data-item]').forEach(b => b.onclick = async () => {
     const id = b.dataset.item, item = cat[2].find(x => x[0] === id);
     try {
       if (!id) S.av = await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: null });
-      else if (owned.has(id)) S.av = id === 'c:naranja' ? await rpc('api_avatar_equip', { ...P(), p_slot: 'c', p_item: null }) : await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: id });
+      else if (owned.has(id) || id === 'p:chispita') S.av = id === 'c:naranja' ? await rpc('api_avatar_equip', { ...P(), p_slot: 'c', p_item: null }) : await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: id });
       else {
         if (item[2] > a.coins){ toast(`Te faltan ${item[2] - a.coins} monedas. Cada fueguito suma una 🪙`, 3200); return; }
-        S.av = await rpc('api_avatar_buy', { ...P(), p_item: id }); vibrate([30, 60, 30]); beep(880, .12); toast(`¡${item[1]} comprado! 🎉`);
+        S.av = await rpc('api_avatar_buy', { ...P(), p_item: id }); vibrate([30, 60, 30]); beep(880, .12); toast(`🎉 Compraste: ${item[1]}`);
       }
       S.me.user.avatar = { h: true, eq: S.av.eq, name: S.av.name }; S.group = S.group && { ...S.group };
       shopSheet(slot);
@@ -1467,6 +1509,7 @@ function calendarSheet(h){
     <div class="calstats"><div><b>${h.streak}</b><span>🔥 racha</span></div><div><b>${h.best || h.streak}</b><span>🏆 récord</span></div><div><b>${pct === null ? '–' : pct + '%'}</b><span>✅ último mes</span></div></div>
     <div class="row between section" style="align-items:center"><button class="link" id="cal-prev" aria-label="Mes anterior">‹ Anterior</button><b id="cal-title"></b><button class="link" id="cal-next" aria-label="Mes siguiente">Siguiente ›</button></div>
     <div class="cal" id="cal"></div>
+    <p class="small" style="margin:12px 0 0">🧠 ${h.streak >= 66 ? '¡Pasaste los 66 días! Según la ciencia, este hábito ya es automático.' : `Día ${h.streak} de 66. Un estudio del University College London encontró que un hábito tarda en promedio 66 días en volverse automático.`}</p>
     <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey miss"></span> No se hizo</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   const paint = () => {
@@ -1563,7 +1606,7 @@ function renderHoy(){
   $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
   $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
   const tg = $('#to-group'); if (tg) tg.onclick = createGroupSheet;
-  const egg = $('#egg'); if (egg) egg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 fueguito' : `faltan ${S.av.need - S.av.fed} fueguitos`} para que nazca 🥚🔥`, 3000);
+  const egg = $('#egg'); if (egg) egg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 día' : `faltan ${S.av.need - S.av.fed} días`} con fueguito para que nazca 🥚🔥`, 3000);
   const doneNow = hs.filter(h => h.done_today).length;
   if (S.avDone !== undefined && S.avDone !== doneNow) loadAvatar();
   S.avDone = doneNow;
@@ -1746,6 +1789,7 @@ function goalLine(h){
   const st = h.streak || 0, best = h.best || 0;
   if (best > st && st > 0 && (st >= best / 2 || best - st <= 30)) return `<div class="goal near">🔥 Te ${best - st === 1 ? 'falta 1' : `faltan ${best - st}`} para tu récord (${best})</div>`;
   if (best > 0 && st >= best && st > 7) return `<div class="goal near">🏆 ¡Estás en tu récord!</div>`;
+  if (st < 66) return `<div class="goal">🧠 ${st ? `Día ${st} de 66` : '66 días'}: ahí ya es automático</div>`;
   const next = HITO_LIST.find(x => x > st);
   return next ? `<div class="goal">🎯 Próximo: ${next} días${best > st ? ` · 🏆 récord ${best}` : ''}</div>` : '';
 }
@@ -3757,7 +3801,7 @@ function renderPerfil(){
   const best = me.habits.reduce((a,h) => Math.max(a, h.best ?? h.streak), 0);
   $('#main').innerHTML = `
     <div class="top"><div class="row">${userAv(me.user.nick, me.user.avatar, 56)}<h1>${esc(me.user.nick)}</h1></div></div>
-    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 10px">🪙 ${S.av.coins} monedas · 1 por fueguito</div><button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
+    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">🪙 ${S.av.coins} monedas · 1 por fueguito</div>${nextCharLine()}<button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
       : eggCard()) : ''}
 
     <div class="section"><div class="section-title"><h2>Últimos meses</h2></div>
@@ -3831,7 +3875,7 @@ function renderPerfil(){
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
   $('#year').onclick = yearSheet;
   const sh = $('#shop'); if (sh) sh.onclick = () => shopSheet();
-  const eg = $('#egg'); if (eg) eg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 fueguito' : `faltan ${S.av.need - S.av.fed} fueguitos`} para que nazca 🥚🔥`, 3000);
+  const eg = $('#egg'); if (eg) eg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 día' : `faltan ${S.av.need - S.av.fed} días`} con fueguito para que nazca 🥚🔥`, 3000);
   $('#prof').onsubmit = async (e) => {
     e.preventDefault();
     try { await rpc('api_update_profile', { ...P(), p_nick: $('#p-nick').value, p_email: $('#p-mail').value, p_tz: null }); S.me = await rpc('api_me', P()); renderPerfil(); toast('Datos guardados'); }
