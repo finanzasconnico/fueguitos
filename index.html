@@ -817,7 +817,8 @@ function forgotPinSheet(nick0){
   const el = openSheet(`<h2>🔑 Recuperar mi PIN</h2>
     <p class="muted">Te mandamos un código al mail que vinculaste en tu cuenta.</p>
     <div class="stack section" id="fp-1">
-      <label class="field"><span>Apodo</span><input class="input" id="fp-n" maxlength="30" autocomplete="username" value="${esc(nick0 || '')}" placeholder="Tu apodo"></label>
+      <label class="field"><span>Tu apodo o tu mail</span><input class="input" id="fp-n" maxlength="80" autocomplete="username" autocapitalize="none" value="${esc(nick0 || '')}" placeholder="Apodo o mail"></label>
+      <div class="hint">Si no te acordás el apodo, poné el mail: te lo mandamos junto con el código.</div>
       <button class="btn" id="fp-send">Mandame el código</button></div>
     <div class="stack section" id="fp-2" style="display:none">
       <p class="small" id="fp-hint" style="margin:0"></p>
@@ -826,10 +827,11 @@ function forgotPinSheet(nick0){
       <label class="field"><span>Repetilo</span>${pinInput('fp-p2')}</label>
       <button class="btn" id="fp-ok">Guardar PIN y entrar</button>
       <button type="button" class="link small" id="fp-again">No me llegó: mandarlo de nuevo</button></div>`);
-  const ERR = { SIN_MAIL: 'Esa cuenta no tiene un mail vinculado. Si seguís logueado en otro celu, entrá ahí, vinculá el mail en Perfil → Mis datos y cambiá el PIN.',
-    MAIL_NO_DISPONIBLE: 'Todavía no está activado el envío de mails. Probá más tarde.', DEMASIADOS: 'Ya te mandamos varios códigos. Probá de nuevo en una hora.' };
+  const ERR = { SIN_MAIL: 'No encontramos una cuenta con ese mail, o esa cuenta no tiene mail vinculado. Si seguís logueado en otro celu, entrá ahí, vinculá el mail en Perfil → Mis datos y cambiá el PIN.',
+    MAIL_NO_DISPONIBLE: 'Todavía no está activado el envío de mails. Probá más tarde.', DEMASIADOS: 'Ya te mandamos varios códigos. Probá de nuevo en una hora.',
+    MAIL_VARIAS: 'Ese mail está en más de una cuenta. Poné tu apodo.' };
   const send = async (b) => {
-    const n = $('#fp-n', el).value.trim(); if (!n){ toast('Poné tu apodo'); return; }
+    const n = $('#fp-n', el).value.trim(); if (!n){ toast('Poné tu apodo o tu mail'); return; }
     b.disabled = true;
     try {
       const r = await rpc('api_pin_reset_request', { p_nick: n });
