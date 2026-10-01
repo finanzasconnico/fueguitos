@@ -1974,8 +1974,8 @@ async function quickAnotar(h){
       x = (r0.results || [])[0] || {}; S.me.habits = r0.habits; renderHoy();
       if (x.early || x.late){ toast(x.early ? `Todavía es temprano: se anota desde las ${opensAt(h)}.` : `Hoy ya se pasó la hora (${h.deadline}). Mañana hay revancha 💪`, 3500); return; }
     }
-    const hh = S.me.habits.find(y => y.id === h.id) || h, pb = S.prevBest[h.id] || 0;
-    if (HITOS[hh.streak] || x.earned_ice || (pb >= 7 && hh.streak === pb)) celebrate([{ habit_id: h.id, name: h.name, emoji: h.emoji, streak: hh.streak, ice: hh.ice, left_for_ice: hh.left_for_ice, earned_ice: !!x.earned_ice }]);
+    const hh = S.me.habits.find(y => y.id === h.id) || h, rb = hh.run_best || 0;
+    if (HITOS[hh.streak] || x.earned_ice || (rb >= 7 && hh.streak === rb + 1)) celebrate([{ habit_id: h.id, name: h.name, emoji: h.emoji, streak: hh.streak, ice: hh.ice, left_for_ice: hh.left_for_ice, earned_ice: !!x.earned_ice }]);
     else {
       const sn = snack(`<span>🔥 <b>${esc(h.name)}</b> · día ${hh.streak}${r0.queued ? ' ☁️' : ''}</span><button data-sf>📸 Foto</button><button data-su>Deshacer</button>`);
       $('[data-sf]', sn).onclick = () => { sn.remove(); S.sel = new Set([h.id]); openCheckinSheet(); };
@@ -1990,7 +1990,7 @@ function localCheckin(ids){
   const results = [];
   S.me.habits = S.me.habits.map(h => {
     if (!ids.includes(h.id) || h.done_today) return h;
-    const x = { ...h, done_today: true, streak: h.streak + 1, left_for_ice: h.left_for_ice - 1 };
+    const x = { ...h, done_today: true, streak: h.streak + 1, left_for_ice: h.left_for_ice - 1, best: Math.max(h.best || 0, h.streak + 1), run_best: h.streak === 0 ? (h.best || 0) : h.run_best };
     let earned = false;
     if (x.left_for_ice <= 0){ x.left_for_ice = h.ice_every; if (x.ice < x.max_ice){ x.ice++; earned = true; } }
     results.push({ habit_id: h.id, name: h.name, emoji: h.emoji, streak: x.streak, ice: x.ice, left_for_ice: x.left_for_ice, earned_ice: earned });
@@ -2072,8 +2072,10 @@ function celebrate(results){
     <div class="count" id="cnt">${Math.max(0, main.streak - 1)}</div>
     <div class="lbl">${main.streak === 1 ? 'día de racha' : 'días de racha'} de ${esc(main.name)}</div>
     ${(() => { const pb = (S.prevBest || {})[main.habit_id] || 0;
-      // Solo al pasar de "no estar en récord" a "estar": el día que alcanzás tu marca. Mientras seguís en récord, no se repite.
-      if (pb >= 7 && main.streak === pb) return `<div class="hito big">🏆 ¡Llegaste a tu récord!</div><p style="opacity:.8;margin:4px 0 0">Igualaste tus ${pb} días. Desde mañana, cada día es un récord nuevo 🔥</p>`;
+      // Nuevo récord solo si al arrancar esta racha había otro récord y hoy lo pasás (run_best).
+      // Si el récord lo venís haciendo en esta misma racha, no se repite cada día.
+      const rb = ((S.me.habits.find(x => x.id === main.habit_id) || {}).run_best) || 0;
+      if (rb >= 7 && main.streak === rb + 1) return `<div class="hito big">🏆 ¡Nuevo récord personal!</div><p style="opacity:.8;margin:4px 0 0">Tu marca anterior era ${rb} días</p>`;
       if (pb > main.streak && pb - main.streak <= 30) return `<div class="hito">${HITOS[main.streak] || ANIMO[main.streak % ANIMO.length]}</div><p style="opacity:.8;margin:4px 0 0">🔥 Te ${pb - main.streak === 1 ? 'falta 1' : `faltan ${pb - main.streak}`} para tu récord</p>`;
       return `<div class="hito ${HITOS[main.streak] ? 'big' : ''}">${HITOS[main.streak] || ANIMO[main.streak % ANIMO.length]}</div>`; })()}
     ${results.length > 1 ? `<div class="others">${results.slice(1).map(r => `<div class="o"><span>${esc(r.emoji)} ${esc(r.name)}</span><span>${r.streak} 🔥</span></div>`).join('')}</div>` : ''}
