@@ -124,6 +124,27 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
+.ava{position:relative;display:inline-block;flex:none;border-radius:50%;overflow:visible}
+.ava svg{position:absolute;left:10%;top:8%;width:80%;height:84%}
+.ava i{position:absolute;font-style:normal;line-height:1;transform:translateX(-50%)}
+.ava .ava-h{left:50%;top:-14%;font-size:.42em}
+.ava .ava-g{left:50%;top:50%;font-size:.3em}
+.ava .ava-x{left:86%;top:60%;font-size:.3em}
+.eggcard{display:flex;gap:12px;align-items:center;width:100%;text-align:left;margin:14px 0 0;font:inherit;color:inherit}
+.eggimg{width:64px;height:64px;flex:none;animation:wobble 2.4s ease-in-out infinite}
+.eggimg svg{width:100%;height:100%}
+@keyframes wobble{0%,80%,100%{transform:rotate(0)}85%{transform:rotate(-8deg)}90%{transform:rotate(8deg)}95%{transform:rotate(-4deg)}}
+@media (prefers-reduced-motion:reduce){.eggimg{animation:none}}
+.hatch{display:inline-block;animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.coins{font-weight:800;font-size:18px;background:var(--fire-soft);padding:6px 12px;border-radius:999px}
+.shop{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.shopit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:16px;border:2px solid var(--line);background:var(--card);font:inherit;color:inherit}
+.shopit.on{border-color:var(--fire);background:var(--fire-soft)}
+.shopit.cant{opacity:.55}
+.shopit .prev{height:62px;display:grid;place-items:center}
+.shopit b{font-size:14px}
+.avcard{display:flex;gap:16px;align-items:center}
 .onb h1{margin-top:6px}
 .onb .lead{font-size:17px;margin:6px 0 16px}
 .onb-dots{display:flex;gap:6px;margin-top:8px}
@@ -550,6 +571,8 @@ const ERRORS = {
   SESION_INVALIDA: 'Tu sesión no existe más. Volvé a entrar con tu apodo.',
   CODIGO_INVALIDO: 'Ese código no existe. Revisalo con quien te invitó.',
   GRUPO_LLENO: 'Esa racha de a dos ya tiene a sus dos personas.',
+  SIN_MONEDAS: 'Te faltan monedas. Cada fueguito que anotás suma una 🪙',
+  HUEVO: 'Primero tiene que nacer tu fueguito 🥚',
   YA_EMPUJASTE: 'Ya le mandaste un empujón hoy. Mañana podés de nuevo.',
   FOTO_MUY_GRANDE: 'La foto es muy pesada. Probá con otra.',
   SOLO_ADMIN: 'Solo quien administra el grupo puede hacer esto.',
@@ -725,6 +748,7 @@ async function afterLogin(){
   }
   if (!S.me.habits.length){ S.onboarding = true; renderOnboarding(); return; }
   renderShell();
+  loadAvatar();
   if (S.rutina === 'tiempo'){ S.rutina = null; runTime(); }
   if (S.quick){
     const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
@@ -1037,6 +1061,95 @@ function renderWelcome(){
       await loadMe(); await afterLogin();
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = 'Empezar'; }
   };
+}
+
+/* ============ El muñequito: huevito → fueguito con accesorios ============ */
+const FLAME_COLORS = { 'c:naranja': ['#FF6A1F', '#FFC23D'], 'c:azul': ['#2F7DF6', '#8FD3FF'], 'c:violeta': ['#8B4DFF', '#E2B8FF'],
+  'c:verde': ['#1FB463', '#B9F27C'], 'c:dorado': ['#E8A300', '#FFF1A8'], 'c:arcoiris': ['url(#ava-rb)', '#FFFFFF'] };
+const AV_BG = { 'b:cielo': 'linear-gradient(160deg,#BFE6FF,#E9F7FF)', 'b:bosque': 'linear-gradient(160deg,#9BD97A,#E3F6D3)', 'b:atardecer': 'linear-gradient(160deg,#FF9A6B,#FFD86B)',
+  'b:noche': 'linear-gradient(160deg,#1E2350,#4B3B8F)', 'b:fuego': 'linear-gradient(160deg,#FF3D00,#FFB300)' };
+const AV_EMOJI = { 'h:gorra': '🧢', 'h:casco': '⛑️', 'h:galera': '🎩', 'h:graduado': '🎓', 'h:corona': '👑',
+  'g:lentes': '👓', 'g:sol': '🕶️', 'g:antiparras': '🥽',
+  'x:pelota': '⚽', 'x:libro': '📚', 'x:auris': '🎧', 'x:pesa': '🏋️', 'x:guitarra': '🎸', 'x:trofeo': '🏆' };
+const AV_SHOP = [
+  ['c', 'Color', [['c:naranja', 'Naranja', 0], ['c:azul', 'Azul', 15], ['c:violeta', 'Violeta', 15], ['c:verde', 'Verde', 15], ['c:dorado', 'Dorado', 40], ['c:arcoiris', 'Arcoíris', 80]]],
+  ['h', 'Gorros', [['h:gorra', 'Gorra', 10], ['h:casco', 'Casco', 15], ['h:galera', 'Galera', 20], ['h:graduado', 'Birrete', 25], ['h:corona', 'Corona', 60]]],
+  ['g', 'Anteojos', [['g:lentes', 'Lentes', 10], ['g:sol', 'De sol', 15], ['g:antiparras', 'Antiparras', 15]]],
+  ['x', 'Accesorios', [['x:pelota', 'Pelota', 10], ['x:libro', 'Libros', 10], ['x:auris', 'Auriculares', 15], ['x:pesa', 'Pesas', 20], ['x:guitarra', 'Guitarra', 25], ['x:trofeo', 'Trofeo', 50]]],
+  ['b', 'Fondo', [['b:cielo', 'Cielo', 10], ['b:bosque', 'Bosque', 15], ['b:atardecer', 'Atardecer', 15], ['b:noche', 'Noche', 20], ['b:fuego', 'Fuego', 30]]],
+];
+function flameFace(ck){
+  const [a, b] = FLAME_COLORS[ck] || FLAME_COLORS['c:naranja'];
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">${ck === 'c:arcoiris' ? '<defs><linearGradient id="ava-rb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF4D6D"/><stop offset=".35" stop-color="#FFB703"/><stop offset=".65" stop-color="#2EC4B6"/><stop offset="1" stop-color="#7B5CFF"/></linearGradient></defs>' : ''}
+    <path d="M50 6C58 24 80 34 80 60C80 80 66 94 50 94C34 94 20 80 20 60C20 44 30 36 36 26C38 38 44 42 48 40C44 28 46 16 50 6Z" fill="${a}"/>
+    <path d="M50 46C57 55 66 62 66 74C66 85 59 91 50 91C41 91 34 85 34 74C34 64 43 57 50 46Z" fill="${b}" opacity=".9"/>
+    <ellipse cx="42" cy="66" rx="5" ry="6" fill="#fff"/><ellipse cx="58" cy="66" rx="5" ry="6" fill="#fff"/>
+    <circle cx="43" cy="67" r="2.8" fill="#2B1A12"/><circle cx="59" cy="67" r="2.8" fill="#2B1A12"/>
+    <path d="M44 78Q50 83 56 78" fill="none" stroke="#2B1A12" stroke-width="3" stroke-linecap="round"/></svg>`;
+}
+function eggSVG(fed){
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="58" rx="28" ry="34" fill="#FFF4E6" stroke="#E9C9A8" stroke-width="3"/>
+    <circle cx="40" cy="44" r="4" fill="#FFD9B8"/><circle cx="60" cy="66" r="5" fill="#FFD9B8"/><circle cx="44" cy="76" r="3" fill="#FFD9B8"/>
+    ${fed >= 1 ? '<path d="M34 50l7 5 5-6 6 7" fill="none" stroke="#B58A63" stroke-width="2.5" stroke-linejoin="round"/>' : ''}
+    ${fed >= 2 ? '<path d="M52 54l6 5 6-5 6 6" fill="none" stroke="#B58A63" stroke-width="2.5" stroke-linejoin="round"/><path d="M50 30c3 6 7 7 7 12a7 7 0 0 1-14 0c0-5 4-6 7-12z" fill="#FF6A1F"/>' : ''}</svg>`;
+}
+// El muñequito de alguien, o la letra si todavía no nació.
+function userAv(nick, av, size = 36){
+  if (!av || !av.h) return `<span class="avatar" style="background:${avColor(nick)};width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px">${esc(nick.slice(0, 1).toUpperCase())}</span>`;
+  const eq = av.eq || {};
+  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}" role="img" aria-label="${esc(av.name || nick)}">${flameFace(eq.c)}${eq.h ? `<i class="ava-h">${AV_EMOJI[eq.h]}</i>` : ''}${eq.g ? `<i class="ava-g">${AV_EMOJI[eq.g]}</i>` : ''}${eq.x ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
+}
+async function loadAvatar(){
+  try {
+    const a = await rpc('api_avatar', P()); const was = S.av; S.av = a;
+    S.me.user.avatar = { h: a.hatched, eq: a.eq, name: a.name };
+    if (a.just_hatched){ renderMain(); hatchSheet(); }
+    else if (!was || was.fed !== a.fed || was.coins !== a.coins){ if (S.tab === 'hoy') renderHoy(); if (S.tab === 'perfil') renderPerfil(); }
+  } catch(e){}
+}
+function eggCard(){
+  const a = S.av; if (!a || a.hatched) return '';
+  return `<button class="week eggcard" id="egg"><span class="eggimg">${eggSVG(a.fed)}</span><span><b>🥚 Tu huevito</b><span class="small" style="display:block;margin-top:2px">Alimentalo con fueguitos: con ${a.need} nace tu muñequito.</span>
+    <span class="progress" style="margin-top:8px;display:block"><i style="width:${Math.round(a.fed / a.need * 100)}%"></i></span><span class="small muted" style="display:block;margin-top:4px">${a.fed} de ${a.need} fueguitos</span></span></button>`;
+}
+function hatchSheet(){
+  vibrate([40, 80, 40, 80, 60]); beep(523, .12); setTimeout(() => beep(659, .12), 130); setTimeout(() => beep(784, .2), 260);
+  const el = openSheet(`<div style="text-align:center"><div class="hatch">${userAv(S.me.user.nick, { h: true, eq: {} }, 128)}</div>
+      <h2 style="margin-top:10px">¡Nació tu fueguito! 🎉</h2><p class="muted">Ahora es tu avatar en la app. Cada fueguito que anotás te da una moneda 🪙 para comprarle cosas. De regalo, 10 monedas.</p></div>
+    <div class="stack section"><label class="field"><span>¿Cómo se llama?</span><input class="input" id="hn" maxlength="20" placeholder="Ej: Chispita"></label>
+      <button class="btn" id="hn-ok">Ir a la tienda</button><button class="btn ghost" id="hn-later">Después</button></div>`);
+  const save = async () => { const n = $('#hn', el).value.trim(); if (n) try { S.av = await rpc('api_avatar_name', { ...P(), p_name: n }); S.me.user.avatar.name = n; } catch(e){} };
+  $('#hn-ok', el).onclick = async () => { await save(); shopSheet(); };
+  $('#hn-later', el).onclick = async () => { await save(); closeSheet(); renderMain(); };
+}
+function shopSheet(slot = 'c'){
+  const a = S.av; if (!a) return;
+  if (!a.hatched){ toast(`Primero tiene que nacer: te faltan ${a.need - a.fed} fueguitos 🥚`); return; }
+  const owned = new Set([...(a.owned || []), 'c:naranja']), eq = a.eq || {};
+  const cat = AV_SHOP.find(c => c[0] === slot);
+  const el = openSheet(`<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">🪙 ${a.coins}</span></div>
+    <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${esc(a.name || 'Tu fueguito')}</div></div>
+    <div class="chips">${AV_SHOP.map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
+    <div class="shop">${slot !== 'c' ? `<button class="shopit ${!eq[slot] ? 'on' : ''}" data-item=""><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: undefined } }, 56)}</span><b>Sin nada</b><span class="small muted">${!eq[slot] ? 'Puesto' : 'Sacar'}</span></button>` : ''}
+      ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = (eq[slot] || (slot === 'c' ? 'c:naranja' : '')) === id;
+        return `<button class="shopit ${on ? 'on' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${name}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `🪙 ${price}`}</span></button>`; }).join('')}</div>
+    <p class="hint">Cada fueguito que anotás te da una moneda.</p>
+    <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
+  el.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
+  el.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => shopSheet(b.dataset.slot));
+  el.querySelectorAll('[data-item]').forEach(b => b.onclick = async () => {
+    const id = b.dataset.item, item = cat[2].find(x => x[0] === id);
+    try {
+      if (!id) S.av = await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: null });
+      else if (owned.has(id)) S.av = id === 'c:naranja' ? await rpc('api_avatar_equip', { ...P(), p_slot: 'c', p_item: null }) : await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: id });
+      else {
+        if (item[2] > a.coins){ toast(`Te faltan ${item[2] - a.coins} monedas. Cada fueguito suma una 🪙`, 3200); return; }
+        S.av = await rpc('api_avatar_buy', { ...P(), p_item: id }); vibrate([30, 60, 30]); beep(880, .12); toast(`¡${item[1]} comprado! 🎉`);
+      }
+      S.me.user.avatar = { h: true, eq: S.av.eq, name: S.av.name }; S.group = S.group && { ...S.group };
+      shopSheet(slot);
+    } catch(e){ toast(e.message, 3200); }
+  });
 }
 
 /* ============ Arranque: elegir → primer fueguito → avisos ============ */
@@ -1411,6 +1524,7 @@ function renderHoy(){
       <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
       <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
     </div>
+    ${eggCard()}
     ${pairCards()}
     ${planCard(true)}
     ${hoyNudge()}
@@ -1449,6 +1563,10 @@ function renderHoy(){
   $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
   $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
   const tg = $('#to-group'); if (tg) tg.onclick = createGroupSheet;
+  const egg = $('#egg'); if (egg) egg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 fueguito' : `faltan ${S.av.need - S.av.fed} fueguitos`} para que nazca 🥚🔥`, 3000);
+  const doneNow = hs.filter(h => h.done_today).length;
+  if (S.avDone !== undefined && S.avDone !== doneNow) loadAvatar();
+  S.avDone = doneNow;
   document.querySelectorAll('[data-pair]').forEach(b => b.onclick = () => {
     const g = S.me.groups.find(x => x.id === b.dataset.pair);
     if (!g.other){ shareInvite(g); return; }
@@ -2751,7 +2869,7 @@ function memberSheet(G, uid){
   const m = G.members.find(x => x.id === uid); if (!m) return;
   const canKick = G.group.is_admin && !m.is_me, canGift = giftable(m).length > 0;
   const el = openSheet(`<div class="row" style="gap:12px;align-items:center">
-      <div class="avatar" style="background:${avColor(m.nick)};width:52px;height:52px;font-size:22px">${esc(m.nick.slice(0,1).toUpperCase())}</div>
+      ${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 56)}
       <div><h2>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}</h2>${m.is_admin ? '<div class="small muted">Administra el grupo</div>' : ''}</div></div>
     <div class="card section">${m.habits.length ? m.habits.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
         <span class="small" style="font-weight:700">🔥 ${h.streak} · 🧊 ${h.ice}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no activó hábitos.</p>'}</div>
@@ -2791,7 +2909,7 @@ function nudgeBanner(G, members){
 }
 function memberRow(m){
   return `<div class="member" role="button" tabindex="0" data-member="${m.id}" aria-label="Ver a ${esc(m.nick)}">
-    <div class="who"><div class="avatar" style="background:${avColor(m.nick)}">${esc(m.nick.slice(0,1).toUpperCase())}</div><div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}</div></div>
+    <div class="who">${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 36)}<div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}</div></div>
     <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
   </div>`;
 }
@@ -3638,7 +3756,9 @@ function renderPerfil(){
   const me = S.me;
   const best = me.habits.reduce((a,h) => Math.max(a, h.best ?? h.streak), 0);
   $('#main').innerHTML = `
-    <div class="top"><div class="row"><div class="avatar" style="background:${avColor(me.user.nick)};width:52px;height:52px;font-size:22px">${esc(me.user.nick.slice(0,1).toUpperCase())}</div><h1>${esc(me.user.nick)}</h1></div></div>
+    <div class="top"><div class="row">${userAv(me.user.nick, me.user.avatar, 56)}<h1>${esc(me.user.nick)}</h1></div></div>
+    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 10px">🪙 ${S.av.coins} monedas · 1 por fueguito</div><button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
+      : eggCard()) : ''}
 
     <div class="section"><div class="section-title"><h2>Últimos meses</h2></div>
       <div class="card">${heatmap()}<div class="row small muted" style="margin-top:10px;gap:14px"><span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--fire)"></i> anotado</span><span><i style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--heat-ice)"></i> hielo</span></div></div>
@@ -3710,6 +3830,8 @@ function renderPerfil(){
   bindHabitToggles(renderPerfil);
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
   $('#year').onclick = yearSheet;
+  const sh = $('#shop'); if (sh) sh.onclick = () => shopSheet();
+  const eg = $('#egg'); if (eg) eg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 fueguito' : `faltan ${S.av.need - S.av.fed} fueguitos`} para que nazca 🥚🔥`, 3000);
   $('#prof').onsubmit = async (e) => {
     e.preventDefault();
     try { await rpc('api_update_profile', { ...P(), p_nick: $('#p-nick').value, p_email: $('#p-mail').value, p_tz: null }); S.me = await rpc('api_me', P()); renderPerfil(); toast('Datos guardados'); }
