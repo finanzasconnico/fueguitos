@@ -1302,7 +1302,7 @@ function renderOnboarding(){
     return;
   }
   // Paso 3: avisos. Si no se pueden pedir (ya están, bloqueados o el navegador no deja), se saltea.
-  const finish = () => { S.onboarding = false; S.onb = null; renderShell(); };
+  const finish = () => { S.onboarding = false; S.onb = null; LS.set('fueguitos_news', NEWS.id); renderShell(); };
   const st = pushState();
   if (st !== 'default' && st !== 'instalar'){ finish(); return; }
   $('#app').innerHTML = `<div class="wrap onb">
@@ -1636,6 +1636,19 @@ function pairCards(){
   }).join('')}</div></div>`;
 }
 
+// Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
+const NEWS = { id: '2026-10-02', title: '✨ Novedades en Fueguitos', items: [
+  '🔒 <b>Hábitos privados</b>: los tuyos sin compartir los ves solo vos. No aparecen en el grupo.',
+  '✨ <b>Hábitos libres</b>: sin racha ni días fijos, para cosas como skincare u ordenar el cuarto.',
+  '🎨 <b>Colores</b> para cada hábito y <b>Mi calendario</b> en Perfil, con todo lo que hiciste.',
+  '📅 <b>Calendario del grupo</b>: quién anotó cada día (en Grupo → El grupo).',
+  '🥚 Tu <b>huevito</b> nace con 3 días de fueguitos. ¡Alimentalo!'] };
+function newsCard(){
+  if (LS.get('fueguitos_news') === NEWS.id) return '';
+  return `<div class="card section news"><h3 style="margin:0 0 8px">${NEWS.title}</h3><ul class="small plist" style="margin-bottom:12px">${NEWS.items.map(i => `<li>${i}</li>`).join('')}</ul>
+    <div class="grid2"><button class="btn sm ghost" style="width:100%" id="news-cal">Ver Mi calendario</button><button class="btn sm" style="width:100%" id="news-ok">¡Entendido!</button></div></div>`;
+}
+
 function renderHoy(){
   const me = S.me, hs = me.habits;
   const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
@@ -1651,6 +1664,7 @@ function renderHoy(){
       ${dayRing(hs)}
     </div>
     <div class="quote"><span class="qmark" aria-hidden="true">“</span><p>${esc(fraseDelDia(me.today))}</p></div>
+    ${newsCard()}
     ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
@@ -1712,6 +1726,8 @@ function renderHoy(){
   const tj = $('#to-join'); if (tj) tj.onclick = () => joinGroupSheet();
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
+  const nok = $('#news-ok'); if (nok) nok.onclick = () => { LS.set('fueguitos_news', NEWS.id); renderHoy(); };
+  const ncal = $('#news-cal'); if (ncal) ncal.onclick = () => { LS.set('fueguitos_news', NEWS.id); go('perfil'); setTimeout(() => { const m = $('#mycal'); if (m) m.scrollIntoView({ block: 'center' }); }, 300); };
   const nml = $('#n-mail'); if (nml) nml.onclick = mailSheet;
   const nmn = $('#n-mail-no'); if (nmn) nmn.onclick = () => { LS.set('fueguitos_mail_snooze', String(Date.now())); renderHoy(); toast('Lo tenés en Perfil → Mis datos cuando quieras'); };
   bindPlanCard();
@@ -2330,6 +2346,7 @@ function renderGrupo(){
   document.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
   const ha = $('#hab-add'); if (ha) ha.onclick = () => groupHabitAdd(G);
   const bb = $('#bench-back'); if (bb) bb.onclick = () => benchBackSheet(G);
+  const ps = $('#priv-share'); if (ps) ps.onclick = () => groupHabitAdd(G);
   document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => nudgeFriend(G, G.members.find(x => x.id === b.dataset.nudge)));
   document.querySelectorAll('[data-back]').forEach(b => b.onclick = async () => {
     const m = G.members.find(x => x.id === b.dataset.back); b.disabled = true;
@@ -2365,6 +2382,13 @@ function groupStreak(g, pair){
     <div class="small muted" style="margin-top:2px">${pair ? 'Suma un día cuando anotan los dos.' : 'Suma un día cuando todos anotan algo.'} Hielito y descanso también valen.</div></div>`;
 }
 /* ============ La banca: más de 7 días sin fueguito ============ */
+function privateHint(G){
+  const mine = S.me.habits.filter(h => h.kind === 'hacer');
+  if (!mine.length || mine.some(h => !h.private)) return '';
+  return `<div class="week gst"><div class="small" style="font-weight:700">🔒 Tus hábitos son privados</div>
+    <div class="small muted" style="margin:4px 0 10px">Por eso no contás para la racha del grupo ni ven que anotás. Si querés que cuente, compartí uno con el grupo.</div>
+    <button class="btn sm" id="priv-share" style="width:100%">Compartir uno con el grupo</button></div>`;
+}
 function benchBanner(G){
   if (!G.group.me_bench) return '';
   const me = G.members.find(m => m.is_me) || {};
@@ -2396,6 +2420,7 @@ function grupoRacha(G, members){
     <div class="section-title" style="margin-top:4px"><h2>Hoy</h2></div>
     <div class="board">${members.map(memberRow).join('')}</div>
     ${nudgeBanner(G, members)}
+    ${privateHint(G)}
 
     <div class="section">
       <div class="section-title"><h2>Fotos de hoy</h2><span class="small muted">Duran 24 h</span></div>
