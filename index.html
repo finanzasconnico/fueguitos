@@ -122,6 +122,8 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.descanso,.calkey.descanso{background:var(--line)}
 .cal span.miss,.calkey.miss{border:2px dashed var(--line);color:var(--muted)}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
+.cal span.tap{cursor:pointer;outline:2px dashed color-mix(in srgb,var(--fire) 45%,transparent);outline-offset:-2px}
+.cal span.tap.hecho{outline:none}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
 .flamebox.freebox{width:64px;height:64px;margin:0 5px;border-radius:20px;background:color-mix(in srgb,var(--hc) 16%,transparent);border:2px solid color-mix(in srgb,var(--hc) 40%,transparent)}
@@ -131,6 +133,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.free.done .flamebox.freebox{background:color-mix(in srgb,var(--hc) 30%,transparent)}
 .habit.free.done .check{background:var(--hc);border-color:var(--hc)}
 .lock{font-size:13px}
+.undo.yest{display:block;color:var(--fire-ink);text-decoration:none;font-size:13px;margin-top:6px}
 .colors{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .cdot{width:34px;height:34px;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 2px var(--line)}
 .cdot.on{border-color:var(--card);box-shadow:0 0 0 3px var(--ink)}
@@ -1545,6 +1548,7 @@ function monthGrid(box, opts){
     box.innerHTML = html;
     box.querySelectorAll('[data-mg]').forEach(b => b.onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() + +b.dataset.mg, 1); sel = null; paint(); });
     box.querySelectorAll('[data-day-cell]').forEach(b => b.onclick = () => { if (b.dataset.dayCell > today) return; sel = b.dataset.dayCell; paint(); });
+    if (opts.after) opts.after(box);
   };
   paint();
 }
@@ -1556,7 +1560,10 @@ function myCalendar(box){
   const t = S.me.today; by[t] = new Set(hs.filter(h => h.done_today).map(h => h.id));
   monthGrid(box, {
     cell: (day) => { const set = by[day]; if (!set || !set.size) return ''; return `<span class="dots">${hs.filter(h => set.has(h.id)).map(h => `<i style="background:${habitColor(h)}"></i>`).join('')}</span>`; },
-    detail: (day) => { const set = by[day] || new Set(), done = hs.filter(h => set.has(h.id)); return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => `${esc(h.emoji)} ${esc(h.name)}`).join(' · ') : 'nada anotado'}`; },
+    detail: (day) => { const set = by[day] || new Set(), done = hs.filter(h => set.has(h.id)), miss = hs.filter(h => !set.has(h.id) && !h.goal && !h.next_day);
+      return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => `${esc(h.emoji)} ${esc(h.name)}`).join(' · ') : 'nada anotado'}
+        ${(canBackfill(day) || day === t) && miss.length ? `<div class="chips" style="margin:8px 0 0;flex-wrap:wrap">${miss.map(h => `<button class="chip" data-mca="${h.id}" data-mcd="${day}">+ ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}`; },
+    after: (box) => box.querySelectorAll('[data-mca]').forEach(b => b.onclick = () => daySheet(S.me.habits.find(h => h.id === b.dataset.mca), b.dataset.mcd)),
     hint: 'Tocá un día para ver qué hiciste.',
     legend: () => `<div class="mleg">${hs.map(h => `<span><i style="background:${habitColor(h)}"></i>${esc(h.name)}${h.private ? ' 🔒' : ''}</span>`).join('')}</div>`,
   });
@@ -1604,6 +1611,7 @@ function calendarSheet(h){
     <div class="row between section" style="align-items:center"><button class="link" id="cal-prev" aria-label="Mes anterior">‹ Anterior</button><b id="cal-title"></b><button class="link" id="cal-next" aria-label="Mes siguiente">Siguiente ›</button></div>
     <div class="cal" id="cal"></div>
     ${h.free ? '' : `<p class="small" style="margin:12px 0 0">🧠 ${h.streak >= 66 ? '¡Pasaste los 66 días! Según la ciencia, este hábito ya es automático.' : `Día ${h.streak} de 66. Un estudio del University College London encontró que un hábito tarda en promedio 66 días en volverse automático.`}</p>`}
+    ${h.kind !== 'evitar' ? '<p class="small muted" style="margin:10px 0 0">👆 Tocá hoy o uno de los últimos 3 días para anotarlo o sumarle una foto.</p>' : ''}
     <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey miss"></span> No se hizo</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   const paint = () => {
@@ -1613,12 +1621,13 @@ function calendarSheet(h){
     for (let d = 1; d <= n; d++){
       const day = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, k = by[day];
       const miss = !k && day < today && day >= first && h.days.includes(new Date(y, m, d).getDay());
-      html += `<span class="${k === 'hecho' ? 'hecho' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''}"${k === 'hecho' ? ` style="background:${hc}"` : ''}>${d}</span>`;
+      html += `<span data-cd="${day}" class="${k === 'hecho' ? 'hecho' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''} ${day <= today && day >= addDays(today, -3) && h.kind !== 'evitar' ? 'tap' : ''}"${k === 'hecho' ? ` style="background:${hc}"` : ''}>${d}</span>`;
     }
     $('#cal', el).innerHTML = html;
     $('#cal-prev', el).style.visibility = cur > minMonth ? '' : 'hidden';
     $('#cal-next', el).style.visibility = (y * 12 + m) < (parseDay(today).getFullYear() * 12 + parseDay(today).getMonth()) ? '' : 'hidden';
   };
+  if (h.kind !== 'evitar') $('#cal', el).onclick = (e) => { const c = e.target.closest('[data-cd]'); if (c) daySheet(h, c.dataset.cd); };
   $('#cal-prev', el).onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() - 1, 1); paint(); };
   $('#cal-next', el).onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); paint(); };
   el.querySelector('[data-close-sheet]').onclick = closeSheet;
@@ -1637,12 +1646,11 @@ function pairCards(){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-10-02', title: '✨ Novedades en Fueguitos', items: [
-  '🔒 <b>Hábitos privados</b>: los tuyos sin compartir los ves solo vos. No aparecen en el grupo.',
-  '✨ <b>Hábitos libres</b>: sin racha ni días fijos, para cosas como skincare u ordenar el cuarto.',
-  '🎨 <b>Colores</b> para cada hábito y <b>Mi calendario</b> en Perfil, con todo lo que hiciste.',
-  '📅 <b>Calendario del grupo</b>: quién anotó cada día (en Grupo → El grupo).',
-  '🥚 Tu <b>huevito</b> nace con 3 días de fueguitos. ¡Alimentalo!'] };
+const NEWS = { id: '2026-10-05', title: '✨ Novedades en Fueguitos', items: [
+  '↩️ <b>¿Te olvidaste de anotar ayer?</b> Ahora lo anotás desde la tarjeta, y si se te había cortado la racha, <b>la recuperás</b>.',
+  '📅 Tocá el fueguito de un hábito y en su calendario <b>tocá un día</b> de los últimos 3 para anotarlo.',
+  '📸 También podés subir <b>la foto de ayer</b>.',
+  '🔒 Hábitos privados, ✨ hábitos libres (sin racha), 🎨 colores y Mi calendario en Perfil.'] };
 function newsCard(){
   if (LS.get('fueguitos_news') === NEWS.id) return '';
   return `<div class="card section news"><h3 style="margin:0 0 8px">${NEWS.title}</h3><ul class="small plist" style="margin-bottom:12px">${NEWS.items.map(i => `<li>${i}</li>`).join('')}</ul>
@@ -1684,6 +1692,7 @@ function renderHoy(){
   document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
     if (e.target.closest('[data-undo]')) return;
     const h = hs.find(x => x.id === b.dataset.habit);
+    if (e.target.closest('[data-yday]')){ anotarDia(h, addDays(S.me.today, -1)); return; }
     if (e.target.closest('[data-appblock]')){ appBlockSheet(h); return; }
     if (h.kind === 'evitar'){ quitSheet(h); return; }
     if (h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); return; } // ya anotado: sumarle foto o detalle
@@ -1890,6 +1899,7 @@ function habitCard(h){
       <div class="meta">${status}${h.deadline ? `<span class="pill">⏰ antes de las ${h.deadline}</span>` : ''}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
       ${h.deadline && !h.done_today && !lateNow ? (isEarly(h) ? `<div class="goal">Se anota desde las ${opensAt(h)}</div>` : '<div class="goal near">Un toque y queda anotado</div>') : goalLine(h)}
       ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
+      ${yesterdayLink(h)}
     </div>
     <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
   </button>`;
@@ -1927,6 +1937,15 @@ function freeCard(h){
   </button>`;
 }
 
+// Link en la tarjeta para anotar ayer, si ayer tocaba y no quedó anotado (o se usó un hielito).
+function yesterdayLink(h){
+  const y = addDays(S.me.today, -1), hist = S.history || [];
+  if (h.free || h.kind === 'evitar' || doneOn(h, y)) return '';
+  if (!(h.days || []).includes(parseDay(y).getDay())) return '';
+  const lost = h.lost_day === y && h.lost_streak > 0, ice = hist.some(x => x.habit_id === h.id && x.day === y && x.kind === 'hielo');
+  if (!lost && !ice && !hist.some(x => x.habit_id === h.id && x.day < y) && !h.streak) return ''; // recién empezado
+  return `<span class="undo yest" role="button" tabindex="0" data-yday="${h.id}">${lost ? `🔥 ¿Lo hiciste ayer? Recuperá tus ${h.lost_streak} días` : ice ? '🧊 ¿Lo hiciste ayer? Anotalo y te devolvemos el hielito' : '↩️ ¿Lo hiciste ayer? Anotalo'}</span>`;
+}
 // Qué objetivo mostrar: el récord si está al alcance, si no, el próximo hito.
 const HITO_LIST = [3, 7, 14, 21, 30, 50, 100, 150, 200, 365, 500, 730, 1000];
 function goalLine(h){
@@ -2037,14 +2056,15 @@ let photoData = null;
 const PHOTO_EMPTY = '<div class="pd-empty"><span class="pd-icon" aria-hidden="true">📷</span><b>Tocá para sumar una foto</b><span class="small muted">Sacala ahora o elegila de la galería</span></div>';
 function openCheckinSheet(){
   photoData = null;
+  const day = S.ckDay || null; S.ckDay = null; // día pasado (anotar o sumar foto de ayer)
   const hs = S.me.habits.filter(h => S.sel.has(h.id));
   const nG = S.me.groups.length;
   const sport = hs.find(isSport);
-  const allDone = hs.length > 0 && hs.every(h => h.done_today);
+  const allDone = hs.length > 0 && hs.every(h => day ? doneOn(h, day) : h.done_today);
   const idle = allDone ? 'Listo' : 'Anotar sin foto';
   const el = openSheet(`
-    <h2>${hs.map(h => esc(h.emoji)).join(' ')} ${allDone ? `${esc(hs.map(h => h.name).join(' + '))} ✅` : `Anotar ${esc(hs.map(h => h.name).join(' + '))}`}</h2>
-    ${allDone ? '<p class="small" style="margin:4px 0 0;font-weight:700">Ya está anotado hoy. ¿Le sumás una foto o el detalle?</p>' : ''}
+    <h2>${hs.map(h => esc(h.emoji)).join(' ')} ${allDone ? `${esc(hs.map(h => h.name).join(' + '))} ✅` : `Anotar ${esc(hs.map(h => h.name).join(' + '))}`}${day ? ` <span class="small muted">· ${dayName(day)}</span>` : ''}</h2>
+    ${allDone ? `<p class="small" style="margin:4px 0 0;font-weight:700">Ya está anotado ${day ? dayName(day) : 'hoy'}. ¿Le sumás una foto o el detalle?</p>` : ''}
     <p class="muted small" style="margin:6px 0 14px">La foto es opcional. ${nG ? `Si subís una, la ve${nG > 1 ? `n tus ${nG} grupos` : ' tu grupo'} durante 24 h y después se borra sola.` : 'Cuando te sumes a un grupo, tus amigos van a ver tus fotos durante 24 h.'}</p>
     <div class="photo-drop" id="pd" role="button" tabindex="0" aria-label="Sacar o elegir una foto">${PHOTO_EMPTY}</div>
     <div class="grid2" style="margin-top:12px">
@@ -2054,7 +2074,7 @@ function openCheckinSheet(){
     <label class="field" style="margin-top:14px"><span>Comentario (opcional)</span><input class="input" id="note" maxlength="140" placeholder="Ej: 5 km en el parque"></label>
     ${sport ? `<details class="more section" id="det" ${S.pendingActivity ? 'open' : ''}><summary>＋ Agregar detalle: distancia, tiempo o pesos (opcional)</summary><div id="det-body"></div></details>` : ''}
     <div class="section"><button class="btn" id="confirm">${idle}</button>
-      ${allDone ? `<button class="link small danger" id="ck-undo" style="display:block;margin:14px auto 0">Desanotar ${esc(hs.map(h => h.name).join(' + '))}</button>` : ''}</div>
+      ${allDone && !day ? `<button class="link small danger" id="ck-undo" style="display:block;margin:14px auto 0">Desanotar ${esc(hs.map(h => h.name).join(' + '))}</button>` : ''}</div>
   `);
   const cu = $('#ck-undo', el); if (cu) cu.onclick = async () => { try { for (const h of hs) S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); S.sel.clear(); closeSheet(); renderMain(); toast('Desanotado'); } catch(e){ toast(e.message); } };
   const det = { kind: S.pendingActivity ? S.pendingActivity.kind : null, minutes: S.pendingActivity ? S.pendingActivity.minutes : null, km: S.pendingActivity ? S.pendingActivity.km : null };
@@ -2081,15 +2101,17 @@ function openCheckinSheet(){
       if (extra && extra.error){ toast(extra.error); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; return; }
       if (allDone && !photoData && !extra){ S.sel.clear(); closeSheet(); return; }
       S.prevBest = Object.fromEntries(S.me.habits.map(x => [x.id, x.best || 0]));
-      const r0 = await rpcQ('api_checkin', { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null }, 'anotación del día', true);
-      const r = r0.queued ? localCheckin([...S.sel]) : r0;
+      const args = { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null, ...(day ? { p_day: day } : {}) };
+      const r0 = await rpcQ('api_checkin', args, day ? `anotación de ${dayName(day)}` : 'anotación del día', !day);
+      const r = r0.queued ? (day ? { habits: S.me.habits, results: [] } : localCheckin([...S.sel])) : r0;
       S.me.habits = r.habits; S.sel.clear(); closeSheet(); renderMain();
       if (r0.queued) toast('Sin señal: quedó anotado en tu celu y se sube solo cuando vuelva la conexión ☁️', 4000);
-      if (extra) saveDetail(sport, extra);
+      if (extra) saveDetail(sport, extra, day);
       const fresh = (r.results || []).filter(x => !x.already);
-      if (fresh.length) celebrate(fresh); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
+      if (day){ toast(fresh.some(x => x.restored) ? '🔥 ¡Recuperaste la racha!' : photoData ? `Foto de ${dayName(day)} compartida 📸` : `Listo: ${dayName(day)} anotado ✅`, 3500); }
+      else if (fresh.length) celebrate(fresh); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
       S.group = null;
-      rpc('api_history', P()).then(h => { S.history = h || []; }).catch(()=>{});
+      rpc('api_history', P()).then(h => { S.history = h || []; if (day) renderMain(); }).catch(()=>{});
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; }
   };
 }
@@ -2169,6 +2191,41 @@ async function quickAnotar(h){
     rpc('api_history', P()).then(r => { S.history = r || []; }).catch(() => {});
   } catch(e){ S.me.habits = prev; renderHoy(); toast(e.message, 3500); }
 }
+// Anotar un día pasado (hasta 3 días atrás). Si ese día había cortado la racha, el servidor la recupera.
+const doneOn = (h, day) => day === S.me.today ? !!h.done_today : (S.history || []).some(x => x.habit_id === h.id && x.day === day && x.kind === 'hecho');
+const canBackfill = (day) => day < S.me.today && day >= addDays(S.me.today, -3);
+const dayName = (day) => day === addDays(S.me.today, -1) ? 'ayer' : `el ${fmtDay(day).toLowerCase()}`;
+async function anotarDia(h, day){
+  try {
+    const r = await rpcQ('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: null, p_day: day }, `${h.name} de ${dayName(day)}`);
+    if (r.queued){ toast('Sin señal: se anota cuando vuelva la conexión ☁️', 3500); return; }
+    const x = (r.results || [])[0] || {};
+    S.me.habits = r.habits;
+    try { S.history = await rpc('api_history', P()) || []; } catch(e){}
+    S.group = null; renderMain();
+    const hh = S.me.habits.find(y => y.id === h.id) || h;
+    vibrate([20, 40, 20]); beep(660, .1);
+    const sn = snack(`<span>${x.restored ? '🔥 <b>¡Recuperaste la racha!</b>' : `✅ <b>${esc(h.name)}</b> de ${dayName(day)}`}${hh.free ? '' : ` · día ${hh.streak}`}</span><button data-sf>📸 Foto</button>`, 7000);
+    $('[data-sf]', sn).onclick = () => { sn.remove(); S.sel = new Set([h.id]); S.ckDay = day; openCheckinSheet(); };
+  } catch(e){ toast(e.message, 3500); }
+}
+// Hoja para un día del calendario: anotarlo, o sumarle una foto si ya estaba.
+function daySheet(h, day){
+  if (day > S.me.today) return;
+  if (day === S.me.today){ if (h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); } else { closeSheet(); quickAnotar(h); } return; }
+  if (!canBackfill(day)){ toast('Solo se pueden anotar los últimos 3 días.', 3000); return; }
+  const done = doneOn(h, day);
+  const el = openSheet(`<h2>${esc(h.emoji)} ${esc(h.name)}</h2><p class="muted" style="margin-top:4px">${fmtDay(day)}</p>
+    <div class="stack section">${done
+      ? `<p class="small" style="margin:0;font-weight:700">✅ Ya está anotado.</p><button class="btn" id="ds-photo">📸 Sumarle una foto</button>`
+      : `${h.lost_day === day && h.lost_streak > 0 ? `<p class="banner fire" style="margin:0">🔥 Ese día se cortó tu racha de ${h.lost_streak}. Si lo hiciste, la recuperás.</p>` : ''}
+        <button class="btn" id="ds-yes">✅ Sí, lo hice</button><button class="btn ghost" id="ds-photo">📸 Lo hice, con foto</button>`}
+      <button class="link small" id="ds-no" style="margin:6px auto 0">Cancelar</button></div>`);
+  const y = $('#ds-yes', el); if (y) y.onclick = () => { closeSheet(); anotarDia(h, day); };
+  $('#ds-photo', el).onclick = () => { S.sel = new Set([h.id]); S.ckDay = day; openCheckinSheet(); };
+  $('#ds-no', el).onclick = closeSheet;
+}
+
 // Anotación local (sin señal): mismas cuentas que el servidor, para ver el fueguito al instante.
 function localCheckin(ids){
   const results = [];
@@ -2215,9 +2272,9 @@ function readDetail(el, det){
   const parts = [km ? `${String(km).replace('.', ',')} km` : '', min ? `${min} min` : '', ex && kg != null ? `${ex} ${kgTxt(kg)}${reps ? ` × ${reps}` : ''}` : ''].filter(Boolean);
   return { kind: det.kind, km, minutes: min ? Math.round(min) : null, ex, kg, reps: reps ? Math.round(reps) : null, summary: `${ic} ${label}${parts.length ? ' · ' + parts.join(' · ') : ''}` };
 }
-async function saveDetail(h, x){
+async function saveDetail(h, x, day){
   try {
-    await rpcQ('api_activity_add', { ...P(), p_habit: h.id, p_kind: x.kind, p_km: x.km, p_minutes: x.minutes, p_note: null }, 'detalle de la actividad', true);
+    await rpcQ('api_activity_add', { ...P(), p_habit: h.id, p_kind: x.kind, p_km: x.km, p_minutes: x.minutes, p_note: null, ...(day ? { p_day: day } : {}) }, 'detalle de la actividad', !day);
     if (x.ex && x.kg != null){
       const r = await rpcQ('api_lift_add', { ...P(), p_exercise: x.ex, p_kg: x.kg, p_reps: x.reps, p_note: null }, 'marca del gym');
       S.lifts = null;
