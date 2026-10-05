@@ -159,6 +159,10 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .shopit.lock b{color:var(--muted)}
 .ava .ava-g{left:50%;top:50%;font-size:.3em}
 .ava .ava-x{left:86%;top:60%;font-size:.3em}
+/* Arcoíris en un muñequito: el color va girando despacio. */
+.ava .ava-rb{animation:avrb 6s linear infinite}
+@keyframes avrb{from{filter:sepia(1) saturate(4) hue-rotate(0deg)}to{filter:sepia(1) saturate(4) hue-rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.ava .ava-rb{animation:none;filter:sepia(1) saturate(4) hue-rotate(300deg)}}
 .eggcard{display:flex;gap:12px;align-items:center;width:100%;text-align:left;margin:14px 0 0;font:inherit;color:inherit}
 .eggimg{width:64px;height:64px;flex:none;animation:wobble 2.4s ease-in-out infinite}
 .eggimg svg{width:100%;height:100%}
@@ -171,6 +175,9 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .shopit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:16px;border:2px solid var(--line);background:var(--card);font:inherit;color:inherit}
 .shopit.on{border-color:var(--fire);background:var(--fire-soft)}
 .shopit.cant{opacity:.55}
+.shopit.sel{border-color:var(--fire);border-style:dashed}
+.shopbuy{display:grid;gap:8px;margin:0 0 12px}
+#shop-in.busy .shopit,#shop-in.busy .chip{pointer-events:none}
 .shopit .prev{height:62px;display:grid;place-items:center}
 .shopit b{font-size:14px}
 .avcard{display:flex;gap:16px;align-items:center}
@@ -1149,11 +1156,25 @@ function eggSVG(fed){
     ${fed >= 1 ? '<path d="M34 50l7 5 5-6 6 7" fill="none" stroke="#B58A63" stroke-width="2.5" stroke-linejoin="round"/>' : ''}
     ${fed >= 2 ? '<path d="M52 54l6 5 6-5 6 6" fill="none" stroke="#B58A63" stroke-width="2.5" stroke-linejoin="round"/><path d="M50 30c3 6 7 7 7 12a7 7 0 0 1-14 0c0-5 4-6 7-12z" fill="#FF6A1F"/>' : ''}</svg>`;
 }
+// Dónde va el gorro y los anteojos en cada muñequito. Cada emoji se dibuja distinto en iPhone/Mac
+// (Apple) y en Android/Windows, así que hay una tabla para cada uno. Coordenadas en % del emoji:
+// [x, y de la coronilla, tamaño del gorro (em), giro, x, y de los ojos, tamaño de los anteojos (em), giro, 1 = mira a la izquierda].
+const AV_APPLE = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+const AV_FIT = AV_APPLE ? { liebre: [27, 18, .24, -15, 19, 30, .16, -10, 1], caballo: [19, 12, .2, -20, 12, 24, .14, -20, 1], guepardo: [14, 18, .2, -10, 12, 28, .14, 0, 1], cohete: [84, 10, .2, 40, 60, 34, .16, 40], pez: [26, 36, .2, -10, 22, 50, .14, 0, 1], tortuga: [13, 13, .2, -10, 14, 22, .14, 0, 1], delfin: [34, 18, .2, -10, 28, 30, .14, -10, 1], ballena: [22, 38, .2, -10, 18, 52, .14, 0, 1], raton: [50, 24, .34, 0, 50, 56, .3, 0], zorro: [50, 22, .34, 0, 50, 56, .3, 0], elefante: [28, 24, .22, -10, 26, 40, .14, 0, 1], mago: [50, 6, .22, 0, 50, 62, .24, 0], caracol: [84, 16, .18, 0, 82, 26, .14, 0], mariposa: [50, 32, .18, 0, 50, 40, .12, 0], panda: [50, 16, .36, 0, 50, 56, .32, 0], loto: [50, 22, .26, 0, 50, 48, .2, 0], koala: [50, 14, .36, 0, 50, 45, .32, 0], perezoso: [31, 26, .18, 0, 31, 38, .14, 0], osopolar: [50, 20, .36, 0, 50, 55, .32, 0], luna: [50, 8, .36, 0, 55, 50, .34, 0], pollito: [50, 20, .28, 0, 50, 42, .24, 0], loro: [30, 10, .2, -10, 26, 22, .14, 0, 1], pavoreal: [48, 50, .14, 0, 48, 56, .1, 0], buho: [50, 14, .34, 0, 50, 40, .3, 0], erizo: [18, 46, .18, -10, 14, 56, .12, 0, 1], lobo: [50, 26, .26, 10, 40, 42, .16, 0, 1], rino: [28, 36, .2, -10, 24, 46, .14, 0, 1], leon: [50, 28, .3, 0, 50, 56, .26, 0], salamandra: [80, 10, .16, 20, 80, 16, .12, 20], dragon: [16, 32, .18, -10, 14, 40, .12, 0, 1], volcan: [55, 36, .22, 0, 52, 66, .2, 0], sol: [50, 22, .32, 0, 50, 48, .3, 0] } : { liebre: [45, 30, .26, 0, 52, 45, .2, 0, 1], caballo: [25, 12, .2, -10, 22, 25, .14, 0, 1], guepardo: [28, 22, .2, 0, 30, 30, .16, 0, 1], cohete: [85, 5, .2, 40, 70, 35, .16, 40], pez: [25, 30, .2, 0, 22, 48, .14, 0, 1], tortuga: [12, 52, .2, 0, 10, 62, .16, 0, 1], delfin: [30, 12, .2, 0, 25, 20, .14, 0, 1], ballena: [15, 40, .18, 0, 15, 52, .14, 0, 1], raton: [50, 22, .34, 0, 50, 55, .3, 0], zorro: [50, 25, .34, 0, 50, 55, .3, 0], elefante: [30, 15, .22, 0, 35, 40, .14, 0, 1], mago: [40, 0, .2, 0, 45, 55, .24, 0], caracol: [18, 22, .18, 0, 18, 38, .14, 0, 1], mariposa: [50, 25, .16, 0, 50, 30, .1, 0], panda: [50, 18, .36, 0, 50, 50, .32, 0], loto: [50, 15, .26, 0, 50, 45, .2, 0], koala: [50, 18, .36, 0, 50, 45, .3, 0], perezoso: [22, 22, .16, 0, 22, 30, .14, 0], osopolar: [50, 22, .36, 0, 50, 45, .3, 0], luna: [50, 5, .36, 0, 55, 48, .32, 0], pollito: [50, 15, .28, 0, 50, 35, .22, 0], loro: [25, 10, .18, 0, 25, 20, .12, 0, 1], pavoreal: [45, 30, .14, 0, 45, 38, .1, 0], buho: [50, 10, .32, 0, 50, 35, .3, 0], erizo: [18, 55, .16, 0, 18, 62, .12, 0, 1], lobo: [50, 20, .34, 0, 50, 55, .3, 0], rino: [20, 30, .2, 0, 22, 45, .14, 0, 1], leon: [50, 30, .3, 0, 50, 55, .26, 0], salamandra: [30, 5, .16, 0, 32, 15, .12, 0], dragon: [35, 10, .18, 0, 35, 20, .12, 0], volcan: [55, 30, .22, 0, 50, 70, .2, 0], sol: [50, 20, .34, 0, 50, 45, .3, 0] };
+// El emoji ocupa .66em centrado, desde el 14% de arriba: se pasa de % del emoji a % del avatar.
+function avFitStyle(ch, slot){
+  const f = AV_FIT[ch]; if (!f) return '';
+  const [x, y, s, r] = slot === 'h' ? f : f.slice(4), top = 14 + .66 * y - (slot === 'h' ? 85 : 50) * s;
+  return ` style="left:${(17 + .66 * x).toFixed(1)}%;top:${top.toFixed(1)}%;font-size:${s}em;transform:translateX(-50%) rotate(${r}deg)${slot === 'h' && f[8] ? ' scaleX(-1)' : ''}"`;
+}
+// Los muñequitos son emojis: el color se les da tiñéndolos (Naranja = su color original).
+const AV_TINT = { 'c:azul': 'sepia(1) saturate(4) hue-rotate(175deg)', 'c:violeta': 'sepia(1) saturate(4) hue-rotate(225deg)',
+  'c:verde': 'sepia(1) saturate(3) hue-rotate(80deg)', 'c:dorado': 'sepia(1) saturate(5) hue-rotate(5deg) brightness(1.05)' };
 // El muñequito de alguien, o la letra si todavía no nació.
 function userAv(nick, av, size = 36){
   if (!av || !av.h) return `<span class="avatar" style="background:${avColor(nick)};width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px">${esc(nick.slice(0, 1).toUpperCase())}</span>`;
   const eq = av.eq || {}, ch = eq.p && eq.p !== 'p:chispita' && CHARS[eq.p];
-  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}" role="img" aria-label="${esc(av.name || nick)}">${ch ? `<i class="ava-body">${ch[0]}</i>` : flameFace(eq.c)}${eq.h ? `<i class="ava-h">${AV_EMOJI[eq.h]}</i>` : ''}${eq.g ? `<i class="ava-g">${AV_EMOJI[eq.g]}</i>` : ''}${eq.x ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
+  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}" role="img" aria-label="${esc(av.name || nick)}">${ch ? `<i class="ava-body${eq.c === 'c:arcoiris' ? ' ava-rb' : ''}"${AV_TINT[eq.c] ? ` style="filter:${AV_TINT[eq.c]}"` : ''}>${ch[0]}</i>` : flameFace(eq.c)}${eq.h ? `<i class="ava-h"${ch ? avFitStyle(eq.p.slice(2), 'h') : ''}>${AV_EMOJI[eq.h]}</i>` : ''}${eq.g ? `<i class="ava-g"${ch ? avFitStyle(eq.p.slice(2), 'g') : ''}>${AV_EMOJI[eq.g]}</i>` : ''}${eq.x ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
 }
 async function loadAvatar(){
   try {
@@ -1197,43 +1218,65 @@ function hatchSheet(){
   $('#hn-ok', el).onclick = async () => { await save(); shopSheet(); };
   $('#hn-later', el).onclick = async () => { await save(); closeSheet(); renderMain(); };
 }
+// Tienda: tocar algo que no tenés lo prueba arriba (vista previa); comprar es un botón aparte.
+// Lo que ya es tuyo se pone con un toque. La hoja se abre una vez y se repinta adentro: así no salta.
 function shopSheet(slot = 'p'){
-  const a = S.av; if (!a) return;
-  if (!a.hatched){ toast(`Primero tiene que nacer: te faltan ${a.need - a.fed} días con fueguito 🥚`); return; }
-  const owned = new Set([...(a.owned || []), 'c:naranja', 'p:chispita']), eq = a.eq || {};
-  const myThemes = [...new Set((a.progress || []).map(x => x.theme))];
-  const runOf = (th) => Math.max(0, ...(a.progress || []).filter(x => x.theme === th).map(x => x.run));
-  const habitOf = (th) => ((a.progress || []).find(x => x.theme === th) || {}).habit || '';
-  const cat = slot === 'p' ? ['p', 'Personaje', [['p:chispita', 'Chispita', 0], ...myThemes.flatMap(th => Object.entries(CHARS).filter(([, c]) => c[2] === th).map(([id, c]) => [id, c[1], 0]))]] : AV_SHOP.find(c => c[0] === slot);
-  const el = openSheet(`<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">🪙 ${a.coins}</span></div>
-    <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${esc(a.name || 'Tu fueguito')}</div></div>
+  const a0 = S.av; if (!a0) return;
+  if (!a0.hatched){ toast(`Primero tiene que nacer: te faltan ${a0.need - a0.fed} días con fueguito 🥚`); return; }
+  let sel = null, busy = false;
+  const el = openSheet('<div id="shop-in"></div>'), box = $('#shop-in', el);
+  const paint = () => {
+    const a = S.av, owned = new Set([...(a.owned || []), 'c:naranja', 'p:chispita']), eq = a.eq || {};
+    const myThemes = [...new Set((a.progress || []).map(x => x.theme))];
+    const runOf = (th) => Math.max(0, ...(a.progress || []).filter(x => x.theme === th).map(x => x.run));
+    const habitOf = (th) => ((a.progress || []).find(x => x.theme === th) || {}).habit || '';
+    const cat = slot === 'p' ? ['p', 'Personaje', [['p:chispita', 'Chispita', 0], ...myThemes.flatMap(th => Object.entries(CHARS).filter(([, c]) => c[2] === th).map(([id, c]) => [id, c[1], 0]))]] : AV_SHOP.find(c => c[0] === slot);
+    const isChar = eq.p && eq.p !== 'p:chispita';
+    const label = (id, name) => id === 'c:naranja' && isChar ? 'Original' : name;
+    const pick = sel && cat[2].find(x => x[0] === sel);
+    const look = pick ? { ...eq, [slot]: sel } : eq;
+    const cur = eq[slot] || (slot === 'c' ? 'c:naranja' : slot === 'p' ? 'p:chispita' : '');
+    box.innerHTML = `<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">🪙 ${a.coins}</span></div>
+    <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq: look }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${pick ? `Probándote: ${esc(label(pick[0], pick[1]))}` : esc(a.name || 'Tu fueguito')}</div></div>
+    ${pick ? `<div class="shopbuy">${pick[2] > a.coins ? `<button class="btn" disabled>Te faltan ${pick[2] - a.coins} 🪙</button>` : `<button class="btn" id="sb-buy">Comprar ${esc(label(pick[0], pick[1]))} · 🪙 ${pick[2]}</button>`}<button class="btn ghost" id="sb-no">Mejor no</button></div>` : ''}
     <div class="chips">${[['p', 'Personaje'], ...AV_SHOP].map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
     ${slot === 'p' ? '<p class="small muted" style="margin:0 0 10px">Cada hábito tiene su temática. Se desbloquean con 7, 21, 45 y 66 días seguidos de ese hábito, contando uno por día. A los 66 días, según la ciencia, ya es automático 🧠</p>' : ''}
-    ${slot === 'c' && eq.p && eq.p !== 'p:chispita' ? '<p class="small muted" style="margin:0 0 10px">El color es para Chispita 🔥. Los demás muñequitos ya tienen el suyo.</p>' : ''}
+    ${slot !== 'p' && slot !== 'c' ? '' : slot === 'c' && isChar ? '<p class="small muted" style="margin:0 0 10px">Tiñe a tu muñequito. Original le deja su color de siempre.</p>' : ''}
     <div class="shop">${slot !== 'c' && slot !== 'p' ? `<button class="shopit ${!eq[slot] ? 'on' : ''}" data-item=""><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: undefined } }, 56)}</span><b>Sin nada</b><span class="small muted">${!eq[slot] ? 'Puesto' : 'Sacar'}</span></button>` : ''}
-      ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = (eq[slot] || (slot === 'c' ? 'c:naranja' : slot === 'p' ? 'p:chispita' : '')) === id;
+      ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = cur === id;
         if (slot === 'p' && !has){ const c = CHARS[id], run = runOf(c[2]);
           return `<button class="shopit lock" data-lock="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, p: id } }, 56)}</span><b>${name}</b><span class="small">🔒 ${c[3]} días</span><span class="small muted">vas ${Math.min(run, c[3])}</span></button>`; }
-        return `<button class="shopit ${on ? 'on' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${name}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `🪙 ${price}`}</span></button>`; }).join('')}</div>
-    <p class="hint">Cada fueguito que anotás te da una moneda.</p>
-    <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
-  el.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
-  el.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => shopSheet(b.dataset.slot));
-  el.querySelectorAll('[data-lock]').forEach(b => b.onclick = () => { const c = CHARS[b.dataset.lock], run = runOf(c[2]);
-    toast(`${c[0]} ${c[1]}: ${c[3]} días seguidos de ${habitOf(c[2])}. Vas ${run}, te ${c[3] - run === 1 ? 'falta 1' : `faltan ${c[3] - run}`} 💪`, 4000); });
-  el.querySelectorAll('[data-item]').forEach(b => b.onclick = async () => {
-    const id = b.dataset.item, item = cat[2].find(x => x[0] === id);
+        return `<button class="shopit ${on ? 'on' : ''} ${sel === id ? 'sel' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${esc(label(id, name))}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `🪙 ${price}`}</span></button>`; }).join('')}</div>
+    <p class="hint">Tocá algo para probártelo. Cada fueguito que anotás te da una moneda.</p>
+    <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`;
+    box.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
+    box.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { slot = b.dataset.slot; sel = null; paint(); });
+    box.querySelectorAll('[data-lock]').forEach(b => b.onclick = () => { const c = CHARS[b.dataset.lock], run = runOf(c[2]);
+      toast(`${c[0]} ${c[1]}: ${c[3]} días seguidos de ${habitOf(c[2])}. Vas ${run}, te ${c[3] - run === 1 ? 'falta 1' : `faltan ${c[3] - run}`} 💪`, 4000); });
+    box.querySelectorAll('[data-item]').forEach(b => b.onclick = () => {
+      const id = b.dataset.item;
+      if (id && !owned.has(id)){ sel = sel === id ? null : id; paint(); return; } // no es tuyo: solo se prueba
+      sel = null;
+      if (id === cur || (!id && !eq[slot])){ paint(); return; }
+      run(() => !id || id === 'c:naranja' ? rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: null }) : rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: id }));
+    });
+    const no = $('#sb-no', box); if (no) no.onclick = () => { sel = null; paint(); };
+    const buy = $('#sb-buy', box); if (buy) buy.onclick = () => {
+      const it = pick; buy.disabled = true; buy.textContent = 'Comprando…';
+      run(() => rpc('api_avatar_buy', { ...P(), p_item: it[0] }), () => { sel = null; vibrate([30, 60, 30]); beep(880, .12); toast(`🎉 Compraste: ${label(it[0], it[1])}`); });
+    };
+  };
+  // Una cosa a la vez: mientras el servidor contesta, los demás toques no hacen nada (antes se compraba dos veces).
+  const run = async (call, after) => {
+    if (busy) return; busy = true; box.classList.add('busy');
     try {
-      if (!id) S.av = await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: null });
-      else if (owned.has(id) || id === 'p:chispita') S.av = id === 'c:naranja' ? await rpc('api_avatar_equip', { ...P(), p_slot: 'c', p_item: null }) : await rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: id });
-      else {
-        if (item[2] > a.coins){ toast(`Te faltan ${item[2] - a.coins} monedas. Cada fueguito suma una 🪙`, 3200); return; }
-        S.av = await rpc('api_avatar_buy', { ...P(), p_item: id }); vibrate([30, 60, 30]); beep(880, .12); toast(`🎉 Compraste: ${item[1]}`);
-      }
+      S.av = await call(); after && after();
       S.me.user.avatar = { h: true, eq: S.av.eq, name: S.av.name }; S.group = S.group && { ...S.group };
-      shopSheet(slot);
     } catch(e){ toast(e.message, 3200); }
-  });
+    busy = false; box.classList.remove('busy');
+    if (box.isConnected) paint();
+  };
+  paint();
 }
 
 /* ============ Arranque: elegir → primer fueguito → avisos ============ */
