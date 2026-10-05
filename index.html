@@ -736,7 +736,7 @@ const S = {
 const P = () => ({ p_token: S.token });
 
 async function loadMe(){
-  S.me = await rpc('api_me', P());
+  S.me = await rpc('api_me', P()); S.mates = undefined;
   cacheSet('me', S.me);
   rpc('api_history', P()).then(h => { S.history = h || []; if (S.tab === 'hoy' || S.tab === 'perfil') renderMain(); }).catch(()=>{});
 }
@@ -1645,6 +1645,41 @@ function pairCards(){
   }).join('')}</div></div>`;
 }
 
+// Empujón de racha compartida (como Duolingo): el que anota primero les avisa a los que faltan
+// en sus rachas de a dos y de grupo. El último no tiene a quién: la lista viene vacía.
+async function loadMates(){
+  if (!(S.me.groups || []).length){ S.mates = []; return; }
+  try { S.mates = await rpc('api_streak_mates', P()); } catch(e){ return; }
+  if (S.tab === 'hoy' && !$('#layer').innerHTML) renderHoy();
+}
+const matesToNudge = () => (S.mates || []).filter(m => !m.nudged);
+const nickList = (ns) => ns.length > 1 ? `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}` : ns[0] || '';
+function mateCard(){
+  const ms = matesToNudge();
+  if (!ms.length || !S.me.habits.some(h => h.done_today && !h.free)) return '';
+  const why = (m) => m.pair ? `👯 racha de a dos${m.streak ? ` · 🔥 ${m.streak}` : ''}` : `${esc(m.group)}${m.streak ? ` · 🔥 ${m.streak}` : ''}`;
+  return `<div class="card section nudge"><h3>👋 Te están esperando</h3>
+    <p class="small muted" style="margin:6px 0 10px">Vos ya anotaste. ${ms.length === 1 ? 'Le falta' : 'Les falta'} a ${esc(nickList(ms.map(m => m.nick)))} para que la racha siga.</p>
+    <div class="small" style="margin-bottom:12px">${ms.map(m => `<div class="row between"><b>${esc(m.nick)}</b><span class="muted">${why(m)}</span></div>`).join('')}</div>
+    <button class="btn sm" style="width:100%" data-nudge-mates>${ms.length === 1 ? `Mandarle un empujón a ${esc(ms[0].nick)}` : `Mandarles un empujón a los ${ms.length}`}</button></div>`;
+}
+async function nudgeMates(b){
+  if (b){ b.disabled = true; b.textContent = 'Enviando…'; }
+  try {
+    const r = await rpc('api_nudge_streak', P());
+    S.mates = (S.mates || []).map(m => ({ ...m, nudged: true })); vibrate(20);
+    const sent = r.sent || [], np = r.no_push || [];
+    if (S.tab === 'hoy' && !$('#layer').innerHTML) renderHoy();
+    if (!sent.length && !np.length){ toast('Ya no hay nadie esperando: anotaron todos 🙌'); return; }
+    if (!np.length){ toast(`👋 Empujón enviado a ${nickList(sent)}`, 3500); return; }
+    const txt = `¡${nickList(np)}! Yo ya anoté en Fueguitos, faltás vos para que no se corte la racha 🔥 ${PUBLIC_URL}`;
+    const el = openSheet(`<h2>👋 ${esc(nickList(np))} no ${np.length === 1 ? 'tiene' : 'tienen'} los avisos activados</h2>${sent.length ? `<p class="small" style="font-weight:700">✅ A ${esc(nickList(sent))} ya ${sent.length === 1 ? 'le llegó' : 'les llegó'} tu empujón.</p>` : ''}<p class="muted">${np.length === 1 ? 'A esta persona no le va' : 'A ellos no les va'} a llegar al celu. ¿Se lo mandás por WhatsApp?</p>
+      <div class="stack section"><button class="btn green" id="nm-wa">Mandar por WhatsApp</button><button class="btn ghost" id="nm-no">Listo</button></div>`);
+    $('#nm-wa', el).onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt); };
+    $('#nm-no', el).onclick = closeSheet;
+  } catch(e){ toast(e.message, 3500); if (b){ b.disabled = false; b.textContent = 'Probar de nuevo'; } }
+}
+
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
 const NEWS = { id: '2026-10-05', title: '✨ Novedades en Fueguitos', items: [
   '↩️ <b>¿Te olvidaste de anotar ayer?</b> Ahora lo anotás desde la tarjeta, y si se te había cortado la racha, <b>la recuperás</b>.',
@@ -1684,6 +1719,7 @@ function renderHoy(){
       <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
     </div>
     ${eggCard()}
+    ${mateCard()}
     ${pairCards()}
     ${planCard(true)}
     ${hoyNudge()}
@@ -1727,6 +1763,9 @@ function renderHoy(){
   // Se espera un poco: al anotar con un toque la pantalla cambia antes de que el servidor termine de guardar.
   if (S.avDone !== undefined && S.avDone !== doneNow){ clearTimeout(S.avT); S.avT = setTimeout(loadAvatar, 2000); }
   S.avDone = doneNow;
+  const nmb = $('[data-nudge-mates]'); if (nmb) nmb.onclick = () => nudgeMates(nmb);
+  // Al abrir la app ya con algo anotado hoy, se busca una vez quién falta en las rachas compartidas.
+  if (S.mates === undefined && doneNow && me.groups.length){ S.mates = null; loadMates(); }
   document.querySelectorAll('[data-pair]').forEach(b => b.onclick = () => {
     const g = S.me.groups.find(x => x.id === b.dataset.pair);
     if (!g.other){ shareInvite(g); return; }
@@ -2111,6 +2150,7 @@ function openCheckinSheet(){
       if (day){ toast(fresh.some(x => x.restored) ? '🔥 ¡Recuperaste la racha!' : photoData ? `Foto de ${dayName(day)} compartida 📸` : `Listo: ${dayName(day)} anotado ✅`, 3500); }
       else if (fresh.length) celebrate(fresh); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
       S.group = null;
+      if (!r0.queued && !day) loadMates().then(celebrateMates);
       rpc('api_history', P()).then(h => { S.history = h || []; if (day) renderMain(); }).catch(()=>{});
     } catch(err){ toast(err.message, 3500); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; }
   };
@@ -2188,6 +2228,7 @@ async function quickAnotar(h){
       $('[data-su]', sn).onclick = async () => { sn.remove(); try { S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); renderHoy(); toast(`${h.name} desanotado`); } catch(e){ toast(e.message, 3500); } };
     }
     S.group = null;
+    if (!r0.queued) loadMates().then(celebrateMates);
     rpc('api_history', P()).then(r => { S.history = r || []; }).catch(() => {});
   } catch(e){ S.me.habits = prev; renderHoy(); toast(e.message, 3500); }
 }
@@ -2331,13 +2372,24 @@ function celebrate(results){
   pushLayer();
   vibrate([30, 60, 30]);
   setTimeout(() => { const c = $('#cnt'); if (c){ c.textContent = main.streak; c.animate && c.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}], {duration:380, easing:'cubic-bezier(.2,1.6,.4,1)'}); beep(660, .12); setTimeout(() => beep(990, .16), 120); } }, 650);
-  $('#p-ok').onclick = closeSheet;
+  $('#p-ok').onclick = () => { closeSheet(); if (S.tab === 'hoy') renderHoy(); };
   const pp = $('#p-push'); if (pp) pp.onclick = async () => { if (await enablePush()){ pp.remove(); } };
   $('#p-wa').onclick = () => {
     const done = S.me.habits.filter(h => h.done_today);
     location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText(done.length ? done : S.me.habits));
     layer.innerHTML = '';
   };
+}
+
+// En el festejo: si hay compañeros de racha esperando, el botón para avisarles va primero.
+function celebrateMates(){
+  const btns = $('#layer .party .btns'), ms = matesToNudge();
+  if (!btns || !ms.length || $('#p-mates')) return;
+  const b = document.createElement('button');
+  b.className = 'btn'; b.id = 'p-mates';
+  b.textContent = `👋 Avisarle${ms.length > 1 ? 's' : ''} a ${nickList(ms.map(m => m.nick))}`;
+  b.onclick = () => { closeSheet(); nudgeMates(); };
+  btns.prepend(b);
 }
 
 /* ============ GRUPO ============ */
