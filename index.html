@@ -1605,10 +1605,10 @@ function myCalendar(box){
     (S.history || []).forEach(x => { if (x.kind === 'hecho' || x.kind === 'pintado') (by[x.day] = by[x.day] || new Set()).add(x.habit_id); });
     by[t] = new Set(hs.filter(h => h.done_today).map(h => h.id)); return by; };
   const repaint = monthGrid(box, {
-    cell: (day) => { const set = doneBy()[day]; if (!set || !set.size) return ''; return `<span class="dots">${hs.filter(h => set.has(h.id)).map(h => `<i style="background:${habitColor(h)}"></i>`).join('')}</span>`; },
+    cell: (day) => { const set = doneBy()[day]; if (!set || !set.size) return ''; return `<span class="dots">${hs.filter(h => set.has(h.id)).map(h => `<i style="background:${intensColor(habitColor(h), intensityOn(h, day))}"></i>`).join('')}</span>`; },
     detail: (day) => { const set = doneBy()[day] || new Set(), done = hs.filter(h => set.has(h.id)), miss = hs.filter(h => !set.has(h.id) && !h.goal && !h.next_day);
       const old = canPaint(day), painted = done.filter(h => paintedOn(h, day));
-      return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => `${esc(h.emoji)} ${esc(h.name)}`).join(' · ') : 'nada anotado'}
+      return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => { const i = intensityOn(h, day); return `${esc(h.emoji)} ${esc(h.name)}${i ? ` (${INTENS[i - 1][1]} ${INTENS[i - 1][2].toLowerCase()})` : ''}`; }).join(' · ') : 'nada anotado'}
         ${(canBackfill(day) || day === t || old) && miss.length ? `<div class="chips" style="margin:8px 0 0;flex-wrap:wrap">${miss.map(h => `<button class="chip" data-mca="${h.id}" data-mcd="${day}">+ ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
         ${painted.length ? `<div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${painted.map(h => `<button class="chip" data-mcu="${h.id}" data-mcd="${day}">✕ Sacar ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
         ${old ? '<div class="muted" style="margin-top:6px">Si el día queda pegado a tu racha, suma. Si no, queda en tu calendario.</div>' : ''}`; },
@@ -1645,6 +1645,7 @@ function calendarSheet(h, startMonth){
   const hist = (S.history || []).filter(x => x.habit_id === h.id);
   const RANK = { hecho: 3, pintado: 2 };
   hist.forEach(x => { if ((RANK[x.kind] || 1) > (RANK[by[x.day]] || 0)) by[x.day] = x.kind; });
+  const iBy = Object.fromEntries(hist.filter(x => x.kind === 'hecho' && x.i).map(x => [x.day, x.i]));
   if (h.done_today) by[today] = 'hecho'; else if (by[today] === 'hecho') delete by[today];
   const first = hist.reduce((a, x) => x.day < a ? x.day : a, today);
   let req = 0, ok = 0;
@@ -1666,6 +1667,7 @@ function calendarSheet(h, startMonth){
     <div class="cal" id="cal"></div>
     ${h.free ? '' : `<p class="small" style="margin:12px 0 0">🧠 ${h.streak >= 66 ? '¡Pasaste los 66 días! Según la ciencia, este hábito ya es automático.' : `Día ${h.streak} de 66. Un estudio del University College London encontró que un hábito tarda en promedio 66 días en volverse automático.`}</p>`}
     ${h.kind !== 'evitar' ? '<p class="small muted" style="margin:10px 0 0">👆 Tocá hoy o uno de los últimos 3 días para anotarlo o sumarle una foto. Los días más viejos también: un toque lo pinta y otro lo saca. Si queda pegado a tu racha, suma.</p>' : ''}
+    ${isSport(h) ? `<p class="hint" style="margin-top:12px">Intensidad: ${INTENS.map(([n, ic, l]) => `<span class="calkey" style="background:${intensColor(hc, n)}"></span> ${ic} ${l}`).join(' &nbsp; ')}</p>` : ''}
     <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey miss"></span> No se hizo</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   const paint = () => {
@@ -1675,7 +1677,7 @@ function calendarSheet(h, startMonth){
     for (let d = 1; d <= n; d++){
       const day = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, k = by[day];
       const miss = !k && day < today && day >= first && h.days.includes(new Date(y, m, d).getDay());
-      html += `<span data-cd="${day}" class="${k === 'hecho' || k === 'pintado' ? 'hecho' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''} ${day <= today && day >= addDays(today, -3) && h.kind !== 'evitar' ? 'tap' : ''}"${k === 'hecho' || k === 'pintado' ? ` style="background:${hc}"` : ''}>${d}</span>`;
+      html += `<span data-cd="${day}" class="${k === 'hecho' || k === 'pintado' ? 'hecho' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''} ${day <= today && day >= addDays(today, -3) && h.kind !== 'evitar' ? 'tap' : ''}"${k === 'hecho' || k === 'pintado' ? ` style="background:${intensColor(hc, iBy[day])}${iBy[day] === 1 ? ';color:var(--ink)' : ''}"` : ''}>${d}</span>`;
     }
     $('#cal', el).innerHTML = html;
     $('#cal-prev', el).style.visibility = cur > minMonth ? '' : 'hidden';
@@ -2166,6 +2168,8 @@ function openCheckinSheet(){
   const sport = hs.find(isSport);
   const allDone = hs.length > 0 && hs.every(h => day ? doneOn(h, day) : h.done_today);
   const idle = allDone ? 'Listo' : 'Anotar sin foto';
+  const inten0 = sport ? intensityOn(sport, day || S.me.today) : null;
+  let inten = inten0;
   const el = openSheet(`
     <h2>${hs.map(h => esc(h.emoji)).join(' ')} ${allDone ? `${esc(hs.map(h => h.name).join(' + '))} ✅` : `Anotar ${esc(hs.map(h => h.name).join(' + '))}`}${day ? ` <span class="small muted">· ${dayName(day)}</span>` : ''}</h2>
     ${allDone ? `<p class="small" style="margin:4px 0 0;font-weight:700">Ya está anotado ${day ? dayName(day) : 'hoy'}. ¿Le sumás una foto o el detalle?</p>` : ''}
@@ -2176,11 +2180,17 @@ function openCheckinSheet(){
       <label class="btn ghost sm" style="width:100%">Elegir de galería<input type="file" accept="image/*" id="gal" hidden></label>
     </div>
     <label class="field" style="margin-top:14px"><span>Comentario (opcional)</span><input class="input" id="note" maxlength="140" placeholder="Ej: 5 km en el parque"></label>
+    ${sport ? `<div class="field section" style="margin-bottom:0"><span>¿Qué tan intenso fue? (opcional)</span><div class="chips" id="inten" style="margin:4px 0 0">${INTENS.map(([n, ic, l]) => `<button type="button" class="chip ${inten === n ? 'on' : ''}" data-in="${n}">${ic} ${l}</button>`).join('')}</div></div>` : ''}
     ${sport ? `<details class="more section" id="det" ${S.pendingActivity ? 'open' : ''}><summary>＋ Agregar detalle: distancia, tiempo o pesos (opcional)</summary><div id="det-body"></div></details>` : ''}
     <div class="section"><button class="btn" id="confirm">${idle}</button>
       ${allDone && !day ? `<button class="link small danger" id="ck-undo" style="display:block;margin:14px auto 0">Desanotar ${esc(hs.map(h => h.name).join(' + '))}</button>` : ''}</div>
   `);
   const cu = $('#ck-undo', el); if (cu) cu.onclick = async () => { try { for (const h of hs) S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); S.sel.clear(); closeSheet(); renderMain(); toast('Desanotado'); } catch(e){ toast(e.message); } };
+  el.querySelectorAll('[data-in]').forEach(b => b.onclick = () => { inten = inten === +b.dataset.in ? null : +b.dataset.in;
+    el.querySelectorAll('[data-in]').forEach(x => x.classList.toggle('on', +x.dataset.in === inten)); vibrate(10); });
+  // La intensidad va a los hábitos de deporte que se están anotando (después del check-in, que es el que crea el día).
+  const saveInten = () => inten === inten0 ? null : Promise.all(hs.filter(isSport).map(h =>
+    rpcQ('api_set_intensity', { ...P(), p_habit: h.id, p_day: day || null, p_level: inten }, 'intensidad').then(() => setIntensityLocal(h, day || S.me.today, inten)).catch(() => {})));
   const det = { kind: S.pendingActivity ? S.pendingActivity.kind : null, minutes: S.pendingActivity ? S.pendingActivity.minutes : null, km: S.pendingActivity ? S.pendingActivity.km : null };
   S.pendingActivity = null;
   if (sport) paintDetail(el, det);
@@ -2203,7 +2213,7 @@ function openCheckinSheet(){
     try {
       const extra = sport ? readDetail(el, det) : null;
       if (extra && extra.error){ toast(extra.error); b.disabled = false; b.textContent = photoData ? 'Anotar y compartir' : idle; return; }
-      if (allDone && !photoData && !extra){ S.sel.clear(); closeSheet(); return; }
+      if (allDone && !photoData && !extra){ const w = saveInten(); S.sel.clear(); closeSheet(); if (w){ await w; renderMain(); toast('Intensidad guardada'); } return; }
       S.prevBest = Object.fromEntries(S.me.habits.map(x => [x.id, x.best || 0]));
       const args = { ...P(), p_habits: [...S.sel], p_photo: photoData, p_note: $('#note', el).value || (extra && extra.summary) || null, ...(day ? { p_day: day } : {}) };
       const r0 = await rpcQ('api_checkin', args, day ? `anotación de ${dayName(day)}` : 'anotación del día', !day);
@@ -2211,6 +2221,7 @@ function openCheckinSheet(){
       S.me.habits = r.habits; S.sel.clear(); closeSheet(); renderMain();
       if (r0.queued) toast('Sin señal: quedó anotado en tu celu y se sube solo cuando vuelva la conexión ☁️', 4000);
       if (extra) saveDetail(sport, extra, day);
+      const wi = saveInten(); if (wi) await wi;
       const fresh = (r.results || []).filter(x => !x.already);
       if (day){ toast(fresh.some(x => x.restored) ? '🔥 ¡Recuperaste la racha!' : photoData ? `Foto de ${dayName(day)} compartida 📸` : `Listo: ${dayName(day)} anotado ✅`, 3500); }
       else if (fresh.length) celebrate(fresh); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
@@ -2366,6 +2377,13 @@ function localCheckin(ids){
   });
   return { habits: S.me.habits, results };
 }
+
+/* ============ Intensidad: más suave se ve más clarito en el calendario, más intenso más fuerte ============ */
+const INTENS = [[1, '🌱', 'Suave'], [2, '💪', 'Media'], [3, '🔥', 'A full']];
+const INTENS_PCT = { 1: 40, 2: 70, 3: 100 }; // cuánto color del hábito lleva el día
+const intensityOn = (h, day) => { const x = (S.history || []).find(y => y.habit_id === h.id && y.day === day && y.kind === 'hecho'); return x && x.i || null; };
+function setIntensityLocal(h, day, level){ (S.history || []).forEach(x => { if (x.habit_id === h.id && x.day === day && x.kind === 'hecho') x.i = level; }); }
+const intensColor = (hc, i) => i && i < 3 ? `color-mix(in srgb,${hc} ${INTENS_PCT[i]}%,transparent)` : hc;
 
 /* ============ Detalle opcional de la actividad ============ */
 const isSport = (h) => /deporte|entren|gym|gimnas|ejerc|correr|running|fútbol|futbol|bici|nata/i.test(h.name);
