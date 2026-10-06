@@ -120,11 +120,10 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.hecho,.calkey.hecho{background:var(--fire);color:#fff}
 .cal span.hielo,.calkey.hielo{background:var(--heat-ice)}
 .cal span.descanso,.calkey.descanso{background:var(--line)}
-.cal span.pintado,.calkey.pintado{background:var(--fire);color:#fff;opacity:.62;border:2px dotted rgba(255,255,255,.8)}
 .cal span.miss,.calkey.miss{border:2px dashed var(--line);color:var(--muted)}
 .cal span.today{box-shadow:0 0 0 2px var(--ink)}
 .cal span.tap{cursor:pointer;outline:2px dashed color-mix(in srgb,var(--fire) 45%,transparent);outline-offset:-2px}
-.cal span.tap.hecho,.cal span.tap.pintado{outline:none}
+.cal span.tap.hecho{outline:none}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
 .flamebox.freebox{width:64px;height:64px;margin:0 5px;border-radius:20px;background:color-mix(in srgb,var(--hc) 16%,transparent);border:2px solid color-mix(in srgb,var(--hc) 40%,transparent)}
@@ -1609,16 +1608,16 @@ function myCalendar(box){
     cell: (day) => { const set = doneBy()[day]; if (!set || !set.size) return ''; return `<span class="dots">${hs.filter(h => set.has(h.id)).map(h => `<i style="background:${habitColor(h)}"></i>`).join('')}</span>`; },
     detail: (day) => { const set = doneBy()[day] || new Set(), done = hs.filter(h => set.has(h.id)), miss = hs.filter(h => !set.has(h.id) && !h.goal && !h.next_day);
       const old = canPaint(day), painted = done.filter(h => paintedOn(h, day));
-      return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => `${esc(h.emoji)} ${esc(h.name)}${paintedOn(h, day) ? ' 🎨' : ''}`).join(' · ') : 'nada anotado'}
-        ${(canBackfill(day) || day === t || old) && miss.length ? `<div class="chips" style="margin:8px 0 0;flex-wrap:wrap">${miss.map(h => `<button class="chip" data-mca="${h.id}" data-mcd="${day}">${old ? '🎨' : '+'} ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
-        ${painted.length ? `<div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${painted.map(h => `<button class="chip" data-mcu="${h.id}" data-mcd="${day}">✕ Despintar ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
-        ${old ? '<div class="muted" style="margin-top:6px">🎨 Si el día que pintás se une a tu racha actual, suma. Si no, queda pintado en tu calendario.</div>' : ''}`; },
+      return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => `${esc(h.emoji)} ${esc(h.name)}`).join(' · ') : 'nada anotado'}
+        ${(canBackfill(day) || day === t || old) && miss.length ? `<div class="chips" style="margin:8px 0 0;flex-wrap:wrap">${miss.map(h => `<button class="chip" data-mca="${h.id}" data-mcd="${day}">+ ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
+        ${painted.length ? `<div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${painted.map(h => `<button class="chip" data-mcu="${h.id}" data-mcd="${day}">✕ Sacar ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
+        ${old ? '<div class="muted" style="margin-top:6px">Si el día queda pegado a tu racha, suma. Si no, queda en tu calendario.</div>' : ''}`; },
     after: (box) => {
       box.querySelectorAll('[data-mca]').forEach(b => b.onclick = () => { const h = S.me.habits.find(x => x.id === b.dataset.mca), day = b.dataset.mcd;
         if (canPaint(day)) paintDay(h, day, true, (j) => j ? renderMain() : repaint && repaint()); else daySheet(h, day); });
       box.querySelectorAll('[data-mcu]').forEach(b => b.onclick = () => paintDay(S.me.habits.find(x => x.id === b.dataset.mcu), b.dataset.mcd, false, () => repaint && repaint()));
     },
-    hint: 'Tocá un día para ver qué hiciste. Los días viejos los podés pintar 🎨',
+    hint: 'Tocá un día para ver qué hiciste o anotar uno que te olvidaste.',
     legend: () => `<div class="mleg">${hs.map(h => `<span><i style="background:${habitColor(h)}"></i>${esc(h.name)}${h.private ? ' 🔒' : ''}</span>`).join('')}</div>`,
   });
 }
@@ -1666,8 +1665,8 @@ function calendarSheet(h, startMonth){
     <div class="row between section" style="align-items:center"><button class="link" id="cal-prev" aria-label="Mes anterior">‹ Anterior</button><b id="cal-title"></b><button class="link" id="cal-next" aria-label="Mes siguiente">Siguiente ›</button></div>
     <div class="cal" id="cal"></div>
     ${h.free ? '' : `<p class="small" style="margin:12px 0 0">🧠 ${h.streak >= 66 ? '¡Pasaste los 66 días! Según la ciencia, este hábito ya es automático.' : `Día ${h.streak} de 66. Un estudio del University College London encontró que un hábito tarda en promedio 66 días en volverse automático.`}</p>`}
-    ${h.kind !== 'evitar' ? '<p class="small muted" style="margin:10px 0 0">👆 Tocá hoy o uno de los últimos 3 días para anotarlo o sumarle una foto. Los días más viejos los pintás con un toque 🎨: si se unen a tu racha actual, suman; si no, quedan pintados.</p>' : ''}
-    <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey pintado" style="background:${habitColor(h)}"></span> Pintado &nbsp; <span class="calkey miss"></span> No se hizo</p>
+    ${h.kind !== 'evitar' ? '<p class="small muted" style="margin:10px 0 0">👆 Tocá hoy o uno de los últimos 3 días para anotarlo o sumarle una foto. Los días más viejos también: un toque lo pinta y otro lo saca. Si queda pegado a tu racha, suma.</p>' : ''}
+    <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey miss"></span> No se hizo</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   const paint = () => {
     const y = cur.getFullYear(), m = cur.getMonth(), n = new Date(y, m + 1, 0).getDate();
@@ -1676,7 +1675,7 @@ function calendarSheet(h, startMonth){
     for (let d = 1; d <= n; d++){
       const day = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, k = by[day];
       const miss = !k && day < today && day >= first && h.days.includes(new Date(y, m, d).getDay());
-      html += `<span data-cd="${day}" class="${k === 'hecho' ? 'hecho' : k === 'pintado' ? 'pintado' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''} ${day <= today && day >= addDays(today, -3) && h.kind !== 'evitar' ? 'tap' : ''}"${k === 'hecho' || k === 'pintado' ? ` style="background:${hc}"` : ''}>${d}</span>`;
+      html += `<span data-cd="${day}" class="${k === 'hecho' || k === 'pintado' ? 'hecho' : k === 'hielo' ? 'hielo' : k === 'descanso' ? 'descanso' : (k === 'falla' || miss) ? 'miss' : ''} ${day === today ? 'today' : ''} ${day > today ? 'fut' : ''} ${day <= today && day >= addDays(today, -3) && h.kind !== 'evitar' ? 'tap' : ''}"${k === 'hecho' || k === 'pintado' ? ` style="background:${hc}"` : ''}>${d}</span>`;
     }
     $('#cal', el).innerHTML = html;
     $('#cal-prev', el).style.visibility = cur > minMonth ? '' : 'hidden';
@@ -2308,7 +2307,7 @@ async function paintDay(h, day, on, after){
   const prev = S.history || [];
   S.history = on ? [...prev, { day, kind: 'pintado', habit_id: h.id }] : prev.filter(x => !(x.habit_id === h.id && x.day === day && x.kind === 'pintado'));
   after && after(0); vibrate(15);
-  if (on && !LS.get('fueguitos_paint_tip')){ LS.set('fueguitos_paint_tip', '1'); toast('🎨 Pintado. Si ese día se une a tu racha actual, suma; si no, queda pintado en tu calendario.', 4500); }
+  if (on && !LS.get('fueguitos_paint_tip')){ LS.set('fueguitos_paint_tip', '1'); toast('Listo ✅ Si ese día queda pegado a tu racha, suma. Si no, queda en tu calendario.', 4500); }
   try {
     const r = await rpc('api_paint_day', { ...P(), p_habit: h.id, p_day: day, p_on: on });
     if (Array.isArray(r)){ S.history = r; return; } // servidor viejo: solo devolvía el historial
@@ -4529,7 +4528,7 @@ function bindChart(ch){
 function heatmap(){
   const today = S.me.today, weeks = 18;
   const byDay = {};
-  (S.history || []).forEach(x => { byDay[x.day] = byDay[x.day] || { d: 0, i: 0 }; if (x.kind === 'hecho') byDay[x.day].d++; else if (x.kind === 'hielo') byDay[x.day].i++; });
+  (S.history || []).forEach(x => { byDay[x.day] = byDay[x.day] || { d: 0, i: 0 }; if (x.kind === 'hecho' || x.kind === 'pintado') byDay[x.day].d++; else if (x.kind === 'hielo') byDay[x.day].i++; });
   const t = parseDay(today);
   // columnas = semanas (domingo arriba)
   const first = addDays(today, -t.getDay() - (weeks-1)*7);

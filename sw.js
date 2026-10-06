@@ -1,5 +1,5 @@
 // Service worker: deja la app instalable y abre rápido aunque haya mala señal.
-const CACHE = 'fueguitos-v36';
+const CACHE = 'fueguitos-v37';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon.png'];
 
 self.addEventListener('install', (e) => {
