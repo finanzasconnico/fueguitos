@@ -1612,10 +1612,10 @@ function myCalendar(box){
       return `<b>${fmtDay(day)}</b>: ${done.length ? done.map(h => `${esc(h.emoji)} ${esc(h.name)}${paintedOn(h, day) ? ' 🎨' : ''}`).join(' · ') : 'nada anotado'}
         ${(canBackfill(day) || day === t || old) && miss.length ? `<div class="chips" style="margin:8px 0 0;flex-wrap:wrap">${miss.map(h => `<button class="chip" data-mca="${h.id}" data-mcd="${day}">${old ? '🎨' : '+'} ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
         ${painted.length ? `<div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${painted.map(h => `<button class="chip" data-mcu="${h.id}" data-mcd="${day}">✕ Despintar ${esc(h.emoji)} ${esc(h.name)}</button>`).join('')}</div>` : ''}
-        ${old ? '<div class="muted" style="margin-top:6px">🎨 Pintar un día viejo lo deja en tu calendario, sin sumar a la racha.</div>' : ''}`; },
+        ${old ? '<div class="muted" style="margin-top:6px">🎨 Si el día que pintás se une a tu racha actual, suma. Si no, queda pintado en tu calendario.</div>' : ''}`; },
     after: (box) => {
       box.querySelectorAll('[data-mca]').forEach(b => b.onclick = () => { const h = S.me.habits.find(x => x.id === b.dataset.mca), day = b.dataset.mcd;
-        if (canPaint(day)) paintDay(h, day, true, () => repaint && repaint()); else daySheet(h, day); });
+        if (canPaint(day)) paintDay(h, day, true, (j) => j ? renderMain() : repaint && repaint()); else daySheet(h, day); });
       box.querySelectorAll('[data-mcu]').forEach(b => b.onclick = () => paintDay(S.me.habits.find(x => x.id === b.dataset.mcu), b.dataset.mcd, false, () => repaint && repaint()));
     },
     hint: 'Tocá un día para ver qué hiciste. Los días viejos los podés pintar 🎨',
@@ -1641,7 +1641,7 @@ async function groupCalendarSheet(G){
 }
 
 // Calendario del mes de un hábito, con racha, récord y % cumplido del último mes.
-function calendarSheet(h){
+function calendarSheet(h, startMonth){
   const today = S.me.today, by = {};
   const hist = (S.history || []).filter(x => x.habit_id === h.id);
   const RANK = { hecho: 3, pintado: 2 };
@@ -1658,7 +1658,7 @@ function calendarSheet(h){
   }
   const pct = req ? Math.round(ok / req * 100) : null;
   const hc = habitColor(h), prevMonth = (() => { const d = parseDay(today); d.setDate(0); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
-  let cur = parseDay(today); cur.setDate(1);
+  let cur = startMonth ? new Date(startMonth) : parseDay(today); cur.setDate(1);
   const minMonth = parseDay(addDays(today, -365)); minMonth.setDate(1);
   const el = openSheet(`<h2>${esc(h.emoji)} ${esc(h.name)}</h2>
     ${h.free ? `<div class="calstats"><div><b>${monthCount(h)}</b><span>✨ este mes</span></div><div><b>${monthCount(h, prevMonth)}</b><span>mes pasado</span></div><div><b>${h.streak}</b><span>en total</span></div></div>`
@@ -1666,7 +1666,7 @@ function calendarSheet(h){
     <div class="row between section" style="align-items:center"><button class="link" id="cal-prev" aria-label="Mes anterior">‹ Anterior</button><b id="cal-title"></b><button class="link" id="cal-next" aria-label="Mes siguiente">Siguiente ›</button></div>
     <div class="cal" id="cal"></div>
     ${h.free ? '' : `<p class="small" style="margin:12px 0 0">🧠 ${h.streak >= 66 ? '¡Pasaste los 66 días! Según la ciencia, este hábito ya es automático.' : `Día ${h.streak} de 66. Un estudio del University College London encontró que un hábito tarda en promedio 66 días en volverse automático.`}</p>`}
-    ${h.kind !== 'evitar' ? '<p class="small muted" style="margin:10px 0 0">👆 Tocá hoy o uno de los últimos 3 días para anotarlo o sumarle una foto. Los días más viejos los pintás con un toque 🎨 (quedan en el calendario, sin sumar a la racha).</p>' : ''}
+    ${h.kind !== 'evitar' ? '<p class="small muted" style="margin:10px 0 0">👆 Tocá hoy o uno de los últimos 3 días para anotarlo o sumarle una foto. Los días más viejos los pintás con un toque 🎨: si se unen a tu racha actual, suman; si no, quedan pintados.</p>' : ''}
     <p class="hint" style="margin-top:12px"><span class="calkey hecho"></span> Hecho &nbsp; <span class="calkey hielo"></span> Hielito &nbsp; <span class="calkey descanso"></span> Descanso &nbsp; <span class="calkey pintado" style="background:${habitColor(h)}"></span> Pintado &nbsp; <span class="calkey miss"></span> No se hizo</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   const paint = () => {
@@ -1689,7 +1689,10 @@ function calendarSheet(h){
     if (by[day] === 'hecho'){ toast('Ese día ya está anotado ✅'); return; }
     // Un toque pinta, otro despinta: así se completan muchos días seguidos sin abrir nada.
     const on = by[day] !== 'pintado';
-    paintDay(h, day, on, () => { const k = (S.history || []).filter(x => x.habit_id === h.id && x.day === day).reduce((a, x) => (RANK[x.kind] || 1) > (RANK[a] || 0) ? x.kind : a, undefined); if (k) by[day] = k; else delete by[day]; paint(); });
+    paintDay(h, day, on, (joined) => {
+      // Si se unió a la racha cambian la racha, el récord y otros días: se vuelve a abrir en el mismo mes.
+      if (joined){ renderMain(); calendarSheet(S.me.habits.find(x => x.id === h.id) || h, cur); return; }
+      const k = (S.history || []).filter(x => x.habit_id === h.id && x.day === day).reduce((a, x) => (RANK[x.kind] || 1) > (RANK[a] || 0) ? x.kind : a, undefined); if (k) by[day] = k; else delete by[day]; paint(); });
   };
   $('#cal-prev', el).onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() - 1, 1); paint(); };
   $('#cal-next', el).onclick = () => { cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1); paint(); };
@@ -2304,10 +2307,19 @@ const paintedOn = (h, day) => (S.history || []).some(x => x.habit_id === h.id &&
 async function paintDay(h, day, on, after){
   const prev = S.history || [];
   S.history = on ? [...prev, { day, kind: 'pintado', habit_id: h.id }] : prev.filter(x => !(x.habit_id === h.id && x.day === day && x.kind === 'pintado'));
-  after && after(); vibrate(15);
-  if (on && !LS.get('fueguitos_paint_tip')){ LS.set('fueguitos_paint_tip', '1'); toast('🎨 Pintado. Los días viejos quedan en tu calendario, pero no suman a la racha ni dan monedas.', 4500); }
-  try { S.history = await rpc('api_paint_day', { ...P(), p_habit: h.id, p_day: day, p_on: on }) || S.history; }
-  catch(e){ S.history = prev; after && after(); toast(e.message, 3500); }
+  after && after(0); vibrate(15);
+  if (on && !LS.get('fueguitos_paint_tip')){ LS.set('fueguitos_paint_tip', '1'); toast('🎨 Pintado. Si ese día se une a tu racha actual, suma; si no, queda pintado en tu calendario.', 4500); }
+  try {
+    const r = await rpc('api_paint_day', { ...P(), p_habit: h.id, p_day: day, p_on: on });
+    if (Array.isArray(r)){ S.history = r; return; } // servidor viejo: solo devolvía el historial
+    S.history = r.history || S.history; if (r.habits) S.me.habits = r.habits;
+    if (r.joined){
+      const hh = S.me.habits.find(x => x.id === h.id) || h;
+      vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120);
+      toast(`🔥 ¡Se unió a tu racha! ${hh.emoji} ${hh.name}: ${hh.streak} ${hh.streak === 1 ? 'día' : 'días'}`, 4000);
+      after && after(r.joined);
+    }
+  } catch(e){ S.history = prev; after && after(0); toast(e.message, 3500); }
 }
 const dayName = (day) => day === addDays(S.me.today, -1) ? 'ayer' : `el ${fmtDay(day).toLowerCase()}`;
 async function anotarDia(h, day){
