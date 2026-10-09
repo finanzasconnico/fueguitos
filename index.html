@@ -1563,7 +1563,7 @@ function renderMain(){
 /* ============ HOY ============ */
 // Anillo del día: cuánto de lo de hoy ya cerraste (los de cantidad suman de a poco).
 function dayRing(hs){
-  const req = hs.filter(h => h.required_today); if (!req.length) return '';
+  const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return '';
   const done = req.filter(h => h.done_today).length;
   const part = req.reduce((a, h) => a + (h.done_today ? 1 : h.goal ? Math.min(h.count_today || 0, h.goal) / h.goal : 0), 0) / req.length;
   const C = 2 * Math.PI * 20, full = done === req.length;
@@ -1748,11 +1748,11 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-10-05', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-10-09', title: '✨ Novedades en Fueguitos', items: [
+  '🔢 <b>Veces por semana</b>: en Perfil → Mis hábitos → 📅 Mis días elegís, por ejemplo, <b>3 veces por semana</b>, cualquier día. Mientras llegues, la racha sigue.',
   '↩️ <b>¿Te olvidaste de anotar ayer?</b> Ahora lo anotás desde la tarjeta, y si se te había cortado la racha, <b>la recuperás</b>.',
   '📅 Tocá el fueguito de un hábito y en su calendario <b>tocá un día</b> de los últimos 3 para anotarlo.',
-  '📸 También podés subir <b>la foto de ayer</b>.',
-  '🔒 Hábitos privados, ✨ hábitos libres (sin racha), 🎨 colores y Mi calendario en Perfil.'] };
+  '📸 También podés subir <b>la foto de ayer</b>.'] };
 function newsCard(){
   if (LS.get('fueguitos_news') === NEWS.id) return '';
   return `<div class="card section news"><h3 style="margin:0 0 8px">${NEWS.title}</h3><ul class="small plist" style="margin-bottom:12px">${NEWS.items.map(i => `<li>${i}</li>`).join('')}</ul>
@@ -1762,8 +1762,9 @@ function newsCard(){
 function renderHoy(){
   const me = S.me, hs = me.habits;
   const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
-  const allDone = req.length > 0 && req.every(h => h.done_today);
-  const pend = req.filter(h => !h.done_today && !(h.deadline && isLate(h)) && !(h.next_day && saidNo(h))), corte = hastaCorte();
+  const relaxed = (h) => { const w = weeklyInfo(h); return w && !w.urgent && !h.done_today; };
+  const allDone = req.some(h => h.done_today) && req.every(h => h.done_today || relaxed(h));
+  const pend = req.filter(h => !h.done_today && !(h.deadline && isLate(h)) && !(h.next_day && saidNo(h)) && !relaxed(h)), corte = hastaCorte();
   const ices = (S.history || []).filter(x => x.kind === 'hielo' && x.day >= addDays(me.today, -3));
   const rests = (S.history || []).filter(x => x.kind === 'descanso' && x.day >= addDays(me.today, -3));
   const restMsg = rests.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
@@ -1997,7 +1998,9 @@ function habitCard(h){
   if (h.free) return freeCard(h);
   const sel = S.sel.has(h.id);
   const lateNow = h.deadline && !h.done_today && isLate(h);
-  const status = h.done_today ? `<span class="pill ok">Anotado hoy</span>` : lateNow ? `<span class="pill">Se pasó la hora</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
+  const wk = weeklyInfo(h);
+  const status = wk ? (h.done_today ? `<span class="pill ok">Anotado hoy · ${wk.done}/${wk.target} esta semana</span>` : wk.met ? `<span class="pill ok">Semana cumplida · ${wk.done}/${wk.target}</span>` : wk.urgent ? `<span class="pill fire">Te falta hoy · ${wk.done}/${wk.target}</span>` : `<span class="pill">Semana: ${wk.done} de ${wk.target}</span>`)
+    : h.done_today ? `<span class="pill ok">Anotado hoy</span>` : lateNow ? `<span class="pill">Se pasó la hora</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
   return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''} ${lateNow ? 'late' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
@@ -3558,7 +3561,17 @@ function joinGroupSheet(){
 }
 /* ============ Reglas de días y descansos ============ */
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
-const ruleText = (days, rest) => `${days && days.length ? daysLabel(days) : 'Todos los días'}${rest ? ` · ${rest} ${rest === 1 ? 'descanso' : 'descansos'} por semana` : ''}`;
+const ruleText = (days, rest) => (days && days.length === 7 || !days || !days.length) && rest >= 3 ? `${7 - rest} ${7 - rest === 1 ? 'vez' : 'veces'} por semana, cualquier día`
+  : `${days && days.length ? daysLabel(days) : 'Todos los días'}${rest ? ` · ${rest} ${rest === 1 ? 'descanso' : 'descansos'} por semana` : ''}`;
+// "X veces por semana": todos los días con 7 − X descansos. Cuenta la semana de lunes a domingo.
+function weeklyInfo(h){
+  const days = h.days || [], rest = h.rest_per_week || 0;
+  if (h.free || h.kind === 'evitar' || days.length !== 7 || rest < 3) return null;
+  const t = S.me.today, iso = (parseDay(t).getDay() + 6) % 7, mon = addDays(t, -iso), target = 7 - rest;
+  const prev = new Set((S.history || []).filter(x => x.habit_id === h.id && x.kind === 'hecho' && x.day >= mon && x.day < t).map(x => x.day));
+  const done = prev.size + (h.done_today ? 1 : 0), left = 7 - iso;
+  return { target, done, met: done >= target, urgent: !h.done_today && target > done && (target - done) >= left };
+}
 // Campos reutilizables (grupo y personal). Devuelve el html; `readRules(el)` lee lo elegido.
 function rulesFields(days, rest){
   const on = new Set(days && days.length ? days : [0, 1, 2, 3, 4, 5, 6]);
@@ -3581,18 +3594,34 @@ function readRules(el){
 }
 // Mis días para un hábito activo.
 function rulesSheet(h, after){
+  const wk0 = (h.days || []).length === 7 && (h.rest_per_week || 0) >= 3;
+  let mode = wk0 ? 'week' : 'fixed', times = wk0 ? 7 - h.rest_per_week : 3;
   const el = openSheet(`<h2>${esc(h.emoji)} Mis días de ${esc(h.name)}</h2>
-    <p class="muted">Elegí qué días te tocan. Vale de hoy en adelante: lo que ya pasó no cambia.</p>
-    <div class="stack section">${rulesFields(h.days, h.rest_per_week)}
+    <p class="muted">Elegí cuándo te toca. Vale de hoy en adelante: lo que ya pasó no cambia.</p>
+    <div class="stack section">
+      ${h.kind === 'evitar' ? '' : `<div class="grid2"><button type="button" class="fmt" data-rm="fixed"><b>📅 Días fijos</b><span class="small">Ej: lunes, miércoles y viernes.</span></button>
+        <button type="button" class="fmt" data-rm="week"><b>🔢 Veces por semana</b><span class="small">Cualquier día. Ej: 3 veces.</span></button></div>
+      <div class="field" id="ru-week"><span>¿Cuántas veces por semana?</span><div class="chips" style="margin:0">${[1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="chip" data-rw="${n}">${n === 1 ? '1 vez' : `${n} veces`}</button>`).join('')}</div>
+        <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito. Solo te avisamos cuando ya no te alcanzan los días.</div></div>`}
+      <div id="ru-fixed" class="stack">${rulesFields(h.days, wk0 ? 0 : h.rest_per_week)}</div>
       ${h.kind === 'evitar' ? '<style>#layer .rest-field{display:none}</style><p class="hint" style="margin:0">En los hábitos para dejar algo no hay descansos.</p>' : ''}
       ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
       <button class="btn" id="ru-save">Guardar</button></div>`);
   bindRules(el);
+  const paintMode = () => {
+    el.querySelectorAll('[data-rm]').forEach(b => b.classList.toggle('on', b.dataset.rm === mode));
+    el.querySelectorAll('[data-rw]').forEach(b => b.classList.toggle('on', +b.dataset.rw === times));
+    const w = $('#ru-week', el); if (w) w.style.display = mode === 'week' ? '' : 'none';
+    $('#ru-fixed', el).style.display = mode === 'week' ? 'none' : '';
+  };
+  el.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { mode = b.dataset.rm; paintMode(); });
+  el.querySelectorAll('[data-rw]').forEach(b => b.onclick = () => { times = +b.dataset.rw; paintMode(); });
+  paintMode();
   const save = async (days, rest) => {
     try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: days, p_rest: rest }); closeSheet(); (after || renderMain)(); toast(`Listo: ${ruleText(days, rest)}`); }
     catch(e){ toast(e.message); }
   };
-  $('#ru-save', el).onclick = () => { const r = readRules(el); save(r.days, r.rest); };
+  $('#ru-save', el).onclick = () => { if (mode === 'week') save([0, 1, 2, 3, 4, 5, 6], 7 - times); else { const r = readRules(el); save(r.days, r.rest); } };
   const rs = $('#ru-reset', el); if (rs) rs.onclick = () => save([], h.rest_per_week || 0);
 }
 // Al unirse a un grupo con regla, se ofrece usarla para el hábito de deporte.
