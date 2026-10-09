@@ -133,6 +133,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.free.done .flamebox.freebox{background:color-mix(in srgb,var(--hc) 30%,transparent)}
 .habit.free.done .check{background:var(--hc);border-color:var(--hc)}
 .lock{font-size:13px}
+.chip .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--fire);color:#fff;font-size:11px;font-weight:800;padding:0 5px;margin-left:2px}
 .undo.yest{display:block;color:var(--fire-ink);text-decoration:none;font-size:13px;margin-top:6px}
 .colors{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .cdot{width:34px;height:34px;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 2px var(--line)}
@@ -621,6 +622,8 @@ const ERRORS = {
   SESION_INVALIDA: 'Tu sesión no existe más. Volvé a entrar con tu apodo.',
   CODIGO_INVALIDO: 'Ese código no existe. Revisalo con quien te invitó.',
   GRUPO_LLENO: 'Esa racha de a dos ya tiene a sus dos personas.',
+  NO_EXISTE: 'No encontramos a nadie con ese apodo. Fijate cómo lo escribió.',
+  YA_AMIGOS: 'Ya son amigos 🤝',
   SIN_MONEDAS: 'Te faltan monedas. Cada fueguito que anotás suma una 🪙',
   HUEVO: 'Primero tiene que nacer tu fueguito 🥚',
   YA_EMPUJASTE: 'Ya le mandaste un empujón hoy. Mañana podés de nuevo.',
@@ -1748,7 +1751,9 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-10-09', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-10-09b', title: '✨ Novedades en Fueguitos', items: [
+  '👥 <b>Amigos</b>: en Grupo → 👥 Amigos ves a todos tus amigos, un ranking de rachas y su perfil. Los de tus grupos ya están; al resto lo agregás con su apodo.',
+  '📩 Desde el perfil de un amigo lo <b>invitás a tus grupos</b> o arman una <b>racha de a dos</b>. Y si un grupo es 🔓 abierto, podés pedir sumarte.',
   '🔢 <b>Veces por semana</b>: en Perfil → Mis hábitos → 📅 Mis días elegís, por ejemplo, <b>3 veces por semana</b>, cualquier día. Mientras llegues, la racha sigue.',
   '↩️ <b>¿Te olvidaste de anotar ayer?</b> Ahora lo anotás desde la tarjeta, y si se te había cortado la racha, <b>la recuperás</b>.',
   '📅 Tocá el fueguito de un hábito y en su calendario <b>tocá un día</b> de los últimos 3 para anotarlo.',
@@ -2513,16 +2518,18 @@ async function refreshGroup(){
 }
 const gName = (g) => { const m = ((S.me && S.me.groups) || []).find(x => x.id === g.id) || g; return m.pair ? `Vos y ${m.other || '…'}` : g.name; };
 function renderGrupo(){
+  if (S.gview === 'amigos'){ renderFriends(); return; }
+  if (S.friends === undefined){ S.friends = null; rpc('api_friends', P()).then(f => { S.friends = f; if (f.incoming.length && S.tab === 'grupo') renderGrupo(); }).catch(() => { S.friends = undefined; }); }
   const gs = S.me.groups;
   if (!gs.length){
     $('#main').innerHTML = `
-      <div class="top"><h1>Grupo</h1></div>
+      <div class="top"><h1>Grupo</h1><button class="btn sm ice" data-friends>👥 Amigos${S.friends && S.friends.incoming.length ? ` · ${S.friends.incoming.length}` : ''}</button></div>
       <p class="muted">Armá un grupo con tus amigos para ver sus rachas y las fotos del día. Podés estar en varios grupos, y con una sola anotación aparecés en todos.</p>
       ${groupForms()}`;
-    bindGroupForms(); return;
+    bindGroupForms(); bindChips(); return;
   }
   const G = S.group;
-  const chips = `<div class="chips">${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}</div>`;
+  const chips = `<div class="chips">${friendsChip()}${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}</div>`;
   if (!G || G.group.id !== S.groupId){
     $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
     bindChips(); return;
@@ -2536,7 +2543,7 @@ function renderGrupo(){
       <div class="row" style="gap:8px">${G.group.is_admin ? '<button class="btn sm ghost" id="g-edit" aria-label="Editar grupo">Editar</button>' : ''}<button class="btn sm ice" id="invite">Invitar</button></div></div>
     ${G.group.descr ? `<p class="gdescr">${esc(G.group.descr)}</p>` : ''}
     ${(G.group.rule_days && G.group.rule_days.length) || G.group.rule_rest ? `<p class="gdescr">📅 ${esc(ruleText(G.group.rule_days, G.group.rule_rest))}</p>` : ''}
-    ${gs.length > 1 ? chips : ''}
+    ${chips}
 
     <div class="subtabs" role="tablist">${[['racha','🔥 Racha'],['compartido','🎧 Compartido'],['duelos','⚔️ Duelos']].map(([k,l]) => `<button role="tab" aria-selected="${S.gsub===k}" class="${S.gsub===k?'on':''}" data-gsub="${k}">${l}</button>`).join('')}</div>
     ${S.gsub === 'racha' ? grupoRacha(G, members) : '<div id="gsub"></div>'}
@@ -2563,6 +2570,9 @@ function renderGrupo(){
   const ha = $('#hab-add'); if (ha) ha.onclick = () => groupHabitAdd(G);
   const bb = $('#bench-back'); if (bb) bb.onclick = () => benchBackSheet(G);
   const ps = $('#priv-share'); if (ps) ps.onclick = () => groupHabitAdd(G);
+  const jr = async (id, ok) => { try { await rpc('api_group_join_respond', { ...P(), p_group: G.group.id, p_user: id, p_accept: ok }); await loadGroup(); renderGrupo(); toast(ok ? '🎉 ¡Adentro! Le avisamos' : 'Listo'); } catch(e){ toast(e.message); } };
+  document.querySelectorAll('[data-jra]').forEach(b => b.onclick = () => jr(b.dataset.jra, true));
+  document.querySelectorAll('[data-jrr]').forEach(b => b.onclick = () => jr(b.dataset.jrr, false));
   document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => nudgeFriend(G, G.members.find(x => x.id === b.dataset.nudge)));
   document.querySelectorAll('[data-back]').forEach(b => b.onclick = async () => {
     const m = G.members.find(x => x.id === b.dataset.back); b.disabled = true;
@@ -2633,6 +2643,8 @@ function benchBackSheet(G){
 function grupoRacha(G, members){
   return `
     ${benchBanner(G)}
+    ${(G.group.join_requests || []).length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">🙋 Quieren sumarse al grupo</div>${G.group.join_requests.map(u => `<div class="hrow"><b>${esc(u.nick)}</b>
+      <div class="row" style="gap:6px"><button class="btn sm" data-jra="${u.id}">Aceptar</button><button class="btn sm ghost" data-jrr="${u.id}">No</button></div></div>`).join('')}</div>` : ''}
     <div class="section-title" style="margin-top:4px"><h2>Hoy</h2></div>
     <div class="board">${members.map(memberRow).join('')}</div>
     ${nudgeBanner(G, members)}
@@ -3438,6 +3450,99 @@ function postCard(p){
     <div class="row between" style="margin-top:8px"><span class="small muted">${expiresIn(p.created_at)}</span>${mine ? `<button class="link small danger" data-delphoto="${p.id}">Borrar</button>` : ''}</div>
   </div></article>`;
 }
+/* ============ Amigos ============ */
+// Amigos = los que comparten un grupo con vos (automático) + los que agregaste con su apodo.
+async function renderFriends(){
+  const paint = () => {
+    const F = S.friends, gs = S.me.groups;
+    const chips = `<div class="chips">${friendsChip()}${gs.map(g => `<button class="chip" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}</div>`;
+    $('#main').innerHTML = `<div class="top"><h1>Amigos</h1><button class="btn sm ice" id="fr-add">+ Agregar</button></div>${chips}
+      ${!F ? '<div class="spinner"></div>' : `
+      ${F.incoming.length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">🙋 Te quieren agregar</div>${F.incoming.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<b>${esc(u.nick)}</b></div>
+        <div class="row" style="gap:6px"><button class="btn sm" data-fra="${u.id}">Aceptar</button><button class="btn sm ghost" data-frr="${u.id}">No</button></div></div>`).join('')}</div>` : ''}
+      <div class="section-title"><h2>🏆 Ranking de rachas</h2><span class="small muted">${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}</span></div>
+      ${F.friends.length ? `<div class="board">${F.friends.map((u, i) => `<div class="member" role="button" tabindex="0" data-fp="${u.id}" aria-label="Ver a ${esc(u.nick)}">
+        <div class="who"><span class="small muted" style="width:16px;font-weight:800">${i + 1}</span>${userAv(u.nick, u.avatar, 36)}<div>${esc(u.nick)}${u.done_today ? ' <span class="pill ok" style="font-size:11px">✓ hoy</span>' : ''}</div></div>
+        <div class="mh"><span class="m ${u.done_today ? 'done' : ''}">🔥 ${u.top}</span></div></div>`).join('')}</div>`
+        : '<div class="empty">Todavía no tenés amigos en la app. Agregalos con su apodo, o invitalos a tu grupo y quedan como amigos solos.</div>'}
+      ${F.outgoing.length ? `<p class="small muted">⏳ Esperando respuesta: ${F.outgoing.map(u => esc(u.nick)).join(', ')}</p>` : ''}
+      <p class="small muted">Los que están en un grupo con vos ya son tus amigos. Tocá a cualquiera para ver sus rachas, invitarlo a tus grupos o armar una racha de a dos.</p>
+      <div class="section"><button class="btn ghost" id="fr-share">📲 Invitar a alguien que no tiene la app</button></div>`}`;
+    bindChips();
+    $('#fr-add').onclick = addFriendSheet;
+    const sh = $('#fr-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(`Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos: ${PUBLIC_URL}`); };
+    document.querySelectorAll('[data-fp]').forEach(r => r.onclick = () => friendSheet(r.dataset.fp));
+    const respond = async (id, ok) => { try { S.friends = await rpc('api_friend_respond', { ...P(), p_user: id, p_accept: ok }); paint(); toast(ok ? '🤝 ¡Ahora son amigos!' : 'Listo'); } catch(e){ toast(e.message); } };
+    document.querySelectorAll('[data-fra]').forEach(b => b.onclick = () => respond(b.dataset.fra, true));
+    document.querySelectorAll('[data-frr]').forEach(b => b.onclick = () => respond(b.dataset.frr, false));
+  };
+  paint();
+  try { S.friends = await rpc('api_friends', P()); } catch(e){ toast(e.message); }
+  if (S.tab === 'grupo' && S.gview === 'amigos') paint();
+}
+function addFriendSheet(){
+  const el = openSheet(`<h2>👥 Agregar un amigo</h2><p class="muted">Poné su apodo de Fueguitos. Le llega tu solicitud y, cuando acepta, son amigos.</p>
+    <div class="stack section"><input class="input" id="af-n" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Su apodo"><button class="btn" id="af-ok">Mandar solicitud</button></div>`);
+  setTimeout(() => $('#af-n', el).focus(), 250);
+  $('#af-ok', el).onclick = async (e) => {
+    const n = $('#af-n', el).value.trim(); if (!n){ toast('Poné su apodo'); return; }
+    e.target.disabled = true;
+    try {
+      const r = await rpc('api_friend_request', { ...P(), p_nick: n });
+      closeSheet(); toast(r.accepted ? `🤝 ¡Ya son amigos con ${r.nick}!` : `👋 Le mandamos la solicitud a ${r.nick}`, 3500);
+      S.friends = await rpc('api_friends', P()); renderGrupo();
+    } catch(err){ toast(err.message, 3500); e.target.disabled = false; }
+  };
+}
+async function friendSheet(uid){
+  let p; try { p = await rpc('api_friend_profile', { ...P(), p_user: uid }); } catch(e){ toast(e.message); return; }
+  const hs = p.habits || [], pairWith = p.common.some(g => g.pair);
+  const el = openSheet(`<div class="row" style="gap:14px;align-items:center">${userAv(p.nick, p.avatar, 72)}<div><h2>${esc(p.nick)}</h2>${p.avatar && p.avatar.name ? `<div class="small muted">${esc(p.avatar.name)}</div>` : ''}</div></div>
+    <div class="card section">${hs.length ? hs.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
+      <span class="small" style="font-weight:700">${h.free ? `✨ ${h.streak}` : `🔥 ${h.streak}${h.best > h.streak ? ` · 🏆 ${h.best}` : ''}`}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no tiene hábitos para mostrar.</p>'}</div>
+    ${p.common.length ? `<div class="small" style="font-weight:700;margin-top:14px">Grupos en común</div><div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${p.common.map(g => `<button class="chip" data-fg="${g.id}">${g.pair ? '👯 Racha de a dos' : `${esc(g.emoji || '🔥')} ${esc(g.name)}`}</button>`).join('')}</div>` : ''}
+    ${p.open.length ? `<div class="small" style="font-weight:700;margin-top:14px">🔓 Sus grupos abiertos</div><div class="stack" style="margin-top:6px">${p.open.map(g => `<div class="hrow"><div><b>${esc(g.emoji || '🔥')} ${esc(g.name)}</b><div class="small muted">${g.members} ${g.members === 1 ? 'miembro' : 'miembros'}</div></div>
+      ${g.requested ? '<span class="pill">Pedido ✓</span>' : `<button class="btn sm" data-fjr="${g.id}">Pedir unirme</button>`}</div>`).join('')}</div>` : ''}
+    <div class="stack section">
+      ${!hs.some(h => h.done_today) ? `<button class="btn ${p.nudged ? 'ghost' : ''}" id="fs-nudge" ${p.nudged ? 'disabled' : ''}>${p.nudged ? '👋 Ya le mandaste un empujón hoy' : '👋 Mandale un empujón'}</button>` : ''}
+      ${p.invitable.length ? '<button class="btn ghost" id="fs-inv">📩 Invitar a uno de mis grupos</button>' : ''}
+      ${pairWith ? '' : '<button class="btn ghost" id="fs-pair">👯 Armar una racha de a dos</button>'}
+    </div>
+    ${p.manual ? '<div style="text-align:center;margin-top:14px"><button class="link small danger" id="fs-rm">Quitar de amigos</button></div>' : ''}`);
+  el.querySelectorAll('[data-fg]').forEach(b => b.onclick = () => { closeSheet(); S.gview = null; S.groupId = b.dataset.fg; LS.set('racha_group', S.groupId); S.group = null; go('grupo'); });
+  el.querySelectorAll('[data-fjr]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { await rpc('api_group_join_request', { ...P(), p_group: b.dataset.fjr }); b.outerHTML = '<span class="pill">Pedido ✓</span>'; toast('🙋 Le avisamos al que administra el grupo', 3500); }
+    catch(e){ toast(e.message); b.disabled = false; }
+  });
+  const nb = $('#fs-nudge', el); if (nb) nb.onclick = () => { closeSheet(); nudgeFriend(null, { id: p.id, nick: p.nick }); };
+  const iv = $('#fs-inv', el); if (iv) iv.onclick = () => {
+    const s2 = openSheet(`<h2>📩 Invitar a ${esc(p.nick)}</h2><p class="muted">Le llega un aviso; con un toque se suma.</p>
+      <div class="stack section">${p.invitable.map(g => `<button class="btn ghost" data-fig="${g.id}">${esc(g.emoji || '🔥')} ${esc(g.name)}</button>`).join('')}</div>`);
+    s2.querySelectorAll('[data-fig]').forEach(b => b.onclick = () => inviteFriend(p, b.dataset.fig));
+  };
+  const pr = $('#fs-pair', el); if (pr) pr.onclick = async (e) => {
+    e.target.disabled = true;
+    try { const g = await rpc('api_create_group', { ...P(), p_name: 'Racha de a dos', p_pair: true }); S.me = await rpc('api_me', P()); await inviteFriend(p, g.id); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+  const rm = $('#fs-rm', el); if (rm) rm.onclick = () => confirmSheet(`¿Quitar a ${p.nick} de tus amigos?`, 'Si comparten un grupo, igual lo vas a seguir viendo ahí.', 'Quitar', async () => {
+    S.friends = await rpc('api_friend_remove', { ...P(), p_user: p.id }); renderGrupo(); toast('Listo');
+  });
+}
+// Invitación a un grupo: aviso al amigo (con el link); si no tiene avisos, por WhatsApp.
+async function inviteFriend(p, gid){
+  try {
+    const r = await rpc('api_group_invite', { ...P(), p_group: gid, p_friend: p.id });
+    if (r.has_push){ closeSheet(); toast(r.pair ? `👯 Le propusimos a ${p.nick} la racha de a dos` : `📩 Le mandamos la invitación a ${p.nick}`, 3500); renderMain(); return; }
+    const txt = r.pair ? `¿Hacemos una racha de a dos en Fueguitos? 🔥 ${inviteLink(r.code)}` : `¡Sumate a "${r.name}" en Fueguitos! 🔥 ${inviteLink(r.code)}`;
+    const el = openSheet(`<h2>📩 ${esc(p.nick)} no tiene los avisos activados</h2><p class="muted">Mandale la invitación por WhatsApp: con el link se suma solo.</p>
+      <div class="stack section"><button class="btn green" id="iw-wa">Mandar por WhatsApp</button><button class="btn ghost" id="iw-no">Listo</button></div>`);
+    $('#iw-wa', el).onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt); };
+    $('#iw-no', el).onclick = () => { closeSheet(); renderMain(); };
+  } catch(e){ toast(e.message, 3500); }
+}
+
 /* ============ Foto y logros del grupo ============ */
 const groupAvatar = (g, size) => g.photo && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(g.photo)
   ? `<img class="gav" src="${g.photo}" alt="" style="width:${size}px;height:${size}px">`
@@ -3486,6 +3591,7 @@ function groupEditor(G){
         <div class="emojis">${G_EMOJI.map(e => `<button type="button" data-ge="${e}">${e}</button>`).join('')}</div></div>
       <details class="more" ${G.group.rule_days || G.group.rule_rest ? 'open' : ''}><summary>📅 Regla de deporte del grupo</summary><div class="stack" style="margin-top:10px">${rulesFields(G.group.rule_days, G.group.rule_rest)}</div></details>
       <label class="field"><span>Descripción (opcional)</span><textarea class="input" id="ge-d" maxlength="200" placeholder="Ej: Racha de deporte y lectura. El que corta la racha paga el asado 🥩">${esc(G.group.descr || '')}</textarea></label>
+      ${G.group.pair ? '' : `<label class="row small" style="gap:8px;align-items:flex-start"><input type="checkbox" id="ge-open" ${G.group.open ? 'checked' : ''} style="margin-top:3px"> <span>🔓 <b>Grupo abierto</b>: los amigos de los miembros lo ven en sus perfiles y pueden pedir sumarse (vos aceptás o no). Si no, queda cerrado y no aparece en ningún lado.</span></label>`}
       <div class="card small"><b>Código para invitar:</b> <span style="letter-spacing:.15em;font-weight:800">${esc(G.group.code)}</span><br><span class="muted">Para sacar a alguien, tocá "Sacar del grupo" debajo de su nombre en la tabla.</span></div>
       <button class="btn" id="ge-save">Guardar</button>
     </div>`);
@@ -3504,13 +3610,16 @@ function groupEditor(G){
     try {
       await rpc('api_update_group', { ...P(), p_group: G.group.id, p_name: n, p_emoji: emoji, p_descr: $('#ge-d', el).value });
       if (photoChanged) await rpc('api_set_group_photo', { ...P(), p_group: G.group.id, p_photo: photo });
+      const go_ = $('#ge-open', el); if (go_ && go_.checked !== !!G.group.open) await rpc('api_group_set_open', { ...P(), p_group: G.group.id, p_open: go_.checked });
       const rr = readRules(el); if (rr.days.length === 7) rr.days = []; await rpc('api_set_group_rules', { ...P(), p_group: G.group.id, p_days: rr.days, p_rest: rr.rest });
       S.me = await rpc('api_me', P()); await loadGroup(); closeSheet(); renderGrupo(); toast('Grupo actualizado');
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
 }
+const friendsChip = () => `<button class="chip ${S.gview === 'amigos' ? 'on' : ''}" data-friends>👥 Amigos${S.friends && S.friends.incoming.length ? ` <span class="badge">${S.friends.incoming.length}</span>` : ''}</button>`;
 function bindChips(){
-  document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { S.groupId = b.dataset.g; LS.set('racha_group', S.groupId); S.group = null; renderGrupo(); refreshGroup(); });
+  document.querySelectorAll('[data-friends]').forEach(b => b.onclick = () => { S.gview = 'amigos'; renderGrupo(); });
+  document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { S.gview = null; S.groupId = b.dataset.g; LS.set('racha_group', S.groupId); S.group = null; renderGrupo(); refreshGroup(); });
   const n = $('#g-new'); if (n) n.onclick = createGroupSheet;
   const j = $('#g-join'); if (j) j.onclick = () => joinGroupSheet();
 }
