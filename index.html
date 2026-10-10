@@ -2529,7 +2529,7 @@ function renderGrupo(){
     bindGroupForms(); bindChips(); return;
   }
   const G = S.group;
-  const chips = `<div class="chips">${friendsChip()}${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}</div>`;
+  const chips = `<div class="chips">${friendsChip()}${gs.map(g => `<button class="chip ${g.id===S.groupId?'on':''}" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}${newGroupChip()}</div>`;
   if (!G || G.group.id !== S.groupId){
     $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
     bindChips(); return;
@@ -3455,7 +3455,7 @@ function postCard(p){
 async function renderFriends(){
   const paint = () => {
     const F = S.friends, gs = S.me.groups;
-    const chips = `<div class="chips">${friendsChip()}${gs.map(g => `<button class="chip" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}</div>`;
+    const chips = `<div class="chips">${friendsChip()}${gs.map(g => `<button class="chip" data-g="${g.id}">${g.pair ? '👯' : esc(g.emoji || '🔥')} ${esc(gName(g))}</button>`).join('')}${newGroupChip()}</div>`;
     $('#main').innerHTML = `<div class="top"><h1>Amigos</h1><button class="btn sm ice" id="fr-add">+ Agregar</button></div>${chips}
       ${!F ? '<div class="spinner"></div>' : `
       ${F.incoming.length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">🙋 Te quieren agregar</div>${F.incoming.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<b>${esc(u.nick)}</b></div>
@@ -3616,12 +3616,24 @@ function groupEditor(G){
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
 }
+// Crear o unirse a otro grupo, siempre a mano al final de la fila de grupos (antes solo estaba al fondo de la Racha).
+const newGroupChip = () => `<button class="chip" data-gnew>＋ Nuevo grupo</button>`;
 const friendsChip = () => `<button class="chip ${S.gview === 'amigos' ? 'on' : ''}" data-friends>👥 Amigos${S.friends && S.friends.incoming.length ? ` <span class="badge">${S.friends.incoming.length}</span>` : ''}</button>`;
 function bindChips(){
   document.querySelectorAll('[data-friends]').forEach(b => b.onclick = () => { S.gview = 'amigos'; renderGrupo(); });
   document.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { S.gview = null; S.groupId = b.dataset.g; LS.set('racha_group', S.groupId); S.group = null; renderGrupo(); refreshGroup(); });
   const n = $('#g-new'); if (n) n.onclick = createGroupSheet;
   const j = $('#g-join'); if (j) j.onclick = () => joinGroupSheet();
+  document.querySelectorAll('[data-gnew]').forEach(b => b.onclick = newGroupSheet);
+}
+// El chip ofrece las dos cosas: armar uno nuevo o entrar a uno con código.
+function newGroupSheet(){
+  const el = openSheet(`<h2>＋ Nuevo grupo</h2>
+    <div class="stack section"><button class="btn" id="ng-create">Crear un grupo</button><button class="btn ice" id="ng-join">🔑 Unirme con un código</button>
+    <button class="link small" id="ng-no" style="margin:6px auto 0">Cancelar</button></div>`);
+  $('#ng-create', el).onclick = createGroupSheet;
+  $('#ng-join', el).onclick = () => joinGroupSheet();
+  $('#ng-no', el).onclick = closeSheet;
 }
 function groupForms(){
   return `<div class="stack section">
