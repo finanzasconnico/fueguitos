@@ -133,6 +133,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.free.done .flamebox.freebox{background:color-mix(in srgb,var(--hc) 30%,transparent)}
 .habit.free.done .check{background:var(--hc);border-color:var(--hc)}
 .lock{font-size:13px}
+.undo.save{display:block;color:var(--ok-ink);text-decoration:none;font-size:13px;margin-top:6px}
 .invcode{font-size:26px;font-weight:800;letter-spacing:.18em;background:var(--fire-soft);padding:6px 12px;border-radius:12px}
 .chip .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--fire);color:#fff;font-size:11px;font-weight:800;padding:0 5px;margin-left:2px}
 .undo.yest{display:block;color:var(--fire-ink);text-decoration:none;font-size:13px;margin-top:6px}
@@ -1764,7 +1765,8 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-10-09b', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-10-13', title: '✨ Novedades en Fueguitos', items: [
+  '💰 <b>Cuánto te ahorrás</b>: en un hábito de dejar algo (como Sin fumar), poné cuánto fumabas y lo que sale el atado, y te mostramos la plata que vas ahorrando. Lo ves solo vos.',
   '👥 <b>Amigos</b>: en Grupo → 👥 Amigos ves a todos tus amigos, un ranking de rachas y su perfil. Los de tus grupos ya están; al resto lo agregás con su apodo.',
   '📩 Desde el perfil de un amigo lo <b>invitás a tus grupos</b> o arman una <b>racha de a dos</b>. Y si un grupo es 🔓 abierto, podés pedir sumarte.',
   '🔢 <b>Veces por semana</b>: en Perfil → Mis hábitos → 📅 Mis días elegís, por ejemplo, <b>3 veces por semana</b>, cualquier día. Mientras llegues, la racha sigue.',
@@ -1816,6 +1818,7 @@ function renderHoy(){
     const h = hs.find(x => x.id === b.dataset.habit);
     if (e.target.closest('[data-yday]')){ anotarDia(h, addDays(S.me.today, -1)); return; }
     if (e.target.closest('[data-appblock]')){ appBlockSheet(h); return; }
+    if (e.target.closest('[data-saving]')){ savingSheet(h); return; }
     if (h.kind === 'evitar'){ quitSheet(h); return; }
     if (h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); return; } // ya anotado: sumarle foto o detalle
     if (h.deadline){
@@ -2108,10 +2111,48 @@ function quitCard(h){
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
       <div class="meta">${ok ? '<span class="pill ok">Vas bien hoy</span>' : '<span class="pill fire">Hoy caíste</span>'}<span class="pill">🏆 Récord ${h.best || 0}</span><span class="pill">📅 ${h.total_clean || 0} en total</span></div>
       <span class="small muted">${ok ? 'Se suma solo. Si caés, tocalo.' : 'Mañana arrancás de nuevo. Lo logrado no se borra.'}</span>
+      ${savingLine(h)}
       ${APP_RX.test(h.name) ? `<span class="undo" role="button" tabindex="0" data-appblock="${h.id}">¿Cómo frenar ${esc(appName(h.name))}?</span>` : ''}
     </div>
     <div class="check ${ok ? '' : 'x'}" aria-hidden="true">${ok ? '✓' : '✕'}</div>
   </button>`;
+}
+// Ahorro por dejar algo: se calcula con lo que gastaba por día × días sin (en total, así una caída no borra lo ahorrado).
+const SMOKE_RX = /fum|cigarr|pucho|tabaco|vape|vapeo/i;
+const money = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
+function savingLine(h){
+  const sv = h.saving;
+  if (!sv || !sv.per_day) return SMOKE_RX.test(h.name) ? `<span class="undo save" role="button" tabindex="0" data-saving="${h.id}">💰 ¿Cuánto te estás ahorrando? Calculalo</span>` : '';
+  const days = h.total_clean || 0, saved = days * sv.per_day;
+  return `<span class="undo save" role="button" tabindex="0" data-saving="${h.id}">💰 Ahorraste <b>${money(saved)}</b>${sv.cpd ? ` · ${Math.round(days * sv.cpd).toLocaleString('es-AR')} cigarrillos sin fumar` : ''}</span>`;
+}
+function savingSheet(h, after){
+  const sv = h.saving || {}, smoke = SMOKE_RX.test(h.name);
+  const el = openSheet(`<h2>💰 ¿Cuánto te ahorrás?</h2>
+    <p class="muted">${smoke ? 'Con lo que fumabas y lo que sale el atado, calculamos la plata que te queda en el bolsillo cada día que no fumás.' : 'Poné cuánto gastabas por día en esto y te mostramos cuánto vas ahorrando.'} Lo ves solo vos.</p>
+    <div class="stack section">${smoke ? `
+      <label class="field"><span>¿Cuántos cigarrillos fumabas por día?</span><input class="input" id="sv-cpd" type="number" inputmode="decimal" min="0" step="1" placeholder="Ej: 10" value="${sv.cpd || ''}"></label>
+      <div class="grid2"><label class="field"><span>Precio del atado</span><input class="input" id="sv-price" type="number" inputmode="decimal" min="0" placeholder="Ej: 4000" value="${sv.price || ''}"></label>
+        <label class="field"><span>Cigarrillos por atado</span><input class="input" id="sv-pack" type="number" inputmode="numeric" min="1" value="${sv.pack || 20}"></label></div>`
+      : `<label class="field"><span>¿Cuánto gastabas por día?</span><input class="input" id="sv-pd" type="number" inputmode="decimal" min="0" placeholder="Ej: 2000" value="${sv.per_day || ''}"></label>`}
+      <div class="card small" id="sv-prev" style="margin:0"></div>
+      <button class="btn" id="sv-ok">Guardar</button>
+      ${h.saving ? '<button class="link small danger" id="sv-del" style="margin:0 auto">Sacar el ahorro</button>' : ''}</div>`);
+  const calc = () => {
+    if (!smoke) return { per_day: +$('#sv-pd', el).value || 0 };
+    const cpd = +$('#sv-cpd', el).value || 0, price = +$('#sv-price', el).value || 0, pack = +$('#sv-pack', el).value || 20;
+    return { per_day: pack > 0 ? cpd / pack * price : 0, cpd, price, pack };
+  };
+  const prev = () => { const c = calc(), d = h.total_clean || 0;
+    $('#sv-prev', el).innerHTML = c.per_day > 0 ? `≈ <b>${money(c.per_day)}</b> por día · <b>${money(c.per_day * 30)}</b> por mes · <b>${money(c.per_day * 365)}</b> por año${d ? `<br>${d === 1 ? 'Con tu primer día sin' : `Con tus ${d} días sin`}, ya ahorraste <b>${money(c.per_day * d)}</b> 💪` : ''}` : '<span class="muted">Completá los datos y te mostramos la cuenta.</span>'; };
+  el.querySelectorAll('input').forEach(i => i.oninput = prev); prev();
+  $('#sv-ok', el).onclick = async (e) => {
+    const c = calc(); if (!(c.per_day > 0)){ toast('Completá los datos'); return; }
+    e.target.disabled = true;
+    try { S.me.habits = await rpc('api_set_saving', { ...P(), p_habit: h.id, p_saving: c }); closeSheet(); (after || renderMain)(); toast(`💰 Listo: ${money(c.per_day)} por día que no ${smoke ? 'fumás' : 'gastás'}`, 3500); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+  const del = $('#sv-del', el); if (del) del.onclick = async () => { try { S.me.habits = await rpc('api_set_saving', { ...P(), p_habit: h.id, p_saving: null }); closeSheet(); (after || renderMain)(); } catch(err){ toast(err.message); } };
 }
 const APP_RX = /insta|tiktok|tik tok|twitter|\bx\b|youtube|facebook|redes|reels|shorts|celu|pantalla|app|juego|whats/i;
 const appName = (name) => { const m = String(name).match(/instagram|tiktok|tik tok|twitter|youtube|facebook|whatsapp|reels|shorts/i); return m ? m[0].replace(/^./, c => c.toUpperCase()) : 'la app'; };
@@ -2147,7 +2188,8 @@ function quitSheet(h){
   const el = openSheet(ok ? `<div style="text-align:center"><div style="font-size:52px;line-height:1">${esc(h.emoji)}</div>
       <h2 style="margin-top:8px">${esc(h.name)}</h2><p class="muted">Llevás <b>${h.streak} ${h.streak === 1 ? 'día' : 'días'}</b> contando hoy. ¿Caíste hoy?</p></div>
       <div class="stack section"><button class="btn green" id="q-no">No, sigo firme 💪</button><button class="btn ghost" id="q-yes">Sí, hoy caí</button>
-      <p class="hint" style="text-align:center;margin:0">Si caés, la racha vuelve a cero, pero tu récord (${h.best || 0}) y tus ${h.total_clean || 0} días en total quedan.</p></div>`
+      <p class="hint" style="text-align:center;margin:0">Si caés, la racha vuelve a cero, pero tu récord (${h.best || 0}) y tus ${h.total_clean || 0} días en total quedan.</p>
+      <button class="link small" id="q-save" style="margin:4px auto 0">💰 ${h.saving ? 'Cambiar cuánto ahorro' : '¿Cuánto me ahorro? Calcularlo'}</button></div>`
     : `<h2>${esc(h.emoji)} ${esc(h.name)}</h2><p class="muted">Marcaste que hoy caíste.</p>
       <div class="stack section"><button class="btn" id="q-undo">Me equivoqué, no caí</button><button class="btn ghost" id="q-close">Dejarlo así</button></div>`);
   const send = async (failed) => {
@@ -2164,6 +2206,7 @@ function quitSheet(h){
   const yes = $('#q-yes', el); if (yes) yes.onclick = () => send(true);
   const un = $('#q-undo', el); if (un) un.onclick = () => send(false);
   const c = $('#q-close', el); if (c) c.onclick = closeSheet;
+  const qs = $('#q-save', el); if (qs) qs.onclick = () => savingSheet(h);
 }
 
 function wppText(hs = S.me.habits){
@@ -4022,6 +4065,7 @@ function habitEditor(h, groupId = null, after){
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
       if (!h && kind === 'evitar'){
         if (APP_RX.test(name)) setTimeout(() => appBlockSheet({ name }), 600);
+        else if (SMOKE_RX.test(name)) setTimeout(() => { const nh = S.me.habits.find(x => x.name === name && x.kind === 'evitar'); if (nh) savingSheet(nh); }, 900);
         else setTimeout(() => toast('Listo: se tilda solo cada día. Si caés, tocalo en Hoy.', 4000), 3900);
       }
       S.me = await rpc('api_me', P()); if (S.group) await loadGroup().catch(() => {}); closeSheet();
