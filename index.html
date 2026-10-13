@@ -133,6 +133,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .habit.free.done .flamebox.freebox{background:color-mix(in srgb,var(--hc) 30%,transparent)}
 .habit.free.done .check{background:var(--hc);border-color:var(--hc)}
 .lock{font-size:13px}
+.invcode{font-size:26px;font-weight:800;letter-spacing:.18em;background:var(--fire-soft);padding:6px 12px;border-radius:12px}
 .chip .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--fire);color:#fff;font-size:11px;font-weight:800;padding:0 5px;margin-left:2px}
 .undo.yest{display:block;color:var(--fire-ink);text-decoration:none;font-size:13px;margin-top:6px}
 .colors{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
@@ -775,7 +776,7 @@ async function boot(){
   if (q.toString() && !inAppBrowser()) history.replaceState(null, '', location.pathname);
   if (S.stravaBack && await finishStrava()) return;
 
-  if (!S.token){ renderWelcome(); maybeInstallGuide(); return; }
+  if (!S.token){ renderWelcome(); if (!S.pendingJoin) maybeInstallGuide(); return; }
   try {
     await loadMe();
   } catch(e){
@@ -905,7 +906,7 @@ function haveAccountSheet(){
     const raw = $('#h-link', el).value.trim(); let k = null, g = null;
     try { const u = new URL(raw); k = u.searchParams.get('k'); g = u.searchParams.get('g'); } catch(e){}
     if (!k && /^[0-9a-f-]{36}$/i.test(raw)) k = raw;
-    if (!g && /^[a-z]{6}$/i.test(raw)) g = raw;
+    if (!g && /^[a-z0-9]{6}$/i.test(raw)) g = raw;
     if (k){ LS.set('racha_token', k); location.replace(location.pathname); return; }
     if (g){ S.pendingJoin = g.toUpperCase(); closeSheet(); renderWelcome(); toast('Invitación lista. Poné tu apodo 🔥'); return; }
     toast('Ese link no parece de Fueguitos. Revisalo.');
@@ -1088,7 +1089,14 @@ function renderWelcome(){
     <div class="logo">${flameSVG(true)}</div>
     <h1>Fueguitos</h1>
     <p class="muted" style="font-size:18px;margin:8px 0 26px">Anotá tu deporte, lectura o meditación todos los días y mantené el fueguito con tus amigos.</p>
-    ${S.pendingJoin ? `<div class="banner fire">Te invitaron a un grupo. Poné tu apodo y entrás directo.</div>` : ''}
+    ${S.pendingJoin ? `<div class="card invite" style="text-align:left;margin-bottom:18px">
+      <div class="small muted" style="font-weight:700">Te invitaron a</div>
+      <div id="inv-name" style="font-size:22px;font-weight:800;margin:2px 0 10px">un grupo de Fueguitos 🔥</div>
+      <button class="btn" type="button" id="inv-have">Ya tengo cuenta: entrar y sumarme</button>
+      <div class="small" style="margin-top:12px">📲 <b>¿Ya tenés Fueguitos instalada?</b> Abrila desde el ícono → <b>Grupo → 🔑 Unirme</b> y pegá este código:</div>
+      <div class="row" style="gap:10px;margin-top:6px;align-items:center"><span class="invcode">${esc(S.pendingJoin)}</span><button class="btn sm ghost" type="button" id="inv-copy">Copiar código</button></div>
+      </div>
+      <div class="small muted" style="font-weight:700;margin-bottom:8px">¿Primera vez en Fueguitos? Creá tu cuenta:</div>` : ''}
     <form id="reg" class="stack">
       <label class="field"><span>¿Cómo te dicen?</span>
         <input class="input" id="nick" maxlength="30" autocomplete="username" placeholder="Tu nombre o apodo" required>
@@ -1102,6 +1110,11 @@ function renderWelcome(){
     <button class="link" id="have" style="margin:14px auto 0;display:block">Ya tengo cuenta: entrar con mi PIN</button>
   </div>`;
   $('#have').onclick = haveAccountSheet;
+  if (S.pendingJoin){
+    $('#inv-have').onclick = haveAccountSheet;
+    $('#inv-copy').onclick = async () => { (await copy(S.pendingJoin)) ? toast('Código copiado. Ahora abrí la app 👇', 3000) : toast(S.pendingJoin, 5000); };
+    rpc('api_group_preview', { p_code: S.pendingJoin }).then(g => { const n = $('#inv-name'); if (g && n) n.textContent = g.pair ? `una racha de a dos con ${g.admin} 👯` : `${g.emoji || '🔥'} ${g.name} · ${g.members} ${g.members === 1 ? 'miembro' : 'miembros'}`; }).catch(() => {});
+  }
   $('#reg').onsubmit = async (e) => {
     e.preventDefault();
     const nick = $('#nick').value.trim(); if (!nick) return;
@@ -3647,11 +3660,13 @@ function groupForms(){
   </div>`;
 }
 // Acepta el código solo o el link de invitación entero (…?g=ABCDEF).
+// Los códigos tienen 6 letras y números (ej: 7A9S7H). Sirve pegar el código, el link o el mensaje entero de WhatsApp.
 function parseGroupCode(raw){
   raw = String(raw || '').trim();
-  try { const u = new URL(raw); const g = u.searchParams.get('g'); if (g) return g.toUpperCase(); } catch(e){}
-  const m = raw.toUpperCase().match(/[A-Z]{6}/);
-  return m ? m[0] : '';
+  const q = raw.match(/[?&]g=([A-Za-z0-9]{6})(?![A-Za-z0-9])/); if (q) return q[1].toUpperCase();
+  if (/^[A-Za-z0-9]{6}$/.test(raw)) return raw.toUpperCase();
+  const toks = raw.split(/[^A-Za-z0-9]+/).filter(t => t.length === 6);
+  return toks.length ? toks[toks.length - 1].toUpperCase() : '';
 }
 async function joinByCode(code){
   const g = await rpc('api_join_group', { ...P(), p_code: code });
@@ -3661,7 +3676,7 @@ async function joinByCode(code){
 }
 function joinGroupSheet(){
   const el = openSheet(`<h2>🔑 Unirme a un grupo</h2>
-    <p class="muted">Poné el código de 6 letras o pegá el link de invitación.</p>
+    <p class="muted">Poné el código del grupo (6 letras y números) o pegá el link de invitación.</p>
     <div class="stack section">
       <input class="input code-in big" id="j-code" maxlength="200" placeholder="ABCDEF" autocapitalize="characters" autocomplete="off" autofocus>
       ${navigator.clipboard && navigator.clipboard.readText ? '<button class="btn ghost" id="j-paste">Pegar el link</button>' : ''}
@@ -3670,7 +3685,7 @@ function joinGroupSheet(){
   const inp = $('#j-code', el), go_ = $('#j-go', el);
   const tryJoin = async () => {
     const code = parseGroupCode(inp.value);
-    if (code.length !== 6){ toast('El código son 6 letras'); return; }
+    if (code.length !== 6){ toast('El código tiene 6 letras y números (ej: 7A9S7H)', 3500); return; }
     go_.disabled = true; go_.textContent = 'Uniéndote…';
     try { await joinByCode(code); } catch(err){ toast(err.message, 3500); go_.disabled = false; go_.textContent = 'Unirme'; }
   };
@@ -3801,7 +3816,7 @@ function bindGroupForms(root=document){
   $('#f-join', root).onsubmit = async (e) => {
     e.preventDefault(); const b = e.target.querySelector('button');
     const code = parseGroupCode($('#g-code', root).value);
-    if (code.length !== 6){ toast('El código son 6 letras'); return; }
+    if (code.length !== 6){ toast('El código tiene 6 letras y números (ej: 7A9S7H)', 3500); return; }
     b.disabled = true;
     try { await joinByCode(code); } catch(err){ toast(err.message, 3500); b.disabled = false; }
   };
