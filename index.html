@@ -3784,9 +3784,18 @@ function rulesSheet(h, after){
         <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito. Solo te avisamos cuando ya no te alcanzan los días.</div></div>`}
       <div id="ru-fixed" class="stack">${rulesFields(h.days, wk0 ? 0 : h.rest_per_week)}</div>
       ${h.kind === 'evitar' ? '<style>#layer .rest-field{display:none}</style><p class="hint" style="margin:0">En los hábitos para dejar algo no hay descansos.</p>' : ''}
+      ${h.kind === 'evitar' || !h.max_ice ? '' : '<p class="hint" id="ru-ice" style="margin:0"></p>'}
       ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
       <button class="btn" id="ru-save">Guardar</button></div>`);
   bindRules(el);
+  const base = h.base_ice || h.ice_every, defN = (h.default_days || []).length || 7;
+  const paintIce = () => {
+    const ic = $('#ru-ice', el); if (!ic) return;
+    const n = mode === 'week' ? times : readRules(el).days.length - readRules(el).rest;
+    const every = Math.max(1, Math.round(base * n / defN));
+    ic.innerHTML = `🧊 Con ${n === 1 ? '1 vez' : `${n} veces`} por semana, ganás <b>un hielito cada ${every} fueguitos</b>.`;
+  };
+  el.addEventListener('click', () => setTimeout(paintIce));
   const paintMode = () => {
     el.querySelectorAll('[data-rm]').forEach(b => b.classList.toggle('on', b.dataset.rm === mode));
     el.querySelectorAll('[data-rw]').forEach(b => b.classList.toggle('on', +b.dataset.rw === times));
@@ -3795,9 +3804,10 @@ function rulesSheet(h, after){
   };
   el.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { mode = b.dataset.rm; paintMode(); });
   el.querySelectorAll('[data-rw]').forEach(b => b.onclick = () => { times = +b.dataset.rw; paintMode(); });
-  paintMode();
+  paintMode(); paintIce();
   const save = async (days, rest) => {
-    try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: days, p_rest: rest }); closeSheet(); (after || renderMain)(); toast(`Listo: ${ruleText(days, rest)}`); }
+    try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: days, p_rest: rest }); closeSheet(); (after || renderMain)();
+      const nh = S.me.habits.find(x => x.id === h.id); toast(`Listo: ${ruleText(days, rest)}${nh && nh.max_ice && nh.kind !== 'evitar' ? ` · hielito cada ${nh.ice_every}` : ''}`, 3500); }
     catch(e){ toast(e.message); }
   };
   $('#ru-save', el).onclick = () => { if (mode === 'week') save([0, 1, 2, 3, 4, 5, 6], 7 - times); else { const r = readRules(el); save(r.days, r.rest); } };
