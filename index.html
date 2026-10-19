@@ -626,7 +626,7 @@ const ERRORS = {
   GRUPO_LLENO: 'Esa racha de a dos ya tiene a sus dos personas.',
   NO_EXISTE: 'No encontramos a nadie con ese apodo. Fijate cómo lo escribió.',
   YA_AMIGOS: 'Ya son amigos 🤝',
-  SIN_MONEDAS: 'Te faltan monedas. Cada fueguito que anotás suma una 🪙',
+  SIN_MONEDAS: 'Te faltan diamantes. Cada fueguito que anotás suma uno 💎',
   HUEVO: 'Primero tiene que nacer tu fueguito 🥚',
   YA_EMPUJASTE: 'Ya le mandaste un empujón hoy. Mañana podés de nuevo.',
   FOTO_MUY_GRANDE: 'La foto es muy pesada. Probá con otra.',
@@ -1228,7 +1228,7 @@ function unlockSheet(ids){
 function hatchSheet(){
   vibrate([40, 80, 40, 80, 60]); beep(523, .12); setTimeout(() => beep(659, .12), 130); setTimeout(() => beep(784, .2), 260);
   const el = openSheet(`<div style="text-align:center"><div class="hatch">${userAv(S.me.user.nick, { h: true, eq: {} }, 128)}</div>
-      <h2 style="margin-top:10px">¡Nació tu fueguito! 🎉</h2><p class="muted">Ahora es tu avatar en la app. Cada fueguito que anotás te da una moneda 🪙 para comprarle cosas (de regalo, 10). Y si sostenés un hábito 7, 21, 45 y 66 días seguidos, desbloqueás muñequitos de su temática.</p></div>
+      <h2 style="margin-top:10px">¡Nació tu fueguito! 🎉</h2><p class="muted">Ahora es tu avatar en la app. Cada fueguito que anotás te da un diamante 💎 para comprarle cosas (de regalo, 10). Y si sostenés un hábito 7, 21, 45 y 66 días seguidos, desbloqueás muñequitos de su temática.</p></div>
     <div class="stack section"><label class="field"><span>¿Cómo se llama?</span><input class="input" id="hn" maxlength="20" placeholder="Ej: Chispita"></label>
       <button class="btn" id="hn-ok">Ir a la tienda</button><button class="btn ghost" id="hn-later">Después</button></div>`);
   const save = async () => { const n = $('#hn', el).value.trim(); if (n) try { S.av = await rpc('api_avatar_name', { ...P(), p_name: n }); S.me.user.avatar.name = n; } catch(e){} };
@@ -1253,9 +1253,9 @@ function shopSheet(slot = 'p'){
     const pick = sel && cat[2].find(x => x[0] === sel);
     const look = pick ? { ...eq, [slot]: sel } : eq;
     const cur = eq[slot] || (slot === 'c' ? 'c:naranja' : slot === 'p' ? 'p:chispita' : '');
-    box.innerHTML = `<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">🪙 ${a.coins}</span></div>
+    box.innerHTML = `<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">💎 ${a.coins}</span></div>
     <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq: look }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${pick ? `Probándote: ${esc(label(pick[0], pick[1]))}` : esc(a.name || 'Tu fueguito')}</div></div>
-    ${pick ? `<div class="shopbuy">${pick[2] > a.coins ? `<button class="btn" disabled>Te faltan ${pick[2] - a.coins} 🪙</button>` : `<button class="btn" id="sb-buy">Comprar ${esc(label(pick[0], pick[1]))} · 🪙 ${pick[2]}</button>`}<button class="btn ghost" id="sb-no">Mejor no</button></div>` : ''}
+    ${pick ? `<div class="shopbuy">${pick[2] > a.coins ? `<button class="btn" disabled>Te faltan ${pick[2] - a.coins} 💎</button>` : `<button class="btn" id="sb-buy">Comprar ${esc(label(pick[0], pick[1]))} · 💎 ${pick[2]}</button>`}<button class="btn ghost" id="sb-no">Mejor no</button></div>` : ''}
     <div class="chips">${[['p', 'Personaje'], ...AV_SHOP].map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
     ${slot === 'p' ? '<p class="small muted" style="margin:0 0 10px">Cada hábito tiene su temática. Se desbloquean con 7, 21, 45 y 66 días seguidos de ese hábito, contando uno por día. A los 66 días, según la ciencia, ya es automático 🧠</p>' : ''}
     ${slot !== 'p' && slot !== 'c' ? '' : slot === 'c' && isChar ? '<p class="small muted" style="margin:0 0 10px">Tiñe a tu muñequito. Original le deja su color de siempre.</p>' : ''}
@@ -1263,8 +1263,8 @@ function shopSheet(slot = 'p'){
       ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = cur === id;
         if (slot === 'p' && !has){ const c = CHARS[id], run = runOf(c[2]);
           return `<button class="shopit lock" data-lock="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, p: id } }, 56)}</span><b>${name}</b><span class="small">🔒 ${c[3]} días</span><span class="small muted">vas ${Math.min(run, c[3])}</span></button>`; }
-        return `<button class="shopit ${on ? 'on' : ''} ${sel === id ? 'sel' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${esc(label(id, name))}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `🪙 ${price}`}</span></button>`; }).join('')}</div>
-    <p class="hint">Tocá algo para probártelo. Cada fueguito que anotás te da una moneda.</p>
+        return `<button class="shopit ${on ? 'on' : ''} ${sel === id ? 'sel' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${esc(label(id, name))}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `💎 ${price}`}</span></button>`; }).join('')}</div>
+    <p class="hint">Tocá algo para probártelo. Cada fueguito que anotás te da un diamante.</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`;
     box.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
     box.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { slot = b.dataset.slot; sel = null; paint(); });
@@ -2375,7 +2375,7 @@ async function quickAnotar(h){
 // Anotar un día pasado (hasta 3 días atrás). Si ese día había cortado la racha, el servidor la recupera.
 const doneOn = (h, day) => day === S.me.today ? !!h.done_today : (S.history || []).some(x => x.habit_id === h.id && x.day === day && x.kind === 'hecho');
 const canBackfill = (day) => day < S.me.today && day >= addDays(S.me.today, -3);
-// Días viejos (más de 3 días, hasta un año): se pintan en el calendario, sin tocar la racha ni las monedas.
+// Días viejos (más de 3 días, hasta un año): se pintan en el calendario, sin tocar la racha ni los diamantes.
 const canPaint = (day) => day < addDays(S.me.today, -3) && day >= addDays(S.me.today, -365);
 const paintedOn = (h, day) => (S.history || []).some(x => x.habit_id === h.id && x.day === day && x.kind === 'pintado');
 async function paintDay(h, day, on, after){
@@ -4502,7 +4502,7 @@ function renderPerfil(){
   const best = me.habits.reduce((a,h) => Math.max(a, h.best ?? h.streak), 0);
   $('#main').innerHTML = `
     <div class="top"><div class="row">${userAv(me.user.nick, me.user.avatar, 56)}<h1>${esc(me.user.nick)}</h1></div></div>
-    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">🪙 ${S.av.coins} monedas · 1 por fueguito</div>${nextCharLine()}<button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
+    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">💎 ${S.av.coins} ${S.av.coins === 1 ? 'diamante' : 'diamantes'} · 1 por fueguito</div>${nextCharLine()}<button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
       : eggCard()) : ''}
 
     <div class="section"><div class="section-title"><h2>Mi calendario</h2><span class="small muted">Tus hábitos, con su color</span></div>
