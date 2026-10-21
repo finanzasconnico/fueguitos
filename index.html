@@ -160,8 +160,15 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .ava .ava-body{left:50%;top:14%;font-size:.66em}
 .shopit.lock .prev{filter:grayscale(1) brightness(.6);opacity:.45}
 .shopit.lock b{color:var(--muted)}
+.shopit .prev .ava{margin:3px}
 .ava .ava-g{left:50%;top:50%;font-size:.3em}
-.ava .ava-x{left:86%;top:60%;font-size:.3em}
+.ava .ava-x{left:84%;top:58%;font-size:.34em}
+.emogrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.emogrid .emo{display:grid;justify-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:var(--card);border:1px solid var(--line);font:inherit;color:inherit}
+.emogrid .emo span{font-size:28px;line-height:1.1}
+.emogrid .emo small{font-size:11px;font-weight:700;color:var(--muted)}
+.emogrid .emo.lock span{filter:grayscale(.6);opacity:.7}
+.react.more{font-weight:800;color:var(--muted)}
 /* Arcoíris en un muñequito: el color va girando despacio. */
 .ava .ava-rb{animation:avrb 6s linear infinite}
 @keyframes avrb{from{filter:sepia(1) saturate(4) hue-rotate(0deg)}to{filter:sepia(1) saturate(4) hue-rotate(360deg)}}
@@ -1134,18 +1141,31 @@ function renderWelcome(){
 
 /* ============ El muñequito: huevito → fueguito con accesorios ============ */
 const FLAME_COLORS = { 'c:naranja': ['#FF6A1F', '#FFC23D'], 'c:azul': ['#2F7DF6', '#8FD3FF'], 'c:violeta': ['#8B4DFF', '#E2B8FF'],
-  'c:verde': ['#1FB463', '#B9F27C'], 'c:dorado': ['#E8A300', '#FFF1A8'], 'c:arcoiris': ['url(#ava-rb)', '#FFFFFF'] };
+  'c:verde': ['#1FB463', '#B9F27C'], 'c:rosa': ['#FF4FA3', '#FFC2E0'], 'c:celeste': ['#2BB5E8', '#C4F0FF'], 'c:rojo': ['#E5262B', '#FF9F7A'],
+  'c:turquesa': ['#12B5A6', '#A8F5E6'], 'c:negro': ['#2A2A35', '#8A8AA0'], 'c:dorado': ['#E8A300', '#FFF1A8'], 'c:arcoiris': ['url(#ava-rb)', '#FFFFFF'] };
 const AV_BG = { 'b:cielo': 'linear-gradient(160deg,#BFE6FF,#E9F7FF)', 'b:bosque': 'linear-gradient(160deg,#9BD97A,#E3F6D3)', 'b:atardecer': 'linear-gradient(160deg,#FF9A6B,#FFD86B)',
-  'b:noche': 'linear-gradient(160deg,#1E2350,#4B3B8F)', 'b:fuego': 'linear-gradient(160deg,#FF3D00,#FFB300)' };
-const AV_EMOJI = { 'h:gorra': '🧢', 'h:casco': '⛑️', 'h:galera': '🎩', 'h:graduado': '🎓', 'h:corona': '👑',
-  'g:lentes': '👓', 'g:sol': '🕶️', 'g:antiparras': '🥽',
-  'x:pelota': '⚽', 'x:libro': '📚', 'x:auris': '🎧', 'x:pesa': '🏋️', 'x:guitarra': '🎸', 'x:trofeo': '🏆' };
+  'b:noche': 'linear-gradient(160deg,#1E2350,#4B3B8F)', 'b:fuego': 'linear-gradient(160deg,#FF3D00,#FFB300)',
+  'b:menta': 'linear-gradient(160deg,#A8F0D8,#E8FFF6)', 'b:chicle': 'linear-gradient(160deg,#FFB3D9,#FFE6F2)', 'b:arena': 'linear-gradient(160deg,#F2D9A6,#FFF6E0)',
+  'b:mar': 'linear-gradient(160deg,#1E88E5,#7FDBFF)', 'b:lava': 'linear-gradient(160deg,#3A0A0A,#E8380D)', 'b:aurora': 'linear-gradient(160deg,#0B3D3A,#3DDC97 55%,#8E7CFF)',
+  'b:galaxia': 'radial-gradient(circle at 30% 25%,#FFFFFF 0 1.5%,transparent 2%),radial-gradient(circle at 70% 70%,#FFFFFF 0 1%,transparent 1.5%),linear-gradient(160deg,#0D0628,#4A1A8C 60%,#C2185B)',
+  'b:oro': 'linear-gradient(160deg,#B8860B,#FFE57A 50%,#C9971C)' };
+// El marco: el circulito que rodea al muñequito.
+const AV_RING = { 'r:blanco': '#FFFFFF', 'r:negro': '#1C1C24', 'r:naranja': '#FF6A1F', 'r:celeste': '#5CC8F5', 'r:rosa': '#FF6FB5', 'r:verde': '#2BC46A',
+  'r:violeta': '#8B4DFF', 'r:rojo': '#E5262B', 'r:plata': '#B9C2CC', 'r:dorado': '#E8B100' };
+const AV_EMOJI = { 'x:pelota': '⚽', 'x:libro': '📚', 'x:estrella': '⭐', 'x:corazon': '❤️', 'x:planta': '🌱', 'x:cafe': '☕', 'x:trebol': '🍀',
+  'x:auris': '🎧', 'x:basket': '🏀', 'x:tenis': '🎾', 'x:bici': '🚲', 'x:camara': '📷', 'x:joystick': '🎮', 'x:diana': '🎯',
+  'x:pesa': '🏋️', 'x:fuego': '🔥', 'x:rayo': '⚡', 'x:guitarra': '🎸', 'x:trofeo': '🏆', 'x:medalla': '🥇', 'x:diamante': '💎' };
 const AV_SHOP = [
-  ['c', 'Color', [['c:naranja', 'Naranja', 0], ['c:azul', 'Azul', 15], ['c:violeta', 'Violeta', 15], ['c:verde', 'Verde', 15], ['c:dorado', 'Dorado', 40], ['c:arcoiris', 'Arcoíris', 80]]],
-  ['h', 'Gorros', [['h:gorra', 'Gorra', 10], ['h:casco', 'Casco', 15], ['h:galera', 'Galera', 20], ['h:graduado', 'Birrete', 25], ['h:corona', 'Corona', 60]]],
-  ['g', 'Anteojos', [['g:lentes', 'Lentes', 10], ['g:sol', 'De sol', 15], ['g:antiparras', 'Antiparras', 15]]],
-  ['x', 'Accesorios', [['x:pelota', 'Pelota', 10], ['x:libro', 'Libros', 10], ['x:auris', 'Auriculares', 15], ['x:pesa', 'Pesas', 20], ['x:guitarra', 'Guitarra', 25], ['x:trofeo', 'Trofeo', 50]]],
-  ['b', 'Fondo', [['b:cielo', 'Cielo', 10], ['b:bosque', 'Bosque', 15], ['b:atardecer', 'Atardecer', 15], ['b:noche', 'Noche', 20], ['b:fuego', 'Fuego', 30]]],
+  ['c', 'Color', [['c:naranja', 'Naranja', 0], ['c:azul', 'Azul', 15], ['c:celeste', 'Celeste', 15], ['c:violeta', 'Violeta', 15], ['c:rosa', 'Rosa', 15], ['c:rojo', 'Rojo', 15],
+    ['c:verde', 'Verde', 15], ['c:turquesa', 'Turquesa', 15], ['c:negro', 'Negro', 25], ['c:dorado', 'Dorado', 40], ['c:arcoiris', 'Arcoíris', 80]]],
+  ['b', 'Fondo', [['b:cielo', 'Cielo', 10], ['b:menta', 'Menta', 10], ['b:chicle', 'Chicle', 10], ['b:arena', 'Arena', 10], ['b:bosque', 'Bosque', 15], ['b:atardecer', 'Atardecer', 15],
+    ['b:mar', 'Mar', 15], ['b:noche', 'Noche', 20], ['b:lava', 'Lava', 20], ['b:fuego', 'Fuego', 30], ['b:aurora', 'Aurora', 30], ['b:galaxia', 'Galaxia', 40], ['b:oro', 'Oro', 60]]],
+  ['r', 'Marco', [['r:blanco', 'Blanco', 10], ['r:negro', 'Negro', 10], ['r:naranja', 'Naranja', 10], ['r:celeste', 'Celeste', 10], ['r:rosa', 'Rosa', 10], ['r:verde', 'Verde', 10],
+    ['r:violeta', 'Violeta', 15], ['r:rojo', 'Rojo', 15], ['r:plata', 'Plata', 25], ['r:dorado', 'Dorado', 40]]],
+  ['x', 'Accesorio', [['x:pelota', 'Pelota', 10], ['x:libro', 'Libros', 10], ['x:estrella', 'Estrella', 10], ['x:corazon', 'Corazón', 10], ['x:planta', 'Plantita', 10], ['x:cafe', 'Café', 10],
+    ['x:trebol', 'Trébol', 10], ['x:auris', 'Auriculares', 15], ['x:basket', 'Básquet', 15], ['x:tenis', 'Tenis', 15], ['x:bici', 'Bici', 15], ['x:camara', 'Cámara', 15],
+    ['x:joystick', 'Joystick', 15], ['x:diana', 'Diana', 15], ['x:pesa', 'Pesas', 20], ['x:fuego', 'Fueguito', 20], ['x:rayo', 'Rayo', 20], ['x:guitarra', 'Guitarra', 25],
+    ['x:trofeo', 'Trofeo', 50], ['x:medalla', 'Medalla', 50], ['x:diamante', 'Diamante', 70]]],
 ];
 const THEMES = { agua: ['💧', 'Agua'], velocidad: ['⚡', 'Velocidad'], sabiduria: ['📚', 'Sabiduría'], zen: ['🧘', 'Zen'],
   noche: ['🌙', 'Noche'], idiomas: ['🗣️', 'Idiomas'], fuerza: ['🛡️', 'Fuerza'], fuego: ['🔥', 'Fuego'] };
@@ -1186,12 +1206,16 @@ function avFitStyle(ch, slot){
 }
 // Los muñequitos son emojis: el color se les da tiñéndolos (Naranja = su color original).
 const AV_TINT = { 'c:azul': 'sepia(1) saturate(4) hue-rotate(175deg)', 'c:violeta': 'sepia(1) saturate(4) hue-rotate(225deg)',
-  'c:verde': 'sepia(1) saturate(3) hue-rotate(80deg)', 'c:dorado': 'sepia(1) saturate(5) hue-rotate(5deg) brightness(1.05)' };
+  'c:verde': 'sepia(1) saturate(3) hue-rotate(80deg)', 'c:dorado': 'sepia(1) saturate(5) hue-rotate(5deg) brightness(1.05)',
+  'c:rosa': 'sepia(1) saturate(4) hue-rotate(285deg) brightness(1.1)', 'c:celeste': 'sepia(1) saturate(3) hue-rotate(160deg) brightness(1.15)',
+  'c:rojo': 'sepia(1) saturate(7) hue-rotate(320deg) brightness(.95)', 'c:turquesa': 'sepia(1) saturate(3) hue-rotate(120deg)',
+  'c:negro': 'grayscale(1) brightness(.55) contrast(1.3)' };
 // El muñequito de alguien, o la letra si todavía no nació.
 function userAv(nick, av, size = 36){
   if (!av || !av.h) return `<span class="avatar" style="background:${avColor(nick)};width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px">${esc(nick.slice(0, 1).toUpperCase())}</span>`;
   const eq = av.eq || {}, ch = eq.p && eq.p !== 'p:chispita' && CHARS[eq.p];
-  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}" role="img" aria-label="${esc(av.name || nick)}">${ch ? `<i class="ava-body${eq.c === 'c:arcoiris' ? ' ava-rb' : ''}"${AV_TINT[eq.c] ? ` style="filter:${AV_TINT[eq.c]}"` : ''}>${ch[0]}</i>` : flameFace(eq.c)}${eq.h ? `<i class="ava-h"${ch ? avFitStyle(eq.p.slice(2), 'h') : ''}>${AV_EMOJI[eq.h]}</i>` : ''}${eq.g ? `<i class="ava-g"${ch ? avFitStyle(eq.p.slice(2), 'g') : ''}>${AV_EMOJI[eq.g]}</i>` : ''}${eq.x ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
+  const ring = AV_RING[eq.r] ? `;box-shadow:0 0 0 ${Math.max(2, Math.round(size * .05))}px ${AV_RING[eq.r]}` : '';
+  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}${ring}" role="img" aria-label="${esc(av.name || nick)}">${ch ? `<i class="ava-body${eq.c === 'c:arcoiris' ? ' ava-rb' : ''}"${AV_TINT[eq.c] ? ` style="filter:${AV_TINT[eq.c]}"` : ''}>${ch[0]}</i>` : flameFace(eq.c)}${eq.x && AV_EMOJI[eq.x] ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
 }
 async function loadAvatar(){
   try {
@@ -1765,7 +1789,11 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-10-13', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-10-20', title: '✨ Novedades en Fueguitos', items: [
+  '🎨 <b>Tienda nueva del muñequito</b>: más colores, fondos y accesorios, y un <b>marco</b> de color alrededor. Los gorros y anteojos se fueron (si tenías uno, te devolvimos las monedas).',
+  '😍 <b>Más emojis</b> para reaccionar a las fotos: tocá ＋ abajo de una foto. 🔥💪👏😂 son gratis; los demás los comprás una vez con monedas.',
+  '📌 <b>En mi perfil</b>: el libro que estás leyendo o un récord tuyo, en Perfil → En mi perfil. Lo ven tus amigos y todos tus grupos.',
+  '🔢 En el grupo, a los que van <b>X veces por semana</b> se les ve cuántas les faltan, y ya no aparecen en "faltan" si todavía tienen días.',
   '💰 <b>Cuánto te ahorrás</b>: en un hábito de dejar algo (como Sin fumar), poné cuánto fumabas y lo que sale el atado, y te mostramos la plata que vas ahorrando. Lo ves solo vos.',
   '👥 <b>Amigos</b>: en Grupo → 👥 Amigos ves a todos tus amigos, un ranking de rachas y su perfil. Los de tus grupos ya están; al resto lo agregás con su apodo.',
   '📩 Desde el perfil de un amigo lo <b>invitás a tus grupos</b> o arman una <b>racha de a dos</b>. Y si un grupo es 🔓 abierto, podés pedir sumarte.',
@@ -2611,8 +2639,10 @@ function renderGrupo(){
   const gc = $('#gcal'); if (gc) gc.onclick = () => groupCalendarSheet(G);
   loadAch(G);
   document.querySelectorAll('[data-react]').forEach(b => b.onclick = async () => {
+    if (!reactOwned(b.dataset.e)){ reactSheet(b.dataset.react); return; }
     try { await rpc('api_react', { ...P(), p_photo: b.dataset.react, p_emoji: b.dataset.e }); await loadGroup(); renderGrupo(); } catch(e){ toast(e.message); }
   });
+  document.querySelectorAll('[data-reactmore]').forEach(b => b.onclick = () => reactSheet(b.dataset.reactmore));
   document.querySelectorAll('[data-delphoto]').forEach(b => b.onclick = () => confirmSheet('¿Borrar tu foto?', 'Se deja de ver en todos tus grupos. Tu racha no cambia.', 'Borrar foto', async () => {
     await rpc('api_delete_photo', { ...P(), p_photo: b.dataset.delphoto }); await loadGroup(); renderGrupo(); toast('Foto borrada');
   }));
@@ -2674,14 +2704,14 @@ function privateHint(G){
 function benchBanner(G){
   if (!G.group.me_bench) return '';
   const me = G.members.find(m => m.is_me) || {};
-  return `<div class="banner ice">🪑 <span>${me.bench_request ? 'Pediste volver. Falta que alguien del grupo te deje entrar.' : 'Estás en la banca: hace más de una semana que no prendés un fueguito. Tus rachas siguen, pero no contás para la racha del grupo.'}</span></div>
+  return `<div class="banner ice">🪑 <span>${me.bench_lit ? 'Volviste a anotar 🔥 Ya le avisamos al grupo: falta que alguien te saque de la banca.' : me.bench_request ? 'Pediste volver. Falta que alguien del grupo te deje entrar.' : 'Estás en la banca: hace más de una semana que no prendés un fueguito. Tus rachas siguen, pero no contás para la racha del grupo.'}</span></div>
     ${me.bench_request ? '' : '<button class="btn" id="bench-back" style="width:100%;margin-bottom:12px">Quiero volver</button>'}`;
 }
 function benchBlock(G){
   const b = G.members.filter(m => m.bench); if (!b.length) return '';
   return `<div class="section"><div class="section-title"><h2>🪑 En la banca</h2><span class="small muted">Más de 7 días sin fueguito</span></div>
     <div class="card">${b.map(m => `<div class="hrow bench"><div><div style="font-weight:800">${esc(m.nick)}${m.is_me ? ' (vos)' : ''}</div>
-      <div class="small muted">${m.bench_days} días sin fueguito${m.bench_request ? ' · 🙋 pide volver' : ''}</div></div>
+      <div class="small muted">${m.bench_lit ? '🔥 Volvió a anotar · quiere volver' : `${m.bench_days} días sin fueguito${m.bench_request ? ' · 🙋 pide volver' : ''}`}</div></div>
       ${!m.is_me && !G.group.me_bench && m.bench_request ? `<button class="btn sm" data-back="${m.id}">Dejalo volver</button>` : ''}</div>`).join('')}</div></div>`;
 }
 function benchBackSheet(G){
@@ -2746,7 +2776,7 @@ function grupoRecords(G){
 `;
 }
 /* ============ GRUPO · Compartido ============ */
-const KINDS = { musica: ['🎧', 'Música'], meditacion: ['🧘', 'Meditación'], libro: ['📚', 'Libros'], video: ['🎬', 'Videos'], otro: ['✨', 'Otros'] };
+const KINDS = { musica: ['🎧', 'Música'], libro: ['📚', 'Libros'], record: ['🏆', 'Récords'], meditacion: ['🧘', 'Meditación'], video: ['🎬', 'Videos'], otro: ['✨', 'Otros'] };
 let shareFilter = 'todo';
 async function renderShared(G){
   const box = $('#gsub'); if (!box) return;
@@ -2762,7 +2792,7 @@ async function renderShared(G){
     box.querySelectorAll('[data-sf]').forEach(b => b.onclick = () => { shareFilter = b.dataset.sf; paint(); });
     $('#sh-add', box).onclick = () => shareSheet(G);
     box.querySelectorAll('[data-like]').forEach(b => b.onclick = async () => { try { await rpc('api_share_like', { ...P(), p_id: b.dataset.like }); await loadShares(gid); paint(); } catch(e){ toast(e.message); } });
-    box.querySelectorAll('[data-shdel]').forEach(b => b.onclick = () => confirmSheet('¿Borrar esto?', 'Deja de verse en el grupo.', 'Borrar', async () => { await rpc('api_share_delete', { ...P(), p_id: b.dataset.shdel }); await loadShares(gid); renderGrupo(); }));
+    box.querySelectorAll('[data-shdel]').forEach(b => b.onclick = () => confirmSheet('¿Borrar esto?', 'Deja de verse en todos lados.', 'Borrar', async () => { await rpc('api_share_delete', { ...P(), p_id: b.dataset.shdel }); await loadShares(gid); S.myShares = undefined; renderGrupo(); }));
     const ra = $('#rec-add', box); if (ra) ra.onclick = () => recordSheet(null);
     box.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSheet(G.records.find(r => r.id === b.dataset.rec)));
   };
@@ -2770,39 +2800,58 @@ async function renderShared(G){
   if (!list) { await loadShares(gid); if (S.gsub === 'compartido' && S.groupId === gid) paint(); }
 }
 async function loadShares(gid){ try { S.shares[gid] = await rpc('api_shares', { ...P(), p_group: gid }); } catch(e){ S.shares[gid] = S.shares[gid] || []; toast(e.message); } }
-function shareRow(x){
+function shareRow(x, opts = {}){
   const [ic] = KINDS[x.kind] || KINDS.otro;
-  const canDel = x.mine || (S.group && S.group.group.is_admin);
+  const canDel = x.mine || (!x.all && !opts.noUser && S.group && S.group.group.is_admin);
   const safeUrl = x.url && /^https?:\/\//.test(x.url) ? x.url : '';
   return `<div class="share">
     <span class="ic" aria-hidden="true">${ic}</span>
     <div style="min-width:0;flex:1">
       ${safeUrl ? `<a class="stitle" href="${esc(safeUrl)}" target="_blank" rel="noopener">${esc(x.title)} ↗</a>` : `<div class="stitle">${esc(x.title)}</div>`}
-      <div class="small muted">${esc(x.user.nick)} · ${ago(x.created_at).replace('hace ', '')}${x.note ? ` · ${esc(x.note)}` : ''}</div>
+      <div class="small muted">${opts.noUser ? '' : `${esc(x.user.nick)} · `}${ago(x.created_at).replace('hace ', '')}${x.all && !opts.noUser ? ' · 🌐 en su perfil' : ''}${x.note ? ` · ${esc(x.note)}` : ''}</div>
       ${canDel ? `<button class="link small danger" data-shdel="${x.id}">Borrar</button>` : ''}
     </div>
     <button class="react ${x.liked ? 'mine' : ''}" data-like="${x.id}" aria-label="Me gusta">❤️${x.likes ? ' ' + x.likes : ''}</button>
   </div>`;
 }
-function shareSheet(G){
-  let kind = shareFilter !== 'todo' ? shareFilter : 'musica';
-  const el = openSheet(`<h2>Compartir con ${esc(G.group.name)}</h2>
+// G = el grupo desde donde se comparte, o null desde el perfil (va a todos los grupos).
+const KIND_PH = { musica: 'Ej: Mi playlist para correr', libro: 'Ej: Hábitos atómicos, de James Clear', record: 'Ej: 10 km en 52 minutos', meditacion: 'Ej: Meditación de 10 min', video: 'Ej: La rutina de abdominales', otro: 'Ej: La app de recetas que uso' };
+function mySharesBlock(){
+  const l = S.myShares;
+  if (!l) return '<div class="card"><p class="muted" style="margin:0">…</p></div>';
+  return `<div class="card">${l.length ? l.map(x => shareRow(x, { noUser: true })).join('') : '<p class="muted" style="margin:0">El libro que estás leyendo, un récord tuyo, tu playlist… Lo que pongas acá lo ven tus amigos y todos tus grupos.</p>'}</div>`;
+}
+function shareSheet(G, after){
+  let kind = G && shareFilter !== 'todo' ? shareFilter : G ? 'musica' : 'libro', where = G ? 'grupo' : 'todos';
+  const el = openSheet(`<h2>${G ? `Compartir con ${esc(G.group.name)}` : '📌 Sumar a mi perfil'}</h2>
+    ${G ? '' : '<p class="muted">Lo ven tus amigos y todos tus grupos, en Compartido.</p>'}
     <div class="stack section">
       <div class="chips" style="flex-wrap:wrap;margin:0">${Object.entries(KINDS).map(([k, v]) => `<button type="button" class="chip" data-k="${k}">${v[0]} ${v[1]}</button>`).join('')}</div>
       <label class="field"><span>Qué es</span><input class="input" id="s-t" maxlength="80" placeholder="Ej: Mi playlist para correr"></label>
       <label class="field"><span>Link (opcional)</span><input class="input" id="s-u" type="url" inputmode="url" placeholder="https://open.spotify.com/…"></label>
       <label class="field"><span>Comentario (opcional)</span><input class="input" id="s-n" maxlength="200" placeholder="Ej: ideal para la rutina de 12 min"></label>
+      ${G ? `<div class="field"><span>¿Dónde?</span><div class="chips" style="margin:0;flex-wrap:wrap"><button type="button" class="chip" data-w="grupo">Solo en ${esc(G.group.name)}</button><button type="button" class="chip" data-w="todos">🌐 En todos mis grupos</button></div>
+        <div class="hint" id="s-wh"></div></div>` : ''}
       <button class="btn" id="s-save">Compartir</button>
     </div>`);
-  const paintK = () => el.querySelectorAll('[data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
-  el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { kind = b.dataset.k; paintK(); });
+  const paintK = () => {
+    el.querySelectorAll('[data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === kind));
+    el.querySelectorAll('[data-w]').forEach(b => b.classList.toggle('on', b.dataset.w === where));
+    $('#s-t', el).placeholder = KIND_PH[kind] || '';
+    const wh = $('#s-wh', el); if (wh) wh.textContent = where === 'todos' ? 'Queda en tu perfil: lo ven tus amigos y todos tus grupos, también los que se sumen después.' : 'Lo ven solo los de este grupo.';
+  };
+  el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { kind = b.dataset.k; if (G && (kind === 'record' || kind === 'libro')) where = 'todos'; paintK(); });
+  el.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { where = b.dataset.w; paintK(); });
   paintK();
   $('#s-save', el).onclick = async (e) => {
     const t = $('#s-t', el).value.trim(); let u = $('#s-u', el).value.trim();
     if (!t){ toast('Poné qué es'); return; }
     if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
     e.target.disabled = true;
-    try { await rpc('api_share_add', { ...P(), p_group: G.group.id, p_kind: kind, p_title: t, p_url: u || null, p_note: $('#s-n', el).value || null }); await loadShares(G.group.id); closeSheet(); renderGrupo(); toast('Compartido con el grupo 🙌'); }
+    try { await rpc('api_share_add', { ...P(), p_group: where === 'todos' ? null : G.group.id, p_kind: kind, p_title: t, p_url: u || null, p_note: $('#s-n', el).value || null });
+      S.myShares = undefined; S.shares = {};
+      if (G) await loadShares(G.group.id);
+      closeSheet(); (after || renderGrupo)(); toast(where === 'todos' ? 'En tu perfil y en todos tus grupos 🙌' : 'Compartido con el grupo 🙌'); }
     catch(err){ toast(err.message); e.target.disabled = false; }
   };
 }
@@ -3487,25 +3536,64 @@ function nudgeBanner(G, members){
     <div class="nudges">${n.map(m => `<button class="chip" data-nudge="${m.id}" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '✓' : '👋'} ${esc(m.nick)}</button>`).join('')}</div>
     <div class="small muted" style="margin-top:6px">Tocá un nombre y le mandás un empujón.</div></div>`;
 }
+// "3 veces por semana": cuántas le faltan para cerrar la semana (lunes a domingo).
+function weekLeft(h){
+  const days = h.days || [], rest = h.rest_per_week || 0;
+  if (h.free || h.kind === 'evitar' || days.length !== 7 || rest < 3) return '';
+  const left = (7 - rest) - (h.week_done || 0);
+  return left > 0 ? ` <span class="small muted">· le ${left === 1 ? 'falta 1' : `faltan ${left}`} esta semana</span>` : ' <span class="small muted">· semana ✓</span>';
+}
 function memberRow(m){
   return `<div class="member" role="button" tabindex="0" data-member="${m.id}" aria-label="Ver a ${esc(m.nick)}">
     <div class="who">${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 36)}<div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}</div></div>
-    <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
+    <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${weekLeft(h)}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
   </div>`;
 }
+// Los 4 de siempre son gratis; los demás se compran una vez con monedas y quedan para siempre.
+const REACT_FREE = ['🔥', '💪', '👏', '😂'];
+const REACT_SHOP = [['❤️', 5], ['🙌', 5], ['😮', 5], ['🤣', 5], ['😍', 10], ['🫡', 10], ['🥶', 10], ['🍻', 10], ['🤯', 10], ['💀', 20], ['👑', 20], ['🐐', 20]];
+const reactOwned = (e) => REACT_FREE.includes(e) || !!(S.av && (S.av.owned || []).includes('e:' + e));
 function postCard(p){
   const mine = p.user.id === S.me.user.id;
-  const R = ['🔥','💪','👏','😂'];
+  const R = [...REACT_FREE, ...p.reactions.map(x => x.emoji).filter(e => !REACT_FREE.includes(e))];
   // Solo imágenes base64 limpias: la foto la sube otro miembro, no se confía en su contenido.
   const img = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(p.data)) ? `<img src="${p.data}" alt="Foto de ${esc(p.user.nick)}" loading="lazy">` : '';
   return `<article class="post">${img}<div class="pbody">
-    <div class="row between"><div class="who row" style="font-weight:800"><div class="avatar" style="background:${avColor(p.user.nick)};width:30px;height:30px;font-size:14px">${esc(p.user.nick.slice(0,1).toUpperCase())}</div>${esc(p.user.nick)}</div><span class="small muted">${ago(p.created_at)}</span></div>
+    <div class="row between"><div class="who row" style="font-weight:800">${userAv(p.user.nick, mine ? S.me.user.avatar : ((S.group && S.group.members.find(m => m.id === p.user.id)) || {}).avatar, 30)}${esc(p.user.nick)}</div><span class="small muted">${ago(p.created_at)}</span></div>
     <div class="meta">${p.habits.map(h => `<span class="pill fire">${esc(h.emoji)} ${esc(h.name)} · día ${h.streak ?? ''}</span>`).join('')}</div>
     ${p.note ? `<p style="margin:8px 0 0">${esc(p.note)}</p>` : ''}
-    <div class="reacts">${R.map(e => { const r = p.reactions.find(x => x.emoji === e); return `<button class="react ${r && r.mine ? 'mine' : ''}" data-react="${p.id}" data-e="${e}" aria-label="Reaccionar ${e}">${e}${r ? ' ' + r.count : ''}</button>`; }).join('')}</div>
+    <div class="reacts">${R.map(e => { const r = p.reactions.find(x => x.emoji === e); return `<button class="react ${r && r.mine ? 'mine' : ''}" data-react="${p.id}" data-e="${e}" aria-label="Reaccionar ${e}">${e}${r ? ' ' + r.count : ''}</button>`; }).join('')}<button class="react more" data-reactmore="${p.id}" aria-label="Más emojis">＋</button></div>
     <div class="row between" style="margin-top:8px"><span class="small muted">${expiresIn(p.created_at)}</span>${mine ? `<button class="link small danger" data-delphoto="${p.id}">Borrar</button>` : ''}</div>
   </div></article>`;
 }
+// Más emojis: los tuyos se usan con un toque; los otros se compran con monedas (quedan para siempre).
+async function reactSheet(photoId){
+  if (!S.av) await loadAvatar();
+  const el = openSheet('<div id="rs-in"></div>'), box = $('#rs-in', el);
+  const paint = () => {
+    const coins = S.av ? S.av.coins : 0;
+    box.innerHTML = `<div class="row between" style="align-items:center"><h2>Reaccionar</h2><span class="coins">🪙 ${coins}</span></div>
+      <p class="muted" style="margin-top:4px">${REACT_FREE.join(' ')} son gratis. Los demás los comprás una vez y quedan para siempre.</p>
+      <div class="emogrid">${[...REACT_FREE.map(e => [e, 0]), ...REACT_SHOP].map(([e, pr]) => { const has = reactOwned(e);
+        return `<button class="emo ${has ? '' : 'lock'}" data-em="${e}" data-pr="${pr}"><span>${e}</span><small>${has ? 'Usar' : `🪙 ${pr}`}</small></button>`; }).join('')}</div>
+      <p class="hint">Cada fueguito que anotás te da una moneda.</p>`;
+    box.querySelectorAll('[data-em]').forEach(b => b.onclick = async () => {
+      const e = b.dataset.em, pr = +b.dataset.pr;
+      try {
+        if (!reactOwned(e)){
+          if (pr > coins){ toast(`Te faltan ${pr - coins} 🪙. Cada fueguito suma una.`); return; }
+          b.disabled = true;
+          S.av = await rpc('api_avatar_buy', { ...P(), p_item: 'e:' + e });
+          vibrate([30, 60, 30]); toast(`🎉 Ya tenés ${e} para siempre`);
+        }
+        await rpc('api_react', { ...P(), p_photo: photoId, p_emoji: e });
+        closeSheet(); await loadGroup(); renderGrupo();
+      } catch(err){ toast(err.message); b.disabled = false; }
+    });
+  };
+  paint();
+}
+
 /* ============ Amigos ============ */
 // Amigos = los que comparten un grupo con vos (automático) + los que agregaste con su apodo.
 async function renderFriends(){
@@ -3556,6 +3644,7 @@ async function friendSheet(uid){
   const el = openSheet(`<div class="row" style="gap:14px;align-items:center">${userAv(p.nick, p.avatar, 72)}<div><h2>${esc(p.nick)}</h2>${p.avatar && p.avatar.name ? `<div class="small muted">${esc(p.avatar.name)}</div>` : ''}</div></div>
     <div class="card section">${hs.length ? hs.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
       <span class="small" style="font-weight:700">${h.free ? `✨ ${h.streak}` : `🔥 ${h.streak}${h.best > h.streak ? ` · 🏆 ${h.best}` : ''}`}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no tiene hábitos para mostrar.</p>'}</div>
+    <div id="fs-shares"></div>
     ${p.common.length ? `<div class="small" style="font-weight:700;margin-top:14px">Grupos en común</div><div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${p.common.map(g => `<button class="chip" data-fg="${g.id}">${g.pair ? '👯 Racha de a dos' : `${esc(g.emoji || '🔥')} ${esc(g.name)}`}</button>`).join('')}</div>` : ''}
     ${p.open.length ? `<div class="small" style="font-weight:700;margin-top:14px">🔓 Sus grupos abiertos</div><div class="stack" style="margin-top:6px">${p.open.map(g => `<div class="hrow"><div><b>${esc(g.emoji || '🔥')} ${esc(g.name)}</b><div class="small muted">${g.members} ${g.members === 1 ? 'miembro' : 'miembros'}</div></div>
       ${g.requested ? '<span class="pill">Pedido ✓</span>' : `<button class="btn sm" data-fjr="${g.id}">Pedir unirme</button>`}</div>`).join('')}</div>` : ''}
@@ -3565,6 +3654,12 @@ async function friendSheet(uid){
       ${pairWith ? '' : '<button class="btn ghost" id="fs-pair">👯 Armar una racha de a dos</button>'}
     </div>
     ${p.manual ? '<div style="text-align:center;margin-top:14px"><button class="link small danger" id="fs-rm">Quitar de amigos</button></div>' : ''}`);
+  rpc('api_profile_shares', { ...P(), p_user: p.id }).then(l => {
+    const box = $('#fs-shares', el); if (!box || !l.length) return;
+    const paintFs = () => { box.innerHTML = `<div class="small" style="font-weight:700;margin-top:14px">📌 En su perfil</div><div class="card" style="margin-top:6px">${l.map(x => shareRow(x, { noUser: true })).join('')}</div>`;
+      box.querySelectorAll('[data-like]').forEach(b => b.onclick = async () => { try { await rpc('api_share_like', { ...P(), p_id: b.dataset.like }); l = await rpc('api_profile_shares', { ...P(), p_user: p.id }); paintFs(); } catch(e){ toast(e.message); } }); };
+    paintFs();
+  }).catch(() => {});
   el.querySelectorAll('[data-fg]').forEach(b => b.onclick = () => { closeSheet(); S.gview = null; S.groupId = b.dataset.fg; LS.set('racha_group', S.groupId); S.group = null; go('grupo'); });
   el.querySelectorAll('[data-fjr]').forEach(b => b.onclick = async () => {
     b.disabled = true;
@@ -4514,6 +4609,10 @@ function renderPerfil(){
     </div>
     ${stravaBlock()}
 
+    <div class="section"><div class="section-title"><h2>📌 En mi perfil</h2><button class="link" id="ps-add">+ Agregar</button></div>
+      <div id="myshares">${mySharesBlock()}</div>
+    </div>
+
     <div class="section"><button class="week pair" id="year"><b>🎉 Tu ${me.today.slice(0, 4)} en Fueguitos</b><div class="small muted" style="margin-top:2px">Tus números del año, listos para compartir</div></button></div>
 
     <div class="section"><div class="section-title"><h2>Mis hábitos</h2><button class="link" id="h-new">+ Crear hábito</button></div>
@@ -4576,6 +4675,10 @@ function renderPerfil(){
   bindHabitToggles(renderPerfil);
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
   $('#year').onclick = yearSheet;
+  $('#ps-add').onclick = () => shareSheet(null, renderPerfil);
+  if (S.myShares === undefined){ S.myShares = null; rpc('api_profile_shares', { ...P(), p_user: null }).then(r => { S.myShares = r; if (S.tab === 'perfil') renderPerfil(); }).catch(() => { S.myShares = []; }); }
+  document.querySelectorAll('#myshares [data-shdel]').forEach(b => b.onclick = () => confirmSheet('¿Borrar esto?', 'Deja de verse en tu perfil y en tus grupos.', 'Borrar', async () => { await rpc('api_share_delete', { ...P(), p_id: b.dataset.shdel }); S.myShares = undefined; S.shares = {}; renderPerfil(); }));
+  document.querySelectorAll('#myshares [data-like]').forEach(b => b.remove());
   const mc = $('#mycal'); if (mc) myCalendar(mc);
   if (S.strava === undefined){ S.strava = null; loadStrava(); }
   bindStrava();
