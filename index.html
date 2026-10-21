@@ -1154,7 +1154,7 @@ const AV_RING = { 'r:blanco': '#FFFFFF', 'r:negro': '#1C1C24', 'r:naranja': '#FF
   'r:violeta': '#8B4DFF', 'r:rojo': '#E5262B', 'r:plata': '#B9C2CC', 'r:dorado': '#E8B100' };
 const AV_EMOJI = { 'x:pelota': '⚽', 'x:libro': '📚', 'x:estrella': '⭐', 'x:corazon': '❤️', 'x:planta': '🌱', 'x:cafe': '☕', 'x:trebol': '🍀',
   'x:auris': '🎧', 'x:basket': '🏀', 'x:tenis': '🎾', 'x:bici': '🚲', 'x:camara': '📷', 'x:joystick': '🎮', 'x:diana': '🎯',
-  'x:pesa': '🏋️', 'x:fuego': '🔥', 'x:rayo': '⚡', 'x:guitarra': '🎸', 'x:trofeo': '🏆', 'x:medalla': '🥇', 'x:diamante': '💎' };
+  'x:pesa': '🏋️', 'x:fuego': '🔥', 'x:rayo': '⚡', 'x:guitarra': '🎸', 'x:trofeo': '🏆', 'x:medalla': '🥇', 'x:diamante': '👑' };
 const AV_SHOP = [
   ['c', 'Color', [['c:naranja', 'Naranja', 0], ['c:azul', 'Azul', 15], ['c:celeste', 'Celeste', 15], ['c:violeta', 'Violeta', 15], ['c:rosa', 'Rosa', 15], ['c:rojo', 'Rojo', 15],
     ['c:verde', 'Verde', 15], ['c:turquesa', 'Turquesa', 15], ['c:negro', 'Negro', 25], ['c:dorado', 'Dorado', 40], ['c:arcoiris', 'Arcoíris', 80]]],
@@ -1165,7 +1165,7 @@ const AV_SHOP = [
   ['x', 'Accesorio', [['x:pelota', 'Pelota', 10], ['x:libro', 'Libros', 10], ['x:estrella', 'Estrella', 10], ['x:corazon', 'Corazón', 10], ['x:planta', 'Plantita', 10], ['x:cafe', 'Café', 10],
     ['x:trebol', 'Trébol', 10], ['x:auris', 'Auriculares', 15], ['x:basket', 'Básquet', 15], ['x:tenis', 'Tenis', 15], ['x:bici', 'Bici', 15], ['x:camara', 'Cámara', 15],
     ['x:joystick', 'Joystick', 15], ['x:diana', 'Diana', 15], ['x:pesa', 'Pesas', 20], ['x:fuego', 'Fueguito', 20], ['x:rayo', 'Rayo', 20], ['x:guitarra', 'Guitarra', 25],
-    ['x:trofeo', 'Trofeo', 50], ['x:medalla', 'Medalla', 50], ['x:diamante', 'Diamante', 70]]],
+    ['x:trofeo', 'Trofeo', 50], ['x:medalla', 'Medalla', 50], ['x:diamante', 'Corona', 70]]],
 ];
 const THEMES = { agua: ['💧', 'Agua'], velocidad: ['⚡', 'Velocidad'], sabiduria: ['📚', 'Sabiduría'], zen: ['🧘', 'Zen'],
   noche: ['🌙', 'Noche'], idiomas: ['🗣️', 'Idiomas'], fuerza: ['🛡️', 'Fuerza'], fuego: ['🔥', 'Fuego'] };
@@ -1790,8 +1790,8 @@ async function nudgeMates(b){
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
 const NEWS = { id: '2026-10-20', title: '✨ Novedades en Fueguitos', items: [
-  '🎨 <b>Tienda nueva del muñequito</b>: más colores, fondos y accesorios, y un <b>marco</b> de color alrededor. Los gorros y anteojos se fueron (si tenías uno, te devolvimos las monedas).',
-  '😍 <b>Más emojis</b> para reaccionar a las fotos: tocá ＋ abajo de una foto. 🔥💪👏😂 son gratis; los demás los comprás una vez con monedas.',
+  '🎨 <b>Tienda nueva del muñequito</b>: más colores, fondos y accesorios, y un <b>marco</b> de color alrededor. Los gorros y anteojos se fueron (si tenías uno, te devolvimos los diamantes).',
+  '😍 <b>Más emojis</b> para reaccionar a las fotos: tocá ＋ abajo de una foto. 🔥💪👏😂 son gratis; los demás los comprás una vez con diamantes 💎.',
   '📌 <b>En mi perfil</b>: el libro que estás leyendo o un récord tuyo, en Perfil → En mi perfil. Lo ven tus amigos y todos tus grupos.',
   '🔢 En el grupo, a los que van <b>X veces por semana</b> se les ve cuántas les faltan, y ya no aparecen en "faltan" si todavía tienen días.',
   '💰 <b>Cuánto te ahorrás</b>: en un hábito de dejar algo (como Sin fumar), poné cuánto fumabas y lo que sale el atado, y te mostramos la plata que vas ahorrando. Lo ves solo vos.',
@@ -3549,7 +3549,7 @@ function memberRow(m){
     <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${weekLeft(h)}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
   </div>`;
 }
-// Los 4 de siempre son gratis; los demás se compran una vez con monedas y quedan para siempre.
+// Los 4 de siempre son gratis; los demás se compran una vez con diamantes y quedan para siempre.
 const REACT_FREE = ['🔥', '💪', '👏', '😂'];
 const REACT_SHOP = [['❤️', 5], ['🙌', 5], ['😮', 5], ['🤣', 5], ['😍', 10], ['🫡', 10], ['🥶', 10], ['🍻', 10], ['🤯', 10], ['💀', 20], ['👑', 20], ['🐐', 20]];
 const reactOwned = (e) => REACT_FREE.includes(e) || !!(S.av && (S.av.owned || []).includes('e:' + e));
@@ -3566,22 +3566,22 @@ function postCard(p){
     <div class="row between" style="margin-top:8px"><span class="small muted">${expiresIn(p.created_at)}</span>${mine ? `<button class="link small danger" data-delphoto="${p.id}">Borrar</button>` : ''}</div>
   </div></article>`;
 }
-// Más emojis: los tuyos se usan con un toque; los otros se compran con monedas (quedan para siempre).
+// Más emojis: los tuyos se usan con un toque; los otros se compran con diamantes (quedan para siempre).
 async function reactSheet(photoId){
   if (!S.av) await loadAvatar();
   const el = openSheet('<div id="rs-in"></div>'), box = $('#rs-in', el);
   const paint = () => {
     const coins = S.av ? S.av.coins : 0;
-    box.innerHTML = `<div class="row between" style="align-items:center"><h2>Reaccionar</h2><span class="coins">🪙 ${coins}</span></div>
-      <p class="muted" style="margin-top:4px">${REACT_FREE.join(' ')} son gratis. Los demás los comprás una vez y quedan para siempre.</p>
+    box.innerHTML = `<div class="row between" style="align-items:center"><h2>Reaccionar</h2><span class="coins">💎 ${coins}</span></div>
+      <p class="muted" style="margin-top:4px">${REACT_FREE.join(' ')} son gratis. Los demás los comprás una vez con diamantes y quedan para siempre.</p>
       <div class="emogrid">${[...REACT_FREE.map(e => [e, 0]), ...REACT_SHOP].map(([e, pr]) => { const has = reactOwned(e);
-        return `<button class="emo ${has ? '' : 'lock'}" data-em="${e}" data-pr="${pr}"><span>${e}</span><small>${has ? 'Usar' : `🪙 ${pr}`}</small></button>`; }).join('')}</div>
-      <p class="hint">Cada fueguito que anotás te da una moneda.</p>`;
+        return `<button class="emo ${has ? '' : 'lock'}" data-em="${e}" data-pr="${pr}"><span>${e}</span><small>${has ? 'Usar' : `💎 ${pr}`}</small></button>`; }).join('')}</div>
+      <p class="hint">Cada fueguito que anotás te da un diamante.</p>`;
     box.querySelectorAll('[data-em]').forEach(b => b.onclick = async () => {
       const e = b.dataset.em, pr = +b.dataset.pr;
       try {
         if (!reactOwned(e)){
-          if (pr > coins){ toast(`Te faltan ${pr - coins} 🪙. Cada fueguito suma una.`); return; }
+          if (pr > coins){ toast(`Te faltan ${pr - coins} 💎. Cada fueguito suma uno.`); return; }
           b.disabled = true;
           S.av = await rpc('api_avatar_buy', { ...P(), p_item: 'e:' + e });
           vibrate([30, 60, 30]); toast(`🎉 Ya tenés ${e} para siempre`);
