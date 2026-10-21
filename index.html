@@ -185,6 +185,14 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .shopit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:16px;border:2px solid var(--line);background:var(--card);font:inherit;color:inherit}
 .shopit.on{border-color:var(--fire);background:var(--fire-soft)}
 .shopit.cant{opacity:.55}
+.incu{display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 10px 6px 6px;border-radius:14px;background:color-mix(in srgb,var(--fire) 8%,transparent);text-align:left}
+.incu-ch{position:relative;flex:none;width:34px;height:34px;font-size:30px;line-height:34px;text-align:center}
+.incu-ch i{position:absolute;inset:0;font-style:normal}
+.incu-ch .g{filter:brightness(0);opacity:.14}
+.incu-ch .c{clip-path:inset(calc(100% - var(--p)) 0 0 0);transition:clip-path .6s ease}
+.incu-t{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.incu-bar{display:block;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.incu-bar i{display:block;height:100%;border-radius:99px;background:var(--fire)}
 .shopit.sel{border-color:var(--fire);border-style:dashed}
 .shopbuy{display:grid;gap:8px;margin:0 0 12px}
 #shop-in.busy .shopit,#shop-in.busy .chip{pointer-events:none}
@@ -1218,6 +1226,7 @@ function userAv(nick, av, size = 36){
   return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${size}px;background:${AV_BG[eq.b] || 'var(--fire-soft)'}${ring}" role="img" aria-label="${esc(av.name || nick)}">${ch ? `<i class="ava-body${eq.c === 'c:arcoiris' ? ' ava-rb' : ''}"${AV_TINT[eq.c] ? ` style="filter:${AV_TINT[eq.c]}"` : ''}>${ch[0]}</i>` : flameFace(eq.c)}${eq.x && AV_EMOJI[eq.x] ? `<i class="ava-x">${AV_EMOJI[eq.x]}</i>` : ''}</span>`;
 }
 async function loadAvatar(){
+  loadIncubator();
   try {
     const a = await rpc('api_avatar', P()); const was = S.av; S.av = a;
     S.me.user.avatar = { h: a.hatched, eq: a.eq, name: a.name };
@@ -1225,6 +1234,24 @@ async function loadAvatar(){
     else if (a.new && a.new.length) unlockSheet(a.new);
     else if (!was || was.fed !== a.fed || was.coins !== a.coins){ if (S.tab === 'hoy') renderHoy(); if (S.tab === 'perfil') renderPerfil(); }
   } catch(e){}
+}
+// Incubadora: en cada hábito con racha, el próximo muñequito se va llenando de color día a día.
+async function loadIncubator(){
+  try {
+    const r = await rpc('api_incubator', P()), was = JSON.stringify(S.incu || null);
+    S.incu = Object.fromEntries((r || []).map(x => [x.habit_id, x]));
+    if (JSON.stringify(S.incu) !== was && S.tab === 'hoy' && !$('#layer').innerHTML) renderHoy();
+  } catch(e){}
+}
+function incubator(h){
+  const x = (S.incu || {})[h.id], c = x && CHARS[x.next];
+  if (!c || !x.run) return '';
+  const pct = Math.max(6, Math.min(100, Math.round(x.run / x.next_days * 100))), left = x.next_days - x.run;
+  return `<div class="incu" title="${esc(c[1])}: ${x.run} de ${x.next_days} días seguidos">
+    <span class="incu-ch" style="--p:${pct}%" aria-hidden="true"><i class="g">${c[0]}</i><i class="c">${c[0]}</i></span>
+    <span class="incu-t"><span class="small"><b>${esc(c[1])}</b> · ${x.run} de ${x.next_days} días seguidos</span>
+      <span class="incu-bar"><i style="width:${pct}%"></i></span>
+      <span class="small muted">${left === 1 ? (h.done_today ? '¡Mañana nace! 🐣' : '¡Si anotás hoy, nace! 🐣') : `Te faltan ${left} días seguidos`}</span></span></div>`;
 }
 // El muñequito más cercano a desbloquear.
 function nextCharLine(){
@@ -2056,6 +2083,7 @@ function habitCard(h){
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
       <div class="meta">${status}${h.deadline ? `<span class="pill">⏰ antes de las ${h.deadline}</span>` : ''}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
       ${h.deadline && !h.done_today && !lateNow ? (isEarly(h) ? `<div class="goal">Se anota desde las ${opensAt(h)}</div>` : '<div class="goal near">Un toque y queda anotado</div>') : goalLine(h)}
+      ${incubator(h)}
       ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
       ${yesterdayLink(h)}
     </div>
