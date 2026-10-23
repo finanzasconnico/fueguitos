@@ -190,12 +190,12 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .exrow input[type=number]{text-align:center;padding:0 2px}
 .exhead{margin-bottom:2px}.exhead span{font-size:12px;font-weight:800;color:var(--muted);text-align:center}.exhead span:first-child{text-align:left}
 .exrm{border:0;background:none;color:var(--muted);font-size:15px;padding:0;height:42px}
-.incu{display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 10px 6px 6px;border-radius:14px;background:color-mix(in srgb,var(--fire) 8%,transparent);text-align:left}
-.incu-ch{position:relative;flex:none;width:34px;height:34px;font-size:30px;line-height:34px;text-align:center}
+.incu{display:flex;align-items:center;gap:8px;margin-top:8px;padding:5px 10px 5px 6px;border-radius:14px;background:color-mix(in srgb,var(--fire) 8%,transparent);text-align:left}
+.incu-ch{position:relative;flex:none;width:28px;height:28px;font-size:24px;line-height:28px;text-align:center}
 .incu-ch i{position:absolute;inset:0;font-style:normal}
 .incu-ch .g{filter:brightness(0);opacity:.14}
 .incu-ch .c{clip-path:inset(calc(100% - var(--p)) 0 0 0);transition:clip-path .6s ease}
-.incu-t{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.incu-t{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
 .incu-bar{display:block;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
 .incu-bar i{display:block;height:100%;border-radius:99px;background:var(--fire)}
 .shopit.sel{border-color:var(--fire);border-style:dashed}
@@ -233,6 +233,7 @@ button.week.pair{width:100%;text-align:left;display:block;margin:0;font:inherit;
 button.undo{background:none;border:0;padding:0;display:block;margin-top:8px;font-family:inherit;cursor:pointer}
 .goal{font-size:13px;font-weight:700;color:var(--muted);margin-top:6px}
 .goal.near{color:var(--fire-ink)}
+.goal.bad{color:var(--danger)}
 .check.x{background:var(--fire);border-color:var(--fire)}
 .flamebox{position:relative;width:74px;height:78px;display:grid;place-items:center}
 .flamebox svg{width:58px;height:72px}
@@ -1251,12 +1252,11 @@ async function loadIncubator(){
 function incubator(h){
   const x = (S.incu || {})[h.id], c = x && CHARS[x.next];
   if (!c || !x.run) return '';
-  const pct = Math.max(6, Math.min(100, Math.round(x.run / x.next_days * 100))), left = x.next_days - x.run;
-  return `<div class="incu" title="${esc(c[1])}: ${x.run} de ${x.next_days} días seguidos">
+  const pct = Math.max(6, Math.min(100, Math.round(x.run / x.next_days * 100))), last = x.next_days - x.run === 1;
+  return `<div class="incu" title="${esc(c[1])}: ${x.run} de ${x.next_days} días de racha">
     <span class="incu-ch" style="--p:${pct}%" aria-hidden="true"><i class="g">${c[0]}</i><i class="c">${c[0]}</i></span>
-    <span class="incu-t"><span class="small"><b>${esc(c[1])}</b> · ${x.run} de ${x.next_days} días seguidos</span>
-      <span class="incu-bar"><i style="width:${pct}%"></i></span>
-      <span class="small muted">${left === 1 ? (h.done_today ? '¡Mañana nace! 🐣' : '¡Si anotás hoy, nace! 🐣') : `Te faltan ${left} días seguidos`}</span></span></div>`;
+    <span class="incu-t"><span class="small"><b>${esc(c[1])}</b> · ${last ? (h.done_today ? '¡mañana nace! 🐣' : '¡si anotás hoy, nace! 🐣') : `🔥 ${x.run}/${x.next_days}`}</span>
+      <span class="incu-bar"><i style="width:${pct}%"></i></span></span></div>`;
 }
 // El muñequito más cercano a desbloquear.
 function nextCharLine(){
@@ -2140,7 +2140,15 @@ function yesterdayLink(h){
 }
 // Qué objetivo mostrar: el récord si está al alcance, si no, el próximo hito.
 const HITO_LIST = [3, 7, 14, 21, 30, 50, 100, 150, 200, 365, 500, 730, 1000];
+// Semanal: "Te faltan 2 hasta el domingo · te queda 1 descanso". Va en el lugar de la línea de los 66 días.
+function weekLine(wk, h){
+  const need = wk.target - wk.done, after = h.done_today ? wk.left - 1 : wk.left, rest = after - need;
+  const until = wk.left === 1 ? 'hoy' : 'el domingo', n = need === 1 ? 'Te falta 1' : `Te faltan ${need}`;
+  if (rest <= 0) return `<div class="goal bad">⚠️ ${n} y ${after === 1 ? 'queda 1 día' : `quedan ${after} días`}: sin descanso hasta ${until}</div>`;
+  return `<div class="goal ${rest === 1 ? 'near' : ''}">📅 ${n} hasta ${until} · te ${rest === 1 ? 'queda 1 descanso' : `quedan ${rest} descansos`}</div>`;
+}
 function goalLine(h){
+  const wk = weeklyInfo(h); if (wk && !wk.met) return weekLine(wk, h);
   const st = h.streak || 0, best = h.best || 0;
   if (best > st && st > 0 && (st >= best / 2 || best - st <= 30)) return `<div class="goal near">🔥 Te ${best - st === 1 ? 'falta 1' : `faltan ${best - st}`} para tu récord (${best})</div>`;
   if (best > 0 && st >= best && st > 7) return `<div class="goal near">🏆 ¡Estás en tu récord!</div>`;
@@ -3941,7 +3949,7 @@ function weeklyInfo(h){
   const t = S.me.today, iso = (parseDay(t).getDay() + 6) % 7, mon = addDays(t, -iso), target = 7 - rest;
   const prev = new Set((S.history || []).filter(x => x.habit_id === h.id && x.kind === 'hecho' && x.day >= mon && x.day < t).map(x => x.day));
   const done = prev.size + (h.done_today ? 1 : 0), left = 7 - iso;
-  return { target, done, met: done >= target, urgent: !h.done_today && target > done && (target - done) >= left };
+  return { target, done, left, met: done >= target, urgent: !h.done_today && target > done && (target - done) >= left };
 }
 // Campos reutilizables (grupo y personal). Devuelve el html; `readRules(el)` lee lo elegido.
 function rulesFields(days, rest){
