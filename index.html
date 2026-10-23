@@ -205,6 +205,8 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .shopit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:16px;border:2px solid var(--line);background:var(--card);font:inherit;color:inherit}
 .shopit.on{border-color:var(--fire);background:var(--fire-soft)}
 .shopit.cant{opacity:.55}
+.pushbtns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.emo.sel{outline:2px dashed var(--fire);outline-offset:2px}
 .exrow{display:grid;grid-template-columns:minmax(0,1fr) 46px 46px 58px 26px;gap:6px;align-items:center;margin-bottom:6px}
 .exrow .input{min-height:42px;padding:0 8px;font-size:15px;border-radius:12px}
 .exrow input[type=number]{text-align:center;padding:0 2px}
@@ -1334,32 +1336,38 @@ function shopSheet(slot = 'p'){
     const myThemes = [...new Set((a.progress || []).map(x => x.theme))];
     const runOf = (th) => Math.max(0, ...(a.progress || []).filter(x => x.theme === th).map(x => x.run));
     const habitOf = (th) => ((a.progress || []).find(x => x.theme === th) || {}).habit || '';
-    const cat = slot === 'p' ? ['p', 'Personaje', [['p:chispita', 'Chispita', 0], ...myThemes.flatMap(th => Object.entries(CHARS).filter(([, c]) => c[2] === th).map(([id, c]) => [id, c[1], 0]))]] : AV_SHOP.find(c => c[0] === slot);
+    const cat = slot === 'p' ? ['p', 'Personaje', [['p:chispita', 'Chispita', 0], ...myThemes.flatMap(th => Object.entries(CHARS).filter(([, c]) => c[2] === th).map(([id, c]) => [id, c[1], 0]))]]
+      : slot === 'e' ? ['e', 'Reacciones', REACT_SHOP.map(([e, pr]) => ['e:' + e, e, pr])] : AV_SHOP.find(c => c[0] === slot);
     const isChar = eq.p && eq.p !== 'p:chispita';
     const label = (id, name) => id === 'c:naranja' && isChar ? 'Original' : name;
     const pick = sel && cat[2].find(x => x[0] === sel);
-    const look = pick ? { ...eq, [slot]: sel } : eq;
+    const look = pick && slot !== 'e' ? { ...eq, [slot]: sel } : eq;
     const cur = eq[slot] || (slot === 'c' ? 'c:naranja' : slot === 'p' ? 'p:chispita' : '');
     box.innerHTML = `<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">💎 ${a.coins}</span></div>
-    <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq: look }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${pick ? `Probándote: ${esc(label(pick[0], pick[1]))}` : esc(a.name || 'Tu fueguito')}</div></div>
+    <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq: look }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${pick ? (slot === 'e' ? `Elegiste ${esc(pick[1])} para reaccionar` : `Probándote: ${esc(label(pick[0], pick[1]))}`) : esc(a.name || 'Tu fueguito')}</div></div>
     ${pick ? `<div class="shopbuy">${pick[2] > a.coins ? `<button class="btn" disabled>Te faltan ${pick[2] - a.coins} 💎</button>` : `<button class="btn" id="sb-buy">Comprar ${esc(label(pick[0], pick[1]))} · 💎 ${pick[2]}</button>`}<button class="btn ghost" id="sb-no">Mejor no</button></div>` : ''}
-    <div class="chips">${[['p', 'Personaje'], ...AV_SHOP].map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
+    <div class="chips">${[['p', 'Personaje'], ...AV_SHOP, ['e', '😍 Reacciones']].map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
     ${slot === 'p' ? '<p class="small muted" style="margin:0 0 10px">Cada hábito tiene su temática. Se desbloquean con 7, 21, 45 y 66 días seguidos de ese hábito, contando uno por día. A los 66 días, según la ciencia, ya es automático 🧠</p>' : ''}
     ${slot !== 'p' && slot !== 'c' ? '' : slot === 'c' && isChar ? '<p class="small muted" style="margin:0 0 10px">Tiñe a tu muñequito. Original le deja su color de siempre.</p>' : ''}
-    <div class="shop">${slot !== 'c' && slot !== 'p' ? `<button class="shopit ${!eq[slot] ? 'on' : ''}" data-item=""><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: undefined } }, 56)}</span><b>Sin nada</b><span class="small muted">${!eq[slot] ? 'Puesto' : 'Sacar'}</span></button>` : ''}
+    ${slot === 'e' ? `<p class="small muted" style="margin:0 0 10px">Para reaccionar a las fotos del grupo. ${REACT_FREE.join(' ')} son gratis; los demás se compran una vez y quedan para siempre.</p>
+      <div class="emogrid">${REACT_FREE.map(e => `<button class="emo" data-free="${e}"><span>${e}</span><small>Gratis</small></button>`).join('')}${cat[2].map(([id, e, pr]) => { const has = owned.has(id);
+        return `<button class="emo ${has ? '' : 'lock'} ${sel === id ? 'sel' : ''}" data-item="${id}"><span>${e}</span><small>${has ? 'Tuyo' : `💎 ${pr}`}</small></button>`; }).join('')}</div>` : `<div class="shop">${slot !== 'c' && slot !== 'p' ? `<button class="shopit ${!eq[slot] ? 'on' : ''}" data-item=""><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: undefined } }, 56)}</span><b>Sin nada</b><span class="small muted">${!eq[slot] ? 'Puesto' : 'Sacar'}</span></button>` : ''}
       ${cat[2].map(([id, name, price]) => { const has = owned.has(id), on = cur === id;
         if (slot === 'p' && !has){ const c = CHARS[id], run = runOf(c[2]);
           return `<button class="shopit lock" data-lock="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, p: id } }, 56)}</span><b>${name}</b><span class="small">🔒 ${c[3]} días</span><span class="small muted">vas ${Math.min(run, c[3])}</span></button>`; }
         return `<button class="shopit ${on ? 'on' : ''} ${sel === id ? 'sel' : ''} ${!has && price > a.coins ? 'cant' : ''}" data-item="${id}"><span class="prev">${userAv(S.me.user.nick, { h: true, eq: { ...eq, [slot]: id } }, 56)}</span><b>${esc(label(id, name))}</b><span class="small ${has ? 'muted' : ''}">${on ? 'Puesto' : has ? 'Tuyo' : `💎 ${price}`}</span></button>`; }).join('')}</div>
-    <p class="hint">Tocá algo para probártelo. Cada fueguito que anotás te da un diamante.</p>
+`}
+    <p class="hint">${slot === 'e' ? 'Tocá un emoji para elegirlo.' : 'Tocá algo para probártelo.'} Cada fueguito que anotás te da un diamante.</p>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`;
     box.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
     box.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => { slot = b.dataset.slot; sel = null; paint(); });
+    box.querySelectorAll('[data-free]').forEach(b => b.onclick = () => toast('Ese es gratis: ya lo podés usar en las fotos'));
     box.querySelectorAll('[data-lock]').forEach(b => b.onclick = () => { const c = CHARS[b.dataset.lock], run = runOf(c[2]);
       toast(`${c[0]} ${c[1]}: ${c[3]} días seguidos de ${habitOf(c[2])}. Vas ${run}, te ${c[3] - run === 1 ? 'falta 1' : `faltan ${c[3] - run}`} 💪`, 4000); });
     box.querySelectorAll('[data-item]').forEach(b => b.onclick = () => {
       const id = b.dataset.item;
       if (id && !owned.has(id)){ sel = sel === id ? null : id; paint(); return; } // no es tuyo: solo se prueba
+      if (slot === 'e'){ toast('Ya es tuyo: usalo con el ＋ en las fotos del grupo'); return; }
       sel = null;
       if (id === cur || (!id && !eq[slot])){ paint(); return; }
       run(() => !id || id === 'c:naranja' ? rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: null }) : rpc('api_avatar_equip', { ...P(), p_slot: slot, p_item: id }));
@@ -1676,7 +1684,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v53'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v54'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2631,7 +2639,7 @@ function paintDetail(el, det){
       <label class="field"><span>Tiempo (min)</span><input class="input" id="d-min" type="number" inputmode="numeric" min="1" max="1440" placeholder="30" value="${det.minutes || ''}"></label>
     </div>` : '<p class="hint" style="margin:0">Elegí qué hiciste. Todo es opcional: lo que cargues arma tus gráficos de progreso en Perfil.</p>'}
     ${k === 'gym' ? `<div class="field"><span>Ejercicios (opcional)</span>
-      ${S.routines && S.routines.mine.length ? `<div class="chips" style="flex-wrap:wrap;margin:0 0 8px">${S.routines.mine.map(r => `<button type="button" class="chip ${det.routine === r.id ? 'on' : ''}" data-drt="${r.id}">📋 ${esc(r.name)}</button>`).join('')}</div>` : ''}
+      <div class="chips" style="flex-wrap:wrap;margin:0 0 8px"><button type="button" class="chip" data-dflex>💯 100 flexiones</button>${S.routines ? S.routines.mine.map(r => `<button type="button" class="chip ${det.routine === r.id ? 'on' : ''}" data-drt="${r.id}">📋 ${esc(r.name)}</button>`).join('') : ''}</div>
       <div id="d-rows"></div>
       <div class="stack" style="gap:8px;margin-top:10px">
         ${det.routine ? `<label class="row small" style="gap:8px"><input type="checkbox" id="d-upd" ${det.upd !== false ? 'checked' : ''}> Actualizar la rutina con estos pesos</label>`
@@ -2649,6 +2657,7 @@ function paintDetail(el, det){
       if (det.routine === r.id){ det.routine = null; } else { det.routine = r.id; det.rows = withLastKg(r.items); det.upd = true; det.editor = null; } // sin editor: no se pisan las filas nuevas con las viejas
       paintDetail(el, det);
     });
+    const fx = $('[data-dflex]', el); if (fx) fx.onclick = () => { syncDetail(el, det); det.routine = null; det.rows = [{ ex: 'Flexiones', sets: null, reps: 100, kg: null }]; det.editor = null; paintDetail(el, det); };
     const sv = $('#d-save', el); if (sv) sv.onchange = () => { $('#d-rtname', el).style.display = sv.checked ? '' : 'none'; if (sv.checked) $('#d-rtname', el).focus(); };
   } else det.editor = null;
   box.querySelectorAll('[data-ak]').forEach(b => b.onclick = () => { const m = $('#d-min', el); if (m && m.value) det.minutes = +m.value; det.kind = det.kind === b.dataset.ak ? null : b.dataset.ak; paintDetail(el, det); });
@@ -4472,7 +4481,7 @@ function liftSheet(name){
 
 /* ============ Rutinas de gym: listas de ejercicios que cada uno se guarda (privadas, o compartidas sin pesos) ============ */
 async function loadRoutines(){
-  try { S.routines = await rpc('api_routines', P()); } catch(e){ S.routines = S.routines || { mine: [], group: [] }; }
+  try { const r = await rpc('api_routines', P()); S.routines = { mine: (r && r.mine) || [], group: (r && r.group) || [] }; } catch(e){ S.routines = S.routines || { mine: [], group: [] }; }
   const box = $('#routines'); if (box && S.tab === 'rutinas'){ box.innerHTML = routinesBlock(); bindRoutines(); }
 }
 const lastLift = (ex) => (S.lifts || []).find(l => l.exercise.toLowerCase() === String(ex).toLowerCase());
@@ -4689,6 +4698,7 @@ function renderRutinas(){
       ${S.me.user.plan ? planCard(false) : `<div class="stack">${Object.entries(PLANES).map(([id, pl]) => `<button class="card routine" data-plan="${id}"><div class="ic" style="background:var(--fire-soft)">${pl.emoji}</div><div><h3>${esc(pl.name)}</h3><div class="small muted">${pl.weeks} semanas · ${pl.days.length} salidas por semana</div></div></button>`).join('')}</div>`}
     </div>
     <div class="stack section">
+      <button class="card routine" data-r="flex"><div class="ic" style="background:var(--fire-soft)">💯</div><div><h3>100 flexiones</h3><div class="small muted">El básico para salvar el día · en las series que quieras</div></div></button>
       <button class="card routine" data-r="qty"><div class="ic" style="background:var(--fire-soft)">💪</div><div><h3>Rutina por cantidad</h3><div class="small muted">4 series · 1 min de descanso entre series</div></div></button>
       <button class="card routine" data-r="time"><div class="ic" style="background:var(--ice-soft)">⏱️</div><div><h3>Rutina por tiempo · 12 min</h3><div class="small muted">Arrancás con 1 de cada una y sumás 1 por ronda</div></div></button>
       <button class="card routine" data-r="crono"><div class="ic" style="background:var(--fire-soft)">⏲️</div><div><h3>Cronómetro</h3><div class="small muted">Para correr, nadar o lo que hagas. Con vueltas</div></div></button>
@@ -4707,7 +4717,7 @@ function renderRutinas(){
       </div>
       <button class="link" id="pl-set" style="margin-top:10px">${myPlaylist() ? 'Cambiar tu playlist' : '+ Guardar tu propia playlist'}</button>
     </div>`;
-  document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => ({ qty: runQty, time: runTime, med: runMed, crono: runCrono })[b.dataset.r]());
+  document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => ({ flex: runPushups, qty: runQty, time: runTime, med: runMed, crono: runCrono })[b.dataset.r]());
   $('#lift-add').onclick = () => liftSheet('');
   $('#rt-new').onclick = () => routineSheet(null);
   bindRoutines();
@@ -4800,6 +4810,27 @@ function runQty(){
       if (done.size === R_QTY.ex.length){ if (serie < R_QTY.series) resting = true; else serie++; }
       paint();
     }
+  };
+  paint();
+}
+
+// 💯 100 flexiones: el clásico del grupo de WhatsApp original para salvar el día. Cada serie se suma con un toque.
+function runPushups(){
+  const GOAL = 100, series = [];
+  const total = () => series.reduce((a, b) => a + b, 0);
+  const paint = () => {
+    const n = total();
+    if (n >= GOAL){ const el = openRunner(runnerHeader('💯 100 flexiones') + finishBlock('Deporte', `¡100 flexiones en ${series.length} ${series.length === 1 ? 'serie' : 'series'}! Día salvado 💯`)); bindRunnerCommon(el); beep(880, .2, 3); vibrate([200, 100, 200]); return; }
+    const el = openRunner(`${runnerHeader('💯 100 flexiones')}
+      <div class="card" style="text-align:center"><div class="clock">${n}</div><div class="small muted">de ${GOAL} · faltan ${GOAL - n}</div>
+        <div class="progress" style="margin:14px 0 4px"><i style="width:${n}%"></i></div>
+        ${series.length ? `<div class="small muted" style="margin-top:8px">Series: ${series.join(' + ')}</div>` : ''}</div>
+      <div class="pushbtns section">${[5, 10, 20, 25].map(k => `<button class="btn" data-pu="${k}">+${k}</button>`).join('')}</div>
+      ${series.length ? '<div style="text-align:center;margin-top:16px"><button class="link small" id="pu-undo">Deshacer la última serie</button></div>' : ''}
+      <p class="hint" style="text-align:center">Hacé las series que quieras y sumá cada una cuando la terminás. Al llegar a 100, anotás Deporte directo.</p>`);
+    bindRunnerCommon(el);
+    el.querySelectorAll('[data-pu]').forEach(b => b.onclick = () => { series.push(Math.min(+b.dataset.pu, GOAL - total())); vibrate(15); beep(660, .06); paint(); });
+    const u = $('#pu-undo', el); if (u) u.onclick = () => { series.pop(); paint(); };
   };
   paint();
 }
