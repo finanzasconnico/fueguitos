@@ -114,7 +114,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 
 /* Tarjetas de hábito */
 .habits{display:grid;gap:12px}
-.habit{display:grid;grid-template-columns:74px 1fr auto;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:12px 14px 12px 10px;text-align:left;width:100%;position:relative;transition:border-color .12s,background .12s}
+.habit{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:12px;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:12px 14px 12px 10px;text-align:left;width:100%;position:relative;transition:border-color .12s,background .12s}
 .habit.sel{border-color:var(--fire);background:var(--fire-soft)}
 .habit.done{border-color:var(--ok-line)}
 .habit.failed{border-color:var(--fire)}
@@ -146,7 +146,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .cal span.tap.hecho{outline:none}
 .calkey{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;box-sizing:border-box}
 .gst{margin-bottom:12px}
-.flamebox.freebox{width:64px;height:64px;margin:0 5px;border-radius:20px;background:color-mix(in srgb,var(--hc) 16%,transparent);border:2px solid color-mix(in srgb,var(--hc) 40%,transparent)}
+.flamebox.freebox{width:60px;height:60px;margin:0 2px;border-radius:20px;background:color-mix(in srgb,var(--hc) 16%,transparent);border:2px solid color-mix(in srgb,var(--hc) 40%,transparent)}
 .freebox span{font-size:28px;line-height:1;margin-top:-10px}
 .flamebox.freebox .n{color:var(--hc);text-shadow:none;font-size:18px;bottom:2px}
 .habit.free.done{border-color:var(--hc)}
@@ -210,7 +210,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .exrow input[type=number]{text-align:center;padding:0 2px}
 .exhead{margin-bottom:2px}.exhead span{font-size:12px;font-weight:800;color:var(--muted);text-align:center}.exhead span:first-child{text-align:left}
 .exrm{border:0;background:none;color:var(--muted);font-size:15px;padding:0;height:42px}
-.incu{display:flex;align-items:center;gap:8px;margin-top:8px;padding:5px 10px 5px 6px;border-radius:14px;background:color-mix(in srgb,var(--fire) 8%,transparent);text-align:left}
+.incu{display:flex;align-items:center;gap:8px;margin-top:8px;text-align:left}
 .incu-ch{position:relative;flex:none;width:28px;height:28px;font-size:24px;line-height:28px;text-align:center}
 .incu-ch i{position:absolute;inset:0;font-style:normal}
 .incu-ch .g{filter:brightness(0);opacity:.14}
@@ -255,12 +255,21 @@ button.undo{background:none;border:0;padding:0;display:block;margin-top:8px;font
 .goal.near{color:var(--fire-ink)}
 .goal.bad{color:var(--danger)}
 .check.x{background:var(--fire);border-color:var(--fire)}
-.flamebox{position:relative;width:74px;height:78px;display:grid;place-items:center}
-.flamebox svg{width:58px;height:72px}
+.flamebox{position:relative;width:64px;height:70px;display:grid;place-items:center}
+.flamebox svg{width:52px;height:64px}
 .flamebox .n{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-weight:800;font-size:22px;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.18)}
 .flamebox.off .n{color:var(--muted);text-shadow:none}
-.habit .name{font-weight:800;font-size:19px;display:flex;align-items:center;gap:6px}
+.habit .name{font-weight:800;font-size:18px;display:flex;align-items:center;gap:6px}
 .meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.hstat{font-size:14px;font-weight:700;margin-top:3px;color:var(--muted)}
+.hstat.ok{color:var(--ok-ink)}.hstat.fire{color:var(--fire-ink)}.hstat.bad{color:var(--danger)}
+.hfoot{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
+.hfoot .undo,.hfoot .undo.yest{display:inline;margin:0}
+.shareday{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 0;padding:12px 14px;border-radius:16px;border:2px solid var(--line);font-weight:700;font-size:15px}
+.card.news{margin-bottom:16px}
+.newsmore summary{cursor:pointer;color:var(--fire-ink);font-weight:800;margin:0 0 10px;list-style:none}
+.newsmore summary::-webkit-details-marker{display:none}
+.newsmore[open] summary{display:none}
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--bg);color:var(--ink)}
 .plan{border-color:var(--fire)}
 .pses{margin-top:8px;padding:10px 12px;border-radius:14px;background:var(--fire-soft);color:var(--fire-ink)}
@@ -279,9 +288,10 @@ button.undo{background:none;border:0;padding:0;display:block;margin-top:8px;font
 .banner.fire{background:var(--fire-soft);color:var(--fire-ink)}
 
 /* Motivación */
-.quote{position:relative;margin:0 0 16px;padding:14px 16px 14px 46px;border-radius:18px;background:var(--fire-soft);color:var(--fire-ink)}
-.quote p{margin:0;font-weight:700;font-size:17px;line-height:1.3;text-wrap:balance}
-.quote .qmark{position:absolute;left:12px;top:4px;font-size:52px;font-weight:800;color:var(--fire);line-height:1}
+.quote{margin:-8px 0 18px;color:var(--muted)}
+.quote p{margin:0;font-weight:600;font-size:15px;font-style:italic;line-height:1.35;text-wrap:balance}
+.quote p::before{content:'“'}.quote p::after{content:'”'}
+.quote .qmark{display:none}
 .banner.urgent{border:2px solid var(--fire)}
 .music{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:2px solid var(--line);text-decoration:none;color:var(--ink)}
 .music:last-child{border-bottom:0}
@@ -1799,7 +1809,8 @@ function calendarSheet(h, startMonth){
   const minMonth = parseDay(addDays(today, -365)); minMonth.setDate(1);
   const el = openSheet(`<h2>${esc(h.emoji)} ${esc(h.name)}</h2>
     ${h.free ? `<div class="calstats"><div><b>${monthCount(h)}</b><span>✨ este mes</span></div><div><b>${monthCount(h, prevMonth)}</b><span>mes pasado</span></div><div><b>${h.streak}</b><span>en total</span></div></div>`
-      : `<div class="calstats"><div><b>${h.streak}</b><span>🔥 racha</span></div><div><b>${h.best || h.streak}</b><span>🏆 récord</span></div><div><b>${pct === null ? '–' : pct + '%'}</b><span>✅ último mes</span></div></div>`}
+      : `<div class="calstats"><div><b>${h.streak}</b><span>🔥 racha</span></div><div><b>${h.best || h.streak}</b><span>🏆 récord</span></div><div><b>${pct === null ? '–' : pct + '%'}</b><span>✅ último mes</span></div></div>
+      <p class="small muted" style="margin:10px 0 0;text-align:center">🧊 ${h.ice}/${h.max_ice} hielitos · ⌛ ${h.left_for_ice === 1 ? 'falta 1 día' : `faltan ${h.left_for_ice} días`} para el próximo</p>`}
     <div class="row between section" style="align-items:center"><button class="link" id="cal-prev" aria-label="Mes anterior">‹ Anterior</button><b id="cal-title"></b><button class="link" id="cal-next" aria-label="Mes siguiente">Siguiente ›</button></div>
     <div class="cal" id="cal"></div>
     ${h.free ? '' : `<p class="small" style="margin:12px 0 0">🧠 ${h.streak >= 66 ? '¡Pasaste los 66 días! Según la ciencia, este hábito ya es automático.' : `Día ${h.streak} de 66. Un estudio del University College London encontró que un hábito tarda en promedio 66 días en volverse automático.`}</p>`}
@@ -1900,7 +1911,9 @@ const NEWS = { id: '2026-10-21', title: '✨ Novedades en Fueguitos', items: [
   '📸 También podés subir <b>la foto de ayer</b>.'] };
 function newsCard(){
   if (LS.get('fueguitos_news') === NEWS.id) return '';
-  return `<div class="card section news"><h3 style="margin:0 0 8px">${NEWS.title}</h3><ul class="small plist" style="margin-bottom:12px">${NEWS.items.map(i => `<li>${i}</li>`).join('')}</ul>
+  const it = NEWS.items, more = it.length - 2;
+  return `<div class="card section news"><h3 style="margin:0 0 8px">${NEWS.title}</h3><ul class="small plist" style="margin-bottom:${more > 0 ? 4 : 12}px">${it.slice(0, 2).map(i => `<li>${i}</li>`).join('')}</ul>
+    ${more > 0 ? `<details class="newsmore"><summary class="small">Ver ${more === 1 ? 'una más' : `las otras ${more}`}</summary><ul class="small plist">${it.slice(2).map(i => `<li>${i}</li>`).join('')}</ul></details>` : ''}
     <div class="grid2"><button class="btn sm ghost" style="width:100%" id="news-cal">Ver Mi calendario</button><button class="btn sm" style="width:100%" id="news-ok">¡Entendido!</button></div></div>`;
 }
 
@@ -1925,12 +1938,9 @@ function renderHoy(){
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
-      `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>`}
+      (hs.every(h => !h.streak) && !(S.history || []).length ? `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>` : '')}
     <div class="habits">${hs.map(habitCard).join('')}</div>
-    <div class="section grid2">
-      <button class="btn ghost sm" style="width:100%" id="wa-copy">Copiar mensaje</button>
-      <button class="btn green sm" style="width:100%" id="wa-send">WhatsApp</button>
-    </div>
+    ${hs.some(h => h.done_today && h.kind !== 'evitar') ? `<div class="shareday"><span>📲 Contale al grupo</span><span class="row" style="gap:16px"><button class="link" id="wa-copy">Copiar</button><button class="link" id="wa-send" style="color:var(--ok-ink)">Mandar</button></span></div>` : ''}
     ${eggCard()}
     ${mateCard()}
     ${pairCards()}
@@ -1969,8 +1979,8 @@ function renderHoy(){
     try { const hj = await rpc('api_undo_checkin', { ...P(), p_habit: b.dataset.undo }); S.me.habits = hj; renderHoy(); toast('Anotación deshecha'); }
     catch(err){ toast(err.message); }
   });
-  $('#wa-copy').onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
-  $('#wa-send').onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
+  const wac = $('#wa-copy'); if (wac) wac.onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
+  const was_ = $('#wa-send'); if (was_) was_.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
   const tg = $('#to-group'); if (tg) tg.onclick = createGroupSheet;
   const egg = $('#egg'); if (egg) egg.onclick = () => toast(`Te ${S.av.need - S.av.fed === 1 ? 'falta 1 día' : `faltan ${S.av.need - S.av.fed} días`} con fueguito para que nazca 🥚🔥`, 3000);
   const doneNow = hs.filter(h => h.done_today).length;
@@ -2087,14 +2097,14 @@ function hoyNudge(){
 const saidNo = (h) => LS.get('fueguitos_no_' + h.id) === S.me.today;
 function nightCard(h){
   const no = !h.done_today && saidNo(h);
-  const status = h.done_today ? '<span class="pill ok">Anoche cumpliste</span>' : no ? '<span class="pill">Anoche no se pudo</span>' : '<span class="pill fire">¿Anoche cumpliste?</span>';
+  const status = h.done_today ? hstat('ok', '✓ Anoche cumpliste') : no ? hstat('', 'Anoche no se pudo') : hstat('fire', '¿Anoche cumpliste?');
   return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}" data-hid="${h.id}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
-      <div class="meta">${status}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
-      ${h.done_today ? `${goalLine(h)}<button type="button" class="undo" data-undo="${h.id}">Deshacer</button>`
-        : no ? `<div class="goal">Esta noche hay revancha 🌙</div><button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>`
+      ${status}
+      ${h.done_today ? `<button type="button" class="undo" data-undo="${h.id}">Deshacer</button>`
+        : no ? `<button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>`
         : `<div class="nightq"><button type="button" class="btn sm green" data-night-yes="${h.id}">Sí ✓</button><button type="button" class="btn sm ghost" data-night-no="${h.id}">No</button></div>`}
     </div>
     <div class="check" aria-hidden="true">${h.done_today ? '✓' : ''}</div>
@@ -2109,9 +2119,9 @@ function countCard(h){
     <div class="flamebox ${done ? '' : 'off'}">${flameSVG(done)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
-      <div class="meta"><span class="pill ${done ? 'ok' : 'fire'}">${n}/${h.goal}${u}</span><span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
+      ${hstat(done ? 'ok' : 'fire', `${done ? '✓ ' : ''}${n} de ${h.goal}${u}`)}
       <div class="progress" style="margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="${h.goal}" aria-valuenow="${n}"><i style="width:${Math.round(n / h.goal * 100)}%"></i></div>
-      ${done ? `${goalLine(h)}${less}`
+      ${done ? less
         : `<div class="nightq"><button type="button" class="btn sm" data-count="${h.id}" data-d="1" aria-label="Sumar uno a ${esc(h.name)}">+1</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="${h.goal}">Todo ✓</button></div>${n > 0 ? less : ''}`}
     </div>
     <div class="check" aria-hidden="true">${done ? '✓' : ''}</div>
@@ -2144,21 +2154,33 @@ function habitCard(h){
   if (h.free) return freeCard(h);
   const sel = S.sel.has(h.id);
   const lateNow = h.deadline && !h.done_today && isLate(h);
-  const wk = weeklyInfo(h);
-  const status = wk ? (h.done_today ? `<span class="pill ok">Anotado hoy · ${wk.done}/${wk.target} esta semana</span>` : wk.met ? `<span class="pill ok">Semana cumplida · ${wk.done}/${wk.target}</span>` : wk.urgent ? `<span class="pill fire">Te falta hoy · ${wk.done}/${wk.target}</span>` : `<span class="pill">Semana: ${wk.done} de ${wk.target}</span>`)
-    : h.done_today ? `<span class="pill ok">Anotado hoy</span>` : lateNow ? `<span class="pill">Se pasó la hora</span>` : (!h.required_today ? `<span class="pill">Hoy es libre</span>` : `<span class="pill fire">Te falta hoy</span>`);
   return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''} ${lateNow ? 'late' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
     <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
-      <div class="meta">${status}${h.deadline ? `<span class="pill">⏰ antes de las ${h.deadline}</span>` : ''}<span class="pill ice">🧊 ${h.ice}/${h.max_ice}</span><span class="pill">⌛ ${h.left_for_ice}</span></div>
-      ${h.deadline && !h.done_today && !lateNow ? (isEarly(h) ? `<div class="goal">Se anota desde las ${opensAt(h)}</div>` : '<div class="goal near">Un toque y queda anotado</div>') : goalLine(h)}
+      ${habitStatus(h, lateNow)}
       ${incubator(h)}
-      ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
-      ${yesterdayLink(h)}
+      ${hfoot(h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : '', yesterdayLink(h))}
     </div>
     <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
   </button>`;
+}
+// Una sola línea de estado por hábito (en vez de varias etiquetas).
+const hstat = (cls, txt) => `<div class="hstat ${cls}">${txt}</div>`;
+const hfoot = (...links) => { const l = links.filter(Boolean); return l.length ? `<div class="hfoot">${l.join('')}</div>` : ''; };
+function habitStatus(h, lateNow){
+  const wk = weeklyInfo(h);
+  if (wk){
+    if (wk.met) return hstat('ok', `✓ Semana cumplida · ${wk.done} de ${wk.target}`);
+    if (h.done_today) return hstat('ok', `✓ Anotado hoy · ${wk.done} de ${wk.target} esta semana`);
+    const w = weekLine(wk, h).match(/class="goal ?([a-z]*)">(.*)<\/div>/);
+    return hstat(w[1] === 'bad' ? 'bad' : w[1] === 'near' ? 'fire' : '', w[2]);
+  }
+  if (h.done_today) return hstat('ok', '✓ Anotado hoy');
+  if (lateNow) return hstat('', 'Hoy se pasó la hora');
+  if (!h.required_today) return hstat('', 'Hoy es libre');
+  if (h.deadline) return isEarly(h) ? hstat('', `⏰ Se anota desde las ${opensAt(h)}`) : hstat('fire', `⏰ Anotalo antes de las ${h.deadline}`);
+  return hstat('fire', 'Te falta hoy');
 }
 // Color de cada hábito (el que eligió la persona, o uno según el nombre).
 const HCOLORS = [['#FF6A1F', 'Naranja'], ['#F06FA8', 'Rosa'], ['#9B6BFF', 'Violeta'], ['#4FB3E8', 'Celeste'], ['#23A566', 'Verde'], ['#F2B705', 'Amarillo'], ['#E5484D', 'Rojo'], ['#8A8F98', 'Gris']];
@@ -2186,7 +2208,7 @@ function freeCard(h){
     <div class="flamebox freebox"><span aria-hidden="true">${esc(h.emoji)}</span><div class="n">${n}</div></div>
     <div>
       <div class="name">${esc(h.name)}${h.private ? ' <span class="lock" title="Solo lo ves vos">🔒</span>' : ''}</div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
-      <div class="meta">${h.done_today ? '<span class="pill ok">Hecho hoy</span>' : '<span class="pill">✨ Cuando quieras</span>'}<span class="pill">${n} ${n === 1 ? 'vez' : 'veces'} este mes</span></div>
+      ${hstat(h.done_today ? 'ok' : '', `${h.done_today ? '✓ Hecho hoy' : '✨ Cuando quieras'} · ${n} ${n === 1 ? 'vez' : 'veces'} este mes`)}
       ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
     </div>
     <div class="check" aria-hidden="true">${h.done_today ? '✓' : ''}</div>
@@ -2243,8 +2265,7 @@ function quitCard(h){
     <div class="flamebox ${ok ? '' : 'off'}">${flameSVG(ok)}<div class="n">${h.streak}</div></div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
-      <div class="meta">${ok ? '<span class="pill ok">Vas bien hoy</span>' : '<span class="pill fire">Hoy caíste</span>'}<span class="pill">🏆 Récord ${h.best || 0}</span><span class="pill">📅 ${h.total_clean || 0} en total</span></div>
-      <span class="small muted">${ok ? 'Se suma solo. Si caés, tocalo.' : 'Mañana arrancás de nuevo. Lo logrado no se borra.'}</span>
+      ${ok ? hstat('ok', `✓ Vas bien hoy · récord ${h.best || 0}`) : hstat('fire', 'Hoy caíste · mañana arrancás de nuevo')}
       ${savingLine(h)}
       ${APP_RX.test(h.name) ? `<span class="undo" role="button" tabindex="0" data-appblock="${h.id}">¿Cómo frenar ${esc(appName(h.name))}?</span>` : ''}
     </div>
@@ -3696,7 +3717,7 @@ function memberFire(m){
   if (m.is_me){ const h = mainFire(); f = h && { streak: h.streak, done_today: h.done_today, any_today: S.me.habits.some(x => x.done_today && x.kind === 'hacer'), name: h.private ? null : h.name, emoji: h.private ? null : h.emoji }; }
   if (!f) return '<span class="small muted">Sin hábitos</span>';
   const lit = !!(f.done_today || f.any_today); // prendido si hoy anotó algo, aunque sea privado
-  return `<span class="mfire ${lit ? 'on' : ''}" title="${f.name ? esc(f.name) : 'Hábito personal'}${lit ? ': anotó hoy' : ''}">${f.emoji ? `<span class="mfe">${esc(f.emoji)}</span>` : ''}${flameSVG(lit, 'mf-flame')}<b>${f.streak}</b></span>`;
+  return `<span class="mfire ${lit ? 'on' : ''}" title="${lit ? 'Anotó hoy' : 'Todavía no anotó hoy'}">${flameSVG(lit, 'mf-flame')}<b>${f.streak}</b></span>`;
 }
 function memberRow(m){
   return `<div class="member" role="button" tabindex="0" data-member="${m.id}" aria-label="Ver a ${esc(m.nick)}">
