@@ -205,6 +205,23 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .shopit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:16px;border:2px solid var(--line);background:var(--card);font:inherit;color:inherit}
 .shopit.on{border-color:var(--fire);background:var(--fire-soft)}
 .shopit.cant{opacity:.55}
+.weekcard{display:block;width:100%;text-align:left;font:inherit;color:inherit}
+.wg{display:grid;gap:7px}
+.wg-row{display:grid;grid-template-columns:minmax(0,1fr) repeat(7,28px) 26px;align-items:center}
+.wg-head em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted);text-align:center}
+.wg-head em.today{color:var(--fire)}
+.wg-h{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+.wg-c{width:20px;height:20px;border-radius:50%;justify-self:center;background:var(--line);display:block}
+.wg-c.on{background:var(--hc)}
+.wg-c.soft{background:color-mix(in srgb,var(--hc) 30%,transparent)}
+.wg-c.fut{background:transparent;border:2px dashed var(--line);width:16px;height:16px}
+.wg-n{text-align:right;font-size:14px}
+.ym-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 12px}
+.ym b{display:block;font-size:12px;font-weight:800;color:var(--muted);text-transform:capitalize;margin-bottom:4px}
+.ym-d{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.ym-d i{aspect-ratio:1;border-radius:3px;background:var(--line);display:block}
+.ym-d i.fut{background:transparent}
+.ym-d i.today{outline:2px solid var(--ink);outline-offset:-1px}
 .pushbtns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .emo.sel{outline:2px dashed var(--fire);outline-offset:2px}
 .exrow{display:grid;grid-template-columns:minmax(0,1fr) 46px 46px 58px 26px;gap:6px;align-items:center;margin-bottom:6px}
@@ -1671,8 +1688,9 @@ function streaksSheet(){
         <span class="mini-flame ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}</span>
         <span><b>${esc(h.name)}</b> ${esc(h.emoji)}${h.private ? ' 🔒' : ''}<span class="small muted" style="display:block">${h.streak} ${h.streak === 1 ? 'día' : 'días'} · récord ${h.best || h.streak}</span></span></button>
       <button class="chip ${f && f.id === h.id ? 'on' : ''}" data-sh-show="${h.id}" style="margin:0">${f && f.id === h.id ? '✓ En grupos' : 'Mostrar'}</button></div>`).join('') || '<p class="muted" style="margin:0">Todavía no tenés hábitos con racha.</p>'}</div>
-    <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
+    <div class="stack section"><button class="btn ice" id="sh-calendar">📅 Ver mi calendario</button><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   el.querySelector('[data-close-sheet]').onclick = closeSheet;
+  $('#sh-calendar', el).onclick = () => calendarScreen('semana');
   el.querySelectorAll('[data-sh-cal]').forEach(b => b.onclick = () => calendarSheet(S.me.habits.find(h => h.id === b.dataset.shCal)));
   el.querySelectorAll('[data-sh-show]').forEach(b => b.onclick = async () => {
     const prev = S.me.user.show_habit; S.me.user.show_habit = b.dataset.shShow; S.group = null; renderStatus(); streaksSheet();
@@ -1684,7 +1702,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v54'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v55'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -1754,6 +1772,92 @@ function monthGrid(box, opts){
   paint();
   return paint;
 }
+/* ============ Calendario: "Tu semana" (en Hoy y Perfil) y el completo (Semana · Mes · Año) ============ */
+// Qué pasó cada día con cada hábito (clave "día|hábito"): hecho/pintado le gana a hielito/descanso, y eso a falla.
+function dayMap(){
+  const m = {}, rank = { hecho: 3, pintado: 3, hielo: 2, descanso: 2, falla: 1 };
+  (S.history || []).forEach(x => { const k = x.day + '|' + x.habit_id; if ((rank[x.kind] || 0) > (rank[m[k]] || 0)) m[k] = x.kind; });
+  (S.me.habits || []).forEach(h => { const k = S.me.today + '|' + h.id; if (h.done_today) m[k] = 'hecho'; else if (m[k] === 'hecho') delete m[k]; });
+  return m;
+}
+const isDone = (k) => k === 'hecho' || k === 'pintado';
+const calHabits = () => (S.me.habits || []).filter(h => h.kind === 'hacer' || h.kind === 'evitar');
+function weekLabel(mon){
+  const a = parseDay(mon), b = parseDay(addDays(mon, 6));
+  return a.getMonth() === b.getMonth() ? `${a.getDate()} al ${b.getDate()} de ${MONTHS[b.getMonth()]}` : `${a.getDate()} de ${MONTHS[a.getMonth()].slice(0, 3)} al ${b.getDate()} de ${MONTHS[b.getMonth()].slice(0, 3)}`;
+}
+// Grilla de una semana: una fila por hábito, una columna por día, en el color de cada hábito.
+function weekGrid(mon){
+  const m = dayMap(), t = S.me.today, days = [...Array(7)].map((_, i) => addDays(mon, i)), hs = calHabits();
+  let total = 0, want = 0; const any = new Set();
+  const rows = hs.map(h => {
+    const c = habitColor(h); let n = 0, sched = 0;
+    const cells = days.map(d => {
+      const k = m[d + '|' + h.id];
+      if (d <= t && (h.kind === 'evitar' || (h.days || []).includes(parseDay(d).getDay()))) sched++;
+      if (isDone(k)){ n++; any.add(d); }
+      const cls = d > t ? 'fut' : isDone(k) ? 'on' : (k === 'hielo' || k === 'descanso') ? 'soft' : '';
+      return `<i class="wg-c ${cls}" style="--hc:${c}" title="${esc(h.name)} · ${fmtDay(d)}"></i>`;
+    }).join('');
+    total += n; want += Math.min(sched, 7 - ((h.rest_per_week || 0) >= 3 ? h.rest_per_week : 0));
+    return `<div class="wg-row"><span class="wg-h">${esc(h.emoji)} <span>${esc(h.name)}</span></span>${cells}<b class="wg-n" style="color:${n ? c : 'var(--muted)'}">${n}</b></div>`;
+  }).join('');
+  return { total, days: any.size, pct: want ? Math.min(100, Math.round(total / want * 100)) : 0,
+    html: `<div class="wg"><div class="wg-row wg-head"><span></span>${days.map(d => `<em class="${d === t ? 'today' : ''}">${DAYS[parseDay(d).getDay()]}</em>`).join('')}<span></span></div>${rows}</div>` };
+}
+function weekCard(){
+  if (!calHabits().length) return '';
+  const w = weekGrid(mondayOf(S.me.today));
+  return `<button class="card section weekcard" data-wk-open><div class="row between" style="align-items:center;margin-bottom:10px"><h3 style="margin:0">Tu semana</h3><span class="small" style="font-weight:800;color:var(--fire-ink)">🔥 ${w.total} · Ver calendario ›</span></div>${w.html}</button>`;
+}
+// El año en 12 mini meses. "Todos": más color = más hábitos ese día. Con un hábito elegido, su color.
+function yearHTML(yr, only){
+  const m = dayMap(), t = S.me.today, hs = calHabits(), h1 = only && hs.find(h => h.id === only);
+  const pool = h1 ? [h1] : hs;
+  let total = 0; const any = new Set();
+  const months = MONTHS.map((mn, mi) => {
+    const first = new Date(yr, mi, 1), n = new Date(yr, mi + 1, 0).getDate();
+    let cells = '<span></span>'.repeat((first.getDay() + 6) % 7);
+    for (let d = 1; d <= n; d++){
+      const day = `${yr}-${String(mi + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const done = pool.filter(h => isDone(m[day + '|' + h.id])).length;
+      total += done; if (done) any.add(day);
+      const bg = day > t ? '' : !done ? '' : h1 ? habitColor(h1) : `color-mix(in srgb,var(--fire) ${Math.round(30 + 70 * done / pool.length)}%,transparent)`;
+      cells += `<i class="${day > t ? 'fut' : ''} ${day === t ? 'today' : ''}" ${bg ? `style="background:${bg}"` : ''} title="${fmtDay(day)}${done ? ` · ${done}` : ''}"></i>`;
+    }
+    return `<div class="ym"><b>${mn.slice(0, 3)}</b><div class="ym-d">${cells}</div></div>`;
+  }).join('');
+  const best = Math.max(0, ...pool.map(h => h.best || h.streak || 0));
+  return `<div class="row between" style="align-items:center;margin:4px 0 10px"><button class="link" data-yr="-1" style="visibility:${yr > parseDay(addDays(t, -365)).getFullYear() ? 'visible' : 'hidden'}">‹</button><b>${yr}</b><button class="link" data-yr="1" style="visibility:${yr < parseDay(t).getFullYear() ? 'visible' : 'hidden'}">›</button></div>
+    <div class="chips" style="flex-wrap:wrap">${[['', 'Todos'], ...hs.map(h => [h.id, `${h.emoji} ${h.name}`])].map(([id, l]) => `<button class="chip ${(only || '') === id ? 'on' : ''}" data-yh="${id}">${esc(l)}</button>`).join('')}</div>
+    <div class="calstats"><div><b>${total}</b><span>🔥 fueguitos</span></div><div><b>${any.size}</b><span>📅 días con algo</span></div><div><b>${best}</b><span>🏆 mejor racha</span></div></div>
+    <div class="card section ym-grid">${months}</div>`;
+}
+function calendarScreen(view = 'semana'){
+  let v = view, wk = mondayOf(S.me.today), yr = parseDay(S.me.today).getFullYear(), only = null;
+  const el = openSheet('<div id="cal-in"></div>'), box = $('#cal-in', el);
+  const paint = () => {
+    const tabs = `<div class="subtabs" role="tablist" style="margin-top:10px">${[['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']].map(([k, l]) => `<button role="tab" class="${v === k ? 'on' : ''}" aria-selected="${v === k}" data-cv="${k}">${l}</button>`).join('')}</div>`;
+    let body = '';
+    if (v === 'semana'){
+      const w = weekGrid(wk), minWk = mondayOf(addDays(S.me.today, -364)), maxWk = mondayOf(S.me.today);
+      body = `<div class="row between" style="align-items:center;margin:4px 0 10px"><button class="link" data-wk="-7" style="visibility:${wk > minWk ? 'visible' : 'hidden'}">‹</button><b>${wk === maxWk ? 'Esta semana' : weekLabel(wk)}</b><button class="link" data-wk="7" style="visibility:${wk < maxWk ? 'visible' : 'hidden'}">›</button></div>
+        <div class="calstats"><div><b>${w.total}</b><span>🔥 fueguitos</span></div><div><b>${w.days}</b><span>📅 días con algo</span></div><div><b>${w.pct}%</b><span>✅ cumplido</span></div></div>
+        <div class="card section">${w.html}</div><p class="hint">Más clarito: ese día se usó un hielito o un descanso.</p>`;
+    } else if (v === 'mes') body = '<div class="card section" id="cal-mes"></div>';
+    else body = yearHTML(yr, only);
+    box.innerHTML = `<h2>📅 Calendario</h2>${tabs}${body}<div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`;
+    box.querySelector('[data-close-sheet]').onclick = () => { closeSheet(); renderMain(); };
+    box.querySelectorAll('[data-cv]').forEach(b => b.onclick = () => { v = b.dataset.cv; paint(); });
+    box.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { wk = addDays(wk, +b.dataset.wk); paint(); });
+    box.querySelectorAll('[data-yr]').forEach(b => b.onclick = () => { yr += +b.dataset.yr; paint(); });
+    box.querySelectorAll('[data-yh]').forEach(b => b.onclick = () => { only = b.dataset.yh || null; paint(); });
+    if (v === 'mes') myCalendar($('#cal-mes', box));
+  };
+  paint();
+}
+const bindWeekCard = () => document.querySelectorAll('[data-wk-open]').forEach(b => b.onclick = () => calendarScreen('semana'));
+
 // Mi calendario: todos mis hábitos (compartidos y privados), un puntito de color por cada uno hecho ese día.
 // Los días viejos (más de 3 días) se pintan desde acá también: no suman a la racha.
 function myCalendar(box){
@@ -1951,6 +2055,7 @@ function renderHoy(){
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
       (hs.every(h => !h.streak) && !(S.history || []).length ? `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>` : '')}
     <div class="habits">${hs.map(habitCard).join('')}</div>
+    ${weekCard()}
     ${hs.some(h => h.done_today && h.kind !== 'evitar') ? `<div class="shareday"><span>📲 Contale al grupo</span><span class="row" style="gap:16px"><button class="link" id="wa-copy">Copiar</button><button class="link" id="wa-send" style="color:var(--ok-ink)">Mandar</button></span></div>` : ''}
     ${eggCard()}
     ${mateCard()}
@@ -1990,6 +2095,7 @@ function renderHoy(){
     try { const hj = await rpc('api_undo_checkin', { ...P(), p_habit: b.dataset.undo }); S.me.habits = hj; renderHoy(); toast('Anotación deshecha'); }
     catch(err){ toast(err.message); }
   });
+  bindWeekCard();
   const wac = $('#wa-copy'); if (wac) wac.onclick = async () => { (await copy(wppText())) ? toast('Mensaje copiado. Pegalo en el grupo 📋') : toast('No se pudo copiar'); };
   const was_ = $('#wa-send'); if (was_) was_.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(wppText()); };
   const tg = $('#to-group'); if (tg) tg.onclick = createGroupSheet;
@@ -2010,7 +2116,7 @@ function renderHoy(){
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
   const nok = $('#news-ok'); if (nok) nok.onclick = () => { LS.set('fueguitos_news', NEWS.id); renderHoy(); };
-  const ncal = $('#news-cal'); if (ncal) ncal.onclick = () => { LS.set('fueguitos_news', NEWS.id); go('perfil'); setTimeout(() => { const m = $('#mycal'); if (m) m.scrollIntoView({ block: 'center' }); }, 300); };
+  const ncal = $('#news-cal'); if (ncal) ncal.onclick = () => { LS.set('fueguitos_news', NEWS.id); renderHoy(); calendarScreen('mes'); };
   const nml = $('#n-mail'); if (nml) nml.onclick = mailSheet;
   const nmn = $('#n-mail-no'); if (nmn) nmn.onclick = () => { LS.set('fueguitos_mail_snooze', String(Date.now())); renderHoy(); toast('Lo tenés en Perfil → Mis datos cuando quieras'); };
   bindPlanCard();
@@ -4933,9 +5039,7 @@ function renderPerfil(){
     ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">💎 ${S.av.coins} ${S.av.coins === 1 ? 'diamante' : 'diamantes'} · 1 por fueguito</div>${nextCharLine()}<button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
       : eggCard()) : ''}
 
-    <div class="section"><div class="section-title"><h2>Mi calendario</h2><span class="small muted">Tus hábitos, con su color</span></div>
-      <div class="card" id="mycal"></div>
-    </div>
+    ${weekCard()}
 
     <div class="section"><div class="section-title"><h2>Mi progreso</h2></div>
       <div class="card" id="prog">${progressBlock()}</div>
@@ -5013,7 +5117,7 @@ function renderPerfil(){
   if (S.myShares === undefined){ S.myShares = null; rpc('api_profile_shares', { ...P(), p_user: null }).then(r => { S.myShares = r; if (S.tab === 'perfil') renderPerfil(); }).catch(() => { S.myShares = []; }); }
   document.querySelectorAll('#myshares [data-shdel]').forEach(b => b.onclick = () => confirmSheet('¿Borrar esto?', 'Deja de verse en tu perfil y en tus grupos.', 'Borrar', async () => { await rpc('api_share_delete', { ...P(), p_id: b.dataset.shdel }); S.myShares = undefined; S.shares = {}; renderPerfil(); }));
   document.querySelectorAll('#myshares [data-like]').forEach(b => b.remove());
-  const mc = $('#mycal'); if (mc) myCalendar(mc);
+  bindWeekCard();
   if (S.strava === undefined){ S.strava = null; loadStrava(); }
   bindStrava();
   const sh = $('#shop'); if (sh) sh.onclick = () => shopSheet();
