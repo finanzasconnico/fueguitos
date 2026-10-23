@@ -54,6 +54,26 @@ button{cursor:pointer;border:0;background:none;padding:0}
 a{color:var(--ice-dark)}
 :focus-visible{outline:3px solid var(--ice);outline-offset:2px;border-radius:8px}
 .wrap{max-width:480px;margin:0 auto;padding:calc(var(--safe-t) + 14px) 16px calc(96px + var(--safe-b))}
+.status{position:sticky;top:0;z-index:25;background:var(--nav);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding-top:var(--safe-t);border-bottom:2px solid var(--line)}
+.status:empty{display:none}
+.status .inner{max-width:480px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between}
+.status + .wrap{padding-top:16px}
+.st-av{border:0;background:none;padding:0;display:flex;border-radius:50%}
+.st-egg svg{width:34px;height:34px;display:block}
+.st-right{display:flex;gap:8px}
+.st-pill{display:flex;align-items:center;gap:5px;border:0;background:none;font:inherit;font-size:17px;font-weight:800;color:var(--muted);padding:6px 8px;border-radius:12px}
+.st-pill b{font-weight:800}
+.st-pill.on{color:var(--fire)}
+.st-pill.gem{color:#1CB0F6}
+.st-pill:active{background:var(--line)}
+.st-flame{width:20px;height:22px;display:block}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);display:grid;place-items:center;padding:0}
+.icon-btn.accent{background:var(--ice);border-color:transparent;color:#fff}
+.mfire{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;background:var(--line);font-size:17px;color:var(--muted)}
+.mfire.on{background:var(--fire-soft);color:var(--fire-ink)}
+.mfire .mfe{font-size:16px}
+.mf-flame{width:16px;height:18px;display:block}
+.mini-flame svg{width:26px;height:30px;display:block}.mini-flame.off svg{opacity:.35}
 .wrap.with-bar{padding-bottom:calc(160px + var(--safe-b))}
 h1,h2,h3{margin:0;line-height:1.1;letter-spacing:-.01em}
 h1{font-size:30px;font-weight:800}
@@ -1236,6 +1256,7 @@ async function loadAvatar(){
   try {
     const a = await rpc('api_avatar', P()); const was = S.av; S.av = a;
     S.me.user.avatar = { h: a.hatched, eq: a.eq, name: a.name };
+    renderStatus();
     if (a.just_hatched){ renderMain(); hatchSheet(); }
     else if (a.new && a.new.length) unlockSheet(a.new);
     else if (!was || was.fed !== a.fed || was.coins !== a.coins){ if (S.tab === 'hoy') renderHoy(); if (S.tab === 'perfil') renderPerfil(); }
@@ -1602,10 +1623,52 @@ function dragToClose(scrim, sheet, dismiss){
   });
 }
 
+/* ============ Barra de estado: avatar, tu fueguito y tus diamantes, siempre arriba ============ */
+// El fueguito "principal": el que elegiste mostrar en los grupos, o el de racha más alta.
+function mainFire(){
+  const hs = (S.me.habits || []).filter(h => h.kind === 'hacer' && !h.free);
+  if (!hs.length) return null;
+  return hs.find(h => h.id === S.me.user.show_habit) || hs.reduce((a, h) => h.streak > a.streak ? h : a, hs[0]);
+}
+function renderStatus(){
+  const el = $('#status'); if (!el || !S.me) return;
+  const f = mainFire(), a = S.av;
+  el.innerHTML = `<div class="inner">
+    <button class="st-av" id="st-av" aria-label="${a && a.hatched ? 'Tu avatar: abrir la tienda' : 'Tu huevito'}">${a && a.hatched ? userAv(S.me.user.nick, S.me.user.avatar, 34) : `<span class="st-egg">${eggSVG(a ? a.fed : 0)}</span>`}</button>
+    <div class="st-right">
+      <button class="st-pill ${f && f.done_today ? 'on' : ''}" id="st-fire" aria-label="Tus rachas">${flameSVG(!!(f && f.done_today), 'st-flame')}<b>${f ? f.streak : 0}</b></button>
+      <button class="st-pill gem" id="st-gem" aria-label="Diamantes: abrir la tienda">💎<b>${a ? a.coins ?? 0 : '–'}</b></button>
+    </div></div>`;
+  $('#st-av', el).onclick = () => { if (a && a.hatched) shopSheet('p'); else if (a) toast(`Tu huevito nace con ${a.need - a.fed === 1 ? '1 día más' : `${a.need - a.fed} días más`} con fueguito 🥚`, 3000); };
+  $('#st-fire', el).onclick = streaksSheet;
+  $('#st-gem', el).onclick = () => { if (a && a.hatched) shopSheet('c'); else if (a) toast('La tienda se abre cuando nace tu huevito 🥚', 3000); };
+}
+// Tus rachas, y cuál se muestra en los grupos.
+function streaksSheet(){
+  const hs = (S.me.habits || []).filter(h => h.kind === 'hacer' && !h.free), f = mainFire();
+  const el = openSheet(`<h2>🔥 Tus rachas</h2>
+    <p class="muted small" style="margin:4px 0 12px">En los grupos se ve un solo fueguito tuyo. Elegí cuál: si es un hábito privado, se ve el número sin decir de qué.</p>
+    <div class="card">${hs.map(h => `<div class="hrow">
+      <button class="row" style="gap:10px;flex:1;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit" data-sh-cal="${h.id}">
+        <span class="mini-flame ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}</span>
+        <span><b>${esc(h.name)}</b> ${esc(h.emoji)}${h.private ? ' 🔒' : ''}<span class="small muted" style="display:block">${h.streak} ${h.streak === 1 ? 'día' : 'días'} · récord ${h.best || h.streak}</span></span></button>
+      <button class="chip ${f && f.id === h.id ? 'on' : ''}" data-sh-show="${h.id}" style="margin:0">${f && f.id === h.id ? '✓ En grupos' : 'Mostrar'}</button></div>`).join('') || '<p class="muted" style="margin:0">Todavía no tenés hábitos con racha.</p>'}</div>
+    <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
+  el.querySelector('[data-close-sheet]').onclick = closeSheet;
+  el.querySelectorAll('[data-sh-cal]').forEach(b => b.onclick = () => calendarSheet(S.me.habits.find(h => h.id === b.dataset.shCal)));
+  el.querySelectorAll('[data-sh-show]').forEach(b => b.onclick = async () => {
+    const prev = S.me.user.show_habit; S.me.user.show_habit = b.dataset.shShow; S.group = null; renderStatus(); streaksSheet();
+    try { await rpc('api_set_show_habit', { ...P(), p_habit: b.dataset.shShow }); toast('Listo: ese es el fueguito que ven tus grupos 🔥'); }
+    catch(e){ S.me.user.show_habit = prev; renderStatus(); toast(e.message); }
+  });
+}
+
 /* ============ Estructura principal ============ */
+const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
 function renderShell(){
-  $('#app').innerHTML = `<main class="wrap" id="main"></main>
+  $('#app').innerHTML = `<header class="status" id="status"></header><main class="wrap" id="main"></main>
   <div id="bar"></div>
   <nav class="tabs" aria-label="Secciones"><div class="inner">
     ${['hoy','grupo','torneos','rutinas','perfil'].map(t => `<button data-tab="${t}" class="${S.tab===t?'on':''}" aria-current="${S.tab===t?'page':'false'}">${ICONS[t]}<span>${TAB_NAMES[t]}</span></button>`).join('')}
@@ -1625,6 +1688,7 @@ function renderMain(){
   syncWidget();
   if (S.me) cacheSet('me', S.me);
   if (!$('#main')) return;
+  renderStatus();
   if (S.tab === 'hoy') renderHoy();
   else if (S.tab === 'grupo') renderGrupo();
   else if (S.tab === 'torneos') renderTorneosTab();
@@ -2701,13 +2765,13 @@ function renderGrupo(){
     $('#main').innerHTML = `<div class="top"><h1>Grupo</h1></div>${chips}<div class="spinner"></div>`;
     bindChips(); return;
   }
-  const didToday = (m) => m.habits.some(h => h.done_today) ? 1 : 0;
+  const didToday = (m) => (m.is_me ? m.habits.some(h => h.done_today) : (m.fire ? m.fire.any_today : m.habits.some(h => h.done_today))) ? 1 : 0;
   // Primero los que ya anotaron hoy: ver que los otros lo hicieron es lo que más empuja.
   const members = G.members.filter(m => !m.bench).sort((a,b) => didToday(b) - didToday(a) || sumStreak(b) - sumStreak(a));
-  const doneCount = members.filter(m => m.habits.some(h => h.done_today)).length;
+  const doneCount = members.filter(didToday).length;
   $('#main').innerHTML = `
     <div class="top"><div class="row" style="gap:12px;align-items:center;min-width:0">${groupAvatar(G.group, 56)}<div style="min-width:0"><div class="date">${doneCount} de ${members.length} anotaron hoy</div><h1 class="gname">${esc(gName(G.group))}</h1></div></div>
-      <div class="row" style="gap:8px">${G.group.is_admin ? '<button class="btn sm ghost" id="g-edit" aria-label="Editar grupo">Editar</button>' : ''}<button class="btn sm ice" id="invite">Invitar</button></div></div>
+      <div class="row" style="gap:8px;flex:none">${G.group.is_admin ? `<button class="icon-btn" id="g-edit" aria-label="Editar grupo" title="Editar grupo">${ICON_GEAR}</button>` : ''}<button class="icon-btn accent" id="invite" aria-label="Invitar" title="Invitar">${ICON_INVITE}</button></div></div>
     ${G.group.descr ? `<p class="gdescr">${esc(G.group.descr)}</p>` : ''}
     ${(G.group.rule_days && G.group.rule_days.length) || G.group.rule_rest ? `<p class="gdescr">📅 ${esc(ruleText(G.group.rule_days, G.group.rule_rest))}</p>` : ''}
     ${chips}
@@ -3626,10 +3690,18 @@ function weekLeft(h){
   const left = (7 - rest) - (h.week_done || 0);
   return left > 0 ? ` <span class="small muted">· le ${left === 1 ? 'falta 1' : `faltan ${left}`} esta semana</span>` : ' <span class="small muted">· semana ✓</span>';
 }
+// Un solo fueguito por persona: el hábito que eligió mostrar (o su racha más alta). Si es privado, sin nombre.
+function memberFire(m){
+  let f = m.fire;
+  if (m.is_me){ const h = mainFire(); f = h && { streak: h.streak, done_today: h.done_today, any_today: S.me.habits.some(x => x.done_today && x.kind === 'hacer'), name: h.private ? null : h.name, emoji: h.private ? null : h.emoji }; }
+  if (!f) return '<span class="small muted">Sin hábitos</span>';
+  const lit = !!(f.done_today || f.any_today); // prendido si hoy anotó algo, aunque sea privado
+  return `<span class="mfire ${lit ? 'on' : ''}" title="${f.name ? esc(f.name) : 'Hábito personal'}${lit ? ': anotó hoy' : ''}">${f.emoji ? `<span class="mfe">${esc(f.emoji)}</span>` : ''}${flameSVG(lit, 'mf-flame')}<b>${f.streak}</b></span>`;
+}
 function memberRow(m){
   return `<div class="member" role="button" tabindex="0" data-member="${m.id}" aria-label="Ver a ${esc(m.nick)}">
     <div class="who">${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 36)}<div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}</div></div>
-    <div class="mh">${m.habits.length ? m.habits.map(h => `<span class="m ${h.done_today ? 'done' : ''}" title="${esc(h.name)}${h.done_today ? ': anotado hoy' : ''}">${esc(h.emoji)} ${h.streak}${h.done_today ? '🔥' : ''}${weekLeft(h)}${h.ice ? ` <span style="color:var(--ice-dark)">🧊${h.ice}</span>` : ''}</span>`).join('') : '<span class="small muted">Sin hábitos</span>'}</div>
+    <div class="mh">${memberFire(m)}</div>
   </div>`;
 }
 // Los 4 de siempre son gratis; los demás se compran una vez con diamantes y quedan para siempre.
