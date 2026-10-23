@@ -185,6 +185,11 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .shopit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:16px;border:2px solid var(--line);background:var(--card);font:inherit;color:inherit}
 .shopit.on{border-color:var(--fire);background:var(--fire-soft)}
 .shopit.cant{opacity:.55}
+.exrow{display:grid;grid-template-columns:minmax(0,1fr) 46px 46px 58px 26px;gap:6px;align-items:center;margin-bottom:6px}
+.exrow .input{min-height:42px;padding:0 8px;font-size:15px;border-radius:12px}
+.exrow input[type=number]{text-align:center;padding:0 2px}
+.exhead{margin-bottom:2px}.exhead span{font-size:12px;font-weight:800;color:var(--muted);text-align:center}.exhead span:first-child{text-align:left}
+.exrm{border:0;background:none;color:var(--muted);font-size:15px;padding:0;height:42px}
 .incu{display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 10px 6px 6px;border-radius:14px;background:color-mix(in srgb,var(--fire) 8%,transparent);text-align:left}
 .incu-ch{position:relative;flex:none;width:34px;height:34px;font-size:30px;line-height:34px;text-align:center}
 .incu-ch i{position:absolute;inset:0;font-style:normal}
@@ -2302,7 +2307,7 @@ function openCheckinSheet(){
     </div>
     <label class="field" style="margin-top:14px"><span>Comentario (opcional)</span><input class="input" id="note" maxlength="140" placeholder="Ej: 5 km en el parque"></label>
     ${sport ? `<div class="field section" style="margin-bottom:0"><span>¿Qué tan intenso fue? (opcional)</span><div class="chips" id="inten" style="margin:4px 0 0">${INTENS.map(([n, ic, l]) => `<button type="button" class="chip ${inten === n ? 'on' : ''}" data-in="${n}">${ic} ${l}</button>`).join('')}</div></div>` : ''}
-    ${sport ? `<details class="more section" id="det" ${S.pendingActivity ? 'open' : ''}><summary>＋ Agregar detalle: distancia, tiempo o pesos (opcional)</summary><div id="det-body"></div></details>` : ''}
+    ${sport ? `<details class="more section" id="det" ${S.pendingActivity ? 'open' : ''}><summary>＋ Agregar detalle: distancia, tiempo o tu rutina de gym (opcional)</summary><div id="det-body"></div></details>` : ''}
     <div class="section"><button class="btn" id="confirm">${idle}</button>
       ${allDone && !day ? `<button class="link small danger" id="ck-undo" style="display:block;margin:14px auto 0">Desanotar ${esc(hs.map(h => h.name).join(' + '))}</button>` : ''}</div>
   `);
@@ -2315,6 +2320,7 @@ function openCheckinSheet(){
   const det = { kind: S.pendingActivity ? S.pendingActivity.kind : null, minutes: S.pendingActivity ? S.pendingActivity.minutes : null, km: S.pendingActivity ? S.pendingActivity.km : null };
   S.pendingActivity = null;
   if (sport) paintDetail(el, det);
+  if (sport && (!S.routines || !S.lifts)) Promise.all([S.routines ? null : loadRoutines(), S.lifts ? null : loadLifts()]).then(() => { if (el.isConnected) paintDetail(el, det); });
   const onFile = async (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
     $('#pd', el).innerHTML = '<div class="spinner"></div>';
@@ -2510,8 +2516,17 @@ const intensColor = (hc, i) => i && i < 3 ? `color-mix(in srgb,${hc} ${INTENS_PC
 const isSport = (h) => /deporte|entren|gym|gimnas|ejerc|correr|running|fútbol|futbol|bici|nata/i.test(h.name);
 const ACT = { correr: ['🏃', 'Correr', true], caminar: ['🚶', 'Caminar', true], bici: ['🚴', 'Bici', true], nadar: ['🏊', 'Nadar', true],
   gym: ['🏋️', 'Gimnasio', false], futbol: ['⚽', 'Fútbol', false], deporte: ['🏅', 'Otro deporte', false] };
+// Guarda lo que hay escrito antes de volver a dibujar (cambiar de actividad o de rutina no borra nada).
+function syncDetail(el, det){
+  if (det.editor && $('#d-rows', el)) det.rows = det.editor.all();
+  const c = (id) => { const i = $(id, el); return i ? i.checked : undefined; };
+  if ($('#d-upd', el)) det.upd = c('#d-upd');
+  if ($('#d-save', el)){ det.saveAs = c('#d-save'); det.rtName = $('#d-rtname', el).value; }
+  if ($('#d-showkg', el)) det.showKg = c('#d-showkg');
+}
 function paintDetail(el, det){
   const box = $('#det-body', el); if (!box) return;
+  syncDetail(el, det);
   const k = det.kind, dist = k && ACT[k][2];
   box.innerHTML = `<div class="stack" style="margin-top:4px">
     <div class="chips" style="flex-wrap:wrap;margin:0">${Object.entries(ACT).map(([key, [ic, l]]) => `<button type="button" class="chip ${k === key ? 'on' : ''}" data-ak="${key}">${ic} ${l}</button>`).join('')}</div>
@@ -2519,34 +2534,65 @@ function paintDetail(el, det){
       ${dist ? `<label class="field"><span>Distancia (km)</span><input class="input" id="d-km" type="number" inputmode="decimal" step="0.1" min="0" max="500" placeholder="5" value="${det.km || ''}"></label>` : ''}
       <label class="field"><span>Tiempo (min)</span><input class="input" id="d-min" type="number" inputmode="numeric" min="1" max="1440" placeholder="30" value="${det.minutes || ''}"></label>
     </div>` : '<p class="hint" style="margin:0">Elegí qué hiciste. Todo es opcional: lo que cargues arma tus gráficos de progreso en Perfil.</p>'}
-    ${k === 'gym' ? `<div class="field"><span>Un ejercicio (opcional)</span>
-      <div class="grid2"><input class="input" id="d-ex" maxlength="40" placeholder="Press plano" list="d-exl"><datalist id="d-exl">${EJERCICIOS.map(e => `<option value="${esc(e)}">`).join('')}</datalist>
-      <div class="row" style="gap:8px"><input class="input" id="d-kg" type="number" inputmode="decimal" step="0.5" min="0" max="1000" placeholder="kg"><input class="input" id="d-reps" type="number" inputmode="numeric" min="1" max="200" placeholder="reps"></div></div>
-      <div class="hint">Se guarda en tus marcas del gym y en el gráfico de progreso.</div></div>` : ''}
+    ${k === 'gym' ? `<div class="field"><span>Ejercicios (opcional)</span>
+      ${S.routines && S.routines.mine.length ? `<div class="chips" style="flex-wrap:wrap;margin:0 0 8px">${S.routines.mine.map(r => `<button type="button" class="chip ${det.routine === r.id ? 'on' : ''}" data-drt="${r.id}">📋 ${esc(r.name)}</button>`).join('')}</div>` : ''}
+      <div id="d-rows"></div>
+      <div class="stack" style="gap:8px;margin-top:10px">
+        ${det.routine ? `<label class="row small" style="gap:8px"><input type="checkbox" id="d-upd" ${det.upd !== false ? 'checked' : ''}> Actualizar la rutina con estos pesos</label>`
+          : `<label class="row small" style="gap:8px"><input type="checkbox" id="d-save" ${det.saveAs ? 'checked' : ''}> Guardar como rutina para la próxima</label>
+             <input class="input" id="d-rtname" maxlength="40" placeholder="Nombre (ej: Piernas)" value="${esc(det.rtName || '')}" style="display:${det.saveAs ? '' : 'none'}">`}
+        <label class="row small" style="gap:8px"><input type="checkbox" id="d-showkg" ${det.showKg ? 'checked' : ''}> Mostrar mis pesos en la foto del grupo</label>
+      </div>
+      <div class="hint">Tus pesos quedan en "Mis marcas del gym" y los ves solo vos.</div></div>` : ''}
   </div>`;
+  if (k === 'gym'){
+    det.editor = rowsEditor($('#d-rows', el), det.rows && det.rows.length ? det.rows : [{}]);
+    box.querySelectorAll('[data-drt]').forEach(b => b.onclick = () => {
+      syncDetail(el, det);
+      const r = S.routines.mine.find(x => x.id === b.dataset.drt);
+      if (det.routine === r.id){ det.routine = null; } else { det.routine = r.id; det.rows = withLastKg(r.items); det.upd = true; det.editor = null; } // sin editor: no se pisan las filas nuevas con las viejas
+      paintDetail(el, det);
+    });
+    const sv = $('#d-save', el); if (sv) sv.onchange = () => { $('#d-rtname', el).style.display = sv.checked ? '' : 'none'; if (sv.checked) $('#d-rtname', el).focus(); };
+  } else det.editor = null;
   box.querySelectorAll('[data-ak]').forEach(b => b.onclick = () => { const m = $('#d-min', el); if (m && m.value) det.minutes = +m.value; det.kind = det.kind === b.dataset.ak ? null : b.dataset.ak; paintDetail(el, det); });
 }
 function readDetail(el, det){
   if (!det.kind) return null;
+  syncDetail(el, det);
   const num = (id) => { const i = $(id, el); if (!i || i.value === '') return null; return parseFloat(i.value.replace(',', '.')); };
-  const km = num('#d-km'), min = num('#d-min'), kg = num('#d-kg'), reps = num('#d-reps');
-  const ex = $('#d-ex', el) ? capEx($('#d-ex', el).value) : '';
+  const km = num('#d-km'), min = num('#d-min');
   if (km != null && !(km > 0 && km <= 500)) return { error: 'Revisá la distancia' };
   if (min != null && !(min > 0 && min <= 1440)) return { error: 'Revisá el tiempo' };
-  if (kg != null && !(kg >= 0 && kg <= 1000)) return { error: 'Revisá el peso' };
+  const rows = det.kind === 'gym' && det.editor ? det.editor.get() : [];
+  const bad = rows.find(r => Number.isNaN(r.kg) || Number.isNaN(r.reps) || Number.isNaN(r.sets) || (r.kg != null && !(r.kg >= 0 && r.kg <= 1000)));
+  if (bad) return { error: `Revisá los números de ${bad.ex}` };
+  const saveAs = !det.routine && rows.length && det.saveAs, rtName = (det.rtName || '').trim();
+  if (saveAs && !rtName) return { error: 'Ponele un nombre a la rutina' };
+  const routine = det.routine && S.routines ? S.routines.mine.find(r => r.id === det.routine) : null;
   const [ic, label] = ACT[det.kind];
-  const parts = [km ? `${String(km).replace('.', ',')} km` : '', min ? `${min} min` : '', ex && kg != null ? `${ex} ${kgTxt(kg)}${reps ? ` × ${reps}` : ''}` : ''].filter(Boolean);
-  return { kind: det.kind, km, minutes: min ? Math.round(min) : null, ex, kg, reps: reps ? Math.round(reps) : null, summary: `${ic} ${label}${parts.length ? ' · ' + parts.join(' · ') : ''}` };
+  // En la foto del grupo los pesos solo aparecen si la persona lo eligió.
+  const gymTxt = !rows.length ? '' : det.showKg ? rows.map(r => `${r.ex}${r.kg != null ? ' ' + kgTxt(r.kg) : ''}${r.reps ? ` × ${r.reps}` : ''}`).join(', ')
+    : routine ? routine.name : `${rows.length} ${rows.length === 1 ? 'ejercicio' : 'ejercicios'}`;
+  const parts = [km ? `${String(km).replace('.', ',')} km` : '', min ? `${min} min` : '', gymTxt].filter(Boolean);
+  return { kind: det.kind, km, minutes: min ? Math.round(min) : null, rows, routine: routine && routine.id, upd: !!(routine && det.upd !== false), saveAs: !!saveAs, rtName,
+    summary: `${ic} ${label}${parts.length ? ' · ' + parts.join(' · ') : ''}` };
 }
 async function saveDetail(h, x, day){
   try {
     await rpcQ('api_activity_add', { ...P(), p_habit: h.id, p_kind: x.kind, p_km: x.km, p_minutes: x.minutes, p_note: null, ...(day ? { p_day: day } : {}) }, 'detalle de la actividad', !day);
-    if (x.ex && x.kg != null){
-      const r = await rpcQ('api_lift_add', { ...P(), p_exercise: x.ex, p_kg: x.kg, p_reps: x.reps, p_note: null }, 'marca del gym');
-      S.lifts = null;
-      if (r && r.pr && r.prev != null) setTimeout(() => toast(`🏆 ¡Récord nuevo en ${x.ex}! ${kgTxt(x.kg)} (antes ${kgTxt(r.prev)})`, 4000), 1800);
-    }
     S.acts = null;
+    if (!x.rows || !x.rows.length) return;
+    if (x.rows.some(r => r.kg != null)){
+      const res = await rpcQ('api_lifts_add_many', { ...P(), p_items: x.rows, p_note: null }, 'pesos del gym');
+      S.lifts = null;
+      const prs = Array.isArray(res) ? res.filter(r => r.pr) : [];
+      if (prs.length) setTimeout(() => { vibrate([30, 60, 30]); toast(prs.length === 1 ? `🏆 ¡Récord nuevo en ${prs[0].ex}! ${kgTxt(prs[0].kg)} (antes ${kgTxt(prs[0].prev)})` : `🏆 ¡${prs.length} récords nuevos! ${prs.map(p => p.ex).join(', ')}`, 4500); }, 1800);
+    }
+    let r = null;
+    if (x.upd) r = await rpcQ('api_routine_set_items', { ...P(), p_id: x.routine, p_items: x.rows }, 'rutina de gym');
+    else if (x.saveAs){ r = await rpcQ('api_routine_save', { ...P(), p_id: null, p_name: x.rtName, p_items: x.rows, p_group: null }, 'rutina de gym'); setTimeout(() => toast(`📋 Rutina "${x.rtName}" guardada. La próxima vez se carga sola.`, 3500), 3600); }
+    if (r && r.mine) S.routines = r;
   } catch(e){ toast('Se anotó el día, pero no se guardó el detalle: ' + e.message, 4000); }
 }
 
@@ -4309,6 +4355,90 @@ function liftSheet(name){
   };
 }
 
+/* ============ Rutinas de gym: listas de ejercicios que cada uno se guarda (privadas, o compartidas sin pesos) ============ */
+async function loadRoutines(){
+  try { S.routines = await rpc('api_routines', P()); } catch(e){ S.routines = S.routines || { mine: [], group: [] }; }
+  const box = $('#routines'); if (box && S.tab === 'rutinas'){ box.innerHTML = routinesBlock(); bindRoutines(); }
+}
+const lastLift = (ex) => (S.lifts || []).find(l => l.exercise.toLowerCase() === String(ex).toLowerCase());
+// Al cargar una rutina, cada ejercicio trae el último peso que hiciste (o el de la rutina si nunca lo cargaste).
+const withLastKg = (items) => items.map(i => { const l = lastLift(i.ex); return { ex: i.ex, sets: i.sets ?? null, reps: i.reps ?? (l && l.reps) ?? null, kg: l ? +l.kg : (i.kg ?? null) }; });
+function exNames(){ const seen = new Set(); return [...liftGroups().map(g => g.name), ...EJERCICIOS].filter(e => !seen.has(e.toLowerCase()) && seen.add(e.toLowerCase())); }
+const exRow = (r, i) => `<div class="exrow">
+  <input class="input" data-f="ex" maxlength="40" placeholder="Ejercicio" list="exl" value="${esc(r.ex || '')}" aria-label="Ejercicio">
+  <input class="input" data-f="sets" type="number" inputmode="numeric" min="1" max="20" placeholder="–" value="${r.sets ?? ''}" aria-label="Series">
+  <input class="input" data-f="reps" type="number" inputmode="numeric" min="1" max="200" placeholder="–" value="${r.reps ?? ''}" aria-label="Repeticiones">
+  <input class="input" data-f="kg" type="number" inputmode="decimal" step="0.5" min="0" max="1000" placeholder="–" value="${r.kg ?? ''}" aria-label="Peso en kg">
+  <button type="button" class="exrm" data-rm="${i}" aria-label="Quitar ejercicio">✕</button></div>`;
+function readRows(box){
+  return [...box.querySelectorAll('.exrow:not(.exhead)')].map(r => {
+    const v = (f) => r.querySelector(`[data-f="${f}"]`).value.trim().replace(',', '.');
+    const n = (f, fl) => { const x = v(f); if (x === '') return null; const y = fl ? parseFloat(x) : parseInt(x, 10); return isNaN(y) ? NaN : y; };
+    return { ex: capEx(v('ex')), sets: n('sets'), reps: n('reps'), kg: n('kg', true) };
+  });
+}
+// Filas editables de ejercicios (para anotar el gym y para armar rutinas).
+function rowsEditor(box, rows){
+  const paint = () => {
+    box.innerHTML = `<div class="exrow exhead" aria-hidden="true"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>kg</span><span></span></div>
+      ${rows.map(exRow).join('')}<datalist id="exl">${exNames().map(e => `<option value="${esc(e)}">`).join('')}</datalist>
+      <button type="button" class="link small" data-addrow style="margin-top:6px">+ Ejercicio</button>`;
+    box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { rows = readRows(box); rows.splice(+b.dataset.rm, 1); if (!rows.length) rows = [{}]; paint(); });
+    box.querySelector('[data-addrow]').onclick = () => { rows = readRows(box); rows.push({}); paint(); const ins = box.querySelectorAll('[data-f="ex"]'); ins[ins.length - 1].focus(); };
+  };
+  paint();
+  return { all: () => readRows(box), get: () => readRows(box).filter(r => r.ex) };
+}
+const routineShareLabel = (r) => r.group_id ? `👥 Compartida con ${esc(gName({ id: r.group_id, name: r.group_name || 'tu grupo' }))}` : '🔒 Solo vos';
+function routinesBlock(){
+  if (!S.routines) return '<div class="spinner" style="margin:12px auto"></div>';
+  const { mine, group } = S.routines;
+  return `${mine.length ? mine.map(r => `<button class="hrow" style="width:100%;text-align:left" data-rt="${r.id}">
+      <div><div style="font-weight:800;font-size:17px">📋 ${esc(r.name)}</div><div class="small muted">${r.items.length} ${r.items.length === 1 ? 'ejercicio' : 'ejercicios'} · ${routineShareLabel(r)}</div></div><span class="small muted">Editar</span></button>`).join('')
+    : '<p class="muted" style="margin:0">Guardá las rutinas que hacés siempre (ej: Piernas, Pecho y espalda). Cuando anotes Gimnasio, se cargan solas con tus últimos pesos.</p>'}
+    ${group.length ? `<div class="small muted" style="font-weight:800;margin:14px 0 4px">Compartidas en tus grupos</div>${group.map(r => `<button class="hrow" style="width:100%;text-align:left" data-grt="${r.id}">
+      <div><div style="font-weight:800">📋 ${esc(r.name)}</div><div class="small muted">de ${esc(r.owner)} · ${r.items.length} ${r.items.length === 1 ? 'ejercicio' : 'ejercicios'}</div></div><span class="small" style="font-weight:800;color:var(--fire)">Ver</span></button>`).join('')}` : ''}`;
+}
+function bindRoutines(){
+  document.querySelectorAll('[data-rt]').forEach(b => b.onclick = () => routineSheet(S.routines.mine.find(r => r.id === b.dataset.rt)));
+  document.querySelectorAll('[data-grt]').forEach(b => b.onclick = () => groupRoutineSheet(S.routines.group.find(r => r.id === b.dataset.grt)));
+}
+function routineSheet(r){
+  const gs = S.me.groups || [];
+  const el = openSheet(`<h2>${r ? 'Editar rutina' : '📋 Nueva rutina'}</h2>
+    <div class="stack section">
+      <label class="field"><span>Nombre</span><input class="input" id="rt-name" maxlength="40" placeholder="Ej: Piernas" value="${esc(r ? r.name : '')}"></label>
+      <div class="field"><span>Ejercicios</span><div id="rt-rows"></div></div>
+      <label class="field"><span>¿Quién la ve?</span><select class="input" id="rt-share"><option value="">🔒 Solo yo</option>${gs.map(g => `<option value="${g.id}" ${r && r.group_id === g.id ? 'selected' : ''}>👥 Compartir con ${esc(gName(g))}</option>`).join('')}</select></label>
+      <p class="hint" style="margin:-4px 0 0">Si la compartís, el grupo ve los ejercicios, series y repeticiones, pero no tus pesos. Cualquiera puede guardársela.</p>
+      <button class="btn" id="rt-save">Guardar rutina</button>
+      ${r ? '<button class="link small danger" id="rt-del" style="margin:4px auto 0">Borrar rutina</button>' : ''}
+    </div>`);
+  const ed = rowsEditor($('#rt-rows', el), r && r.items.length ? r.items.map(x => ({ ...x })) : [{}, {}, {}]);
+  $('#rt-save', el).onclick = async (e) => {
+    const name = $('#rt-name', el).value.trim(), rows = ed.get();
+    if (!name){ toast('Ponele un nombre'); return; }
+    if (!rows.length){ toast('Sumá al menos un ejercicio'); return; }
+    if (rows.some(x => Number.isNaN(x.kg) || Number.isNaN(x.reps) || Number.isNaN(x.sets))){ toast('Revisá los números'); return; }
+    e.target.disabled = true;
+    try { S.routines = await rpc('api_routine_save', { ...P(), p_id: r ? r.id : null, p_name: name, p_items: rows, p_group: $('#rt-share', el).value || null }); closeSheet(); renderRutinas(); toast(r ? 'Rutina guardada' : `📋 "${name}" guardada. Aparece al anotar Gimnasio.`, 3500); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+  const del = $('#rt-del', el); if (del) del.onclick = () => confirmSheet(`¿Borrar "${r.name}"?`, 'Tus marcas del gym quedan como están.', 'Borrar', async () => {
+    S.routines = await rpc('api_routine_archive', { ...P(), p_id: r.id }); renderRutinas(); toast('Rutina borrada');
+  });
+}
+function groupRoutineSheet(r){
+  const el = openSheet(`<h2>📋 ${esc(r.name)}</h2><p class="muted" style="margin-top:4px">La compartió ${esc(r.owner)} en ${esc(r.group_name)}</p>
+    <div class="card section">${r.items.map(i => `<div class="hrow"><b>${esc(i.ex)}</b><span class="small muted">${[i.sets ? `${i.sets} series` : '', i.reps ? `${i.reps} reps` : ''].filter(Boolean).join(' · ') || ''}</span></div>`).join('')}</div>
+    <div class="stack section"><button class="btn" id="grt-copy">Guardarla en mis rutinas</button><p class="hint" style="margin:0">Se guarda sin pesos: los cargás vos la primera vez que la hagas.</p></div>`);
+  $('#grt-copy', el).onclick = async (e) => {
+    e.target.disabled = true;
+    try { S.routines = await rpc('api_routine_copy', { ...P(), p_id: r.id }); closeSheet(); renderRutinas(); toast(`📋 "${r.name}" está en tus rutinas`); }
+    catch(err){ toast(err.message); e.target.disabled = false; }
+  };
+}
+
 const MUSICA = [
   { ic: '🔥', t: 'Beast Mode', d: 'Para entrenar a full', q: 'beast mode' },
   { ic: '💪', t: 'Motivación gym', d: 'Temas que empujan', q: 'motivacion gym' },
@@ -4449,6 +4579,9 @@ function renderRutinas(){
       <button class="card routine" data-r="crono"><div class="ic" style="background:var(--fire-soft)">⏲️</div><div><h3>Cronómetro</h3><div class="small muted">Para correr, nadar o lo que hagas. Con vueltas</div></div></button>
       <button class="card routine" data-r="med"><div class="ic" style="background:var(--ok-soft)">🧘</div><div><h3>Meditación guiada</h3><div class="small muted">El video del grupo</div></div></button>
     </div>
+    <div class="section"><div class="section-title"><h2>Mis rutinas de gym</h2><button class="link" id="rt-new">+ Nueva rutina</button></div>
+      <div class="card" id="routines">${routinesBlock()}</div>
+    </div>
     <div class="section"><div class="section-title"><h2>Mis marcas del gym</h2><button class="link" id="lift-add">+ Cargar peso</button></div>
       <div class="card" id="lifts">${liftsBlock()}</div>
     </div>
@@ -4461,6 +4594,9 @@ function renderRutinas(){
     </div>`;
   document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => ({ qty: runQty, time: runTime, med: runMed, crono: runCrono })[b.dataset.r]());
   $('#lift-add').onclick = () => liftSheet('');
+  $('#rt-new').onclick = () => routineSheet(null);
+  bindRoutines();
+  if (!S.routines) loadRoutines();
   document.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => planSheet(b.dataset.plan));
   bindPlanCard();
   bindLifts();
