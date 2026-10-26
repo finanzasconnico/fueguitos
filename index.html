@@ -235,6 +235,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .de-tg.on{background:var(--hc)}
 .de-tg:disabled{opacity:.35;cursor:default}
 .de-tg.busy{opacity:.5}
+.tapme{cursor:pointer}
 .de-ph{background:none;border:0;font-size:20px;cursor:pointer;padding:4px}
 .wg-c.fut{background:transparent;border:2px dashed var(--line);width:16px;height:16px}
 .wg-n{text-align:right;font-size:14px}
@@ -1724,7 +1725,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v57'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v58'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2028,7 +2029,7 @@ async function nudgeMates(b){
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
 const NEWS = { id: '2026-10-21', title: '✨ Novedades en Fueguitos', items: [
-  '👥 <b>Amigos de tus amigos</b>: en Grupo → 👥 Amigos aparece <b>"Quizás conozcas"</b>, y en el perfil de un amigo ves sus amigos. Con un toque le mandás solicitud.',
+  '👥 <b>Amigos de tus amigos</b>: tocá a alguien de tu grupo y ves sus amigos. En el grupo también te aparece <b>"Quizás conozcas"</b>. Con un toque le mandás solicitud.',
   '🎨 <b>Tienda nueva del muñequito</b>: más colores, fondos y accesorios, y un <b>marco</b> de color alrededor. Los gorros y anteojos se fueron (si tenías uno, te devolvimos los diamantes).',
   '😍 <b>Más emojis</b> para reaccionar a las fotos: tocá ＋ abajo de una foto. 🔥💪👏😂 son gratis; los demás los comprás una vez con diamantes 💎.',
   '📌 <b>En mi perfil</b>: el libro que estás leyendo o un récord tuyo, en Perfil → En mi perfil. Lo ven tus amigos y todos tus grupos.',
@@ -2976,7 +2977,7 @@ async function refreshGroup(){
 const gName = (g) => { const m = ((S.me && S.me.groups) || []).find(x => x.id === g.id) || g; return m.pair ? `Vos y ${m.other || '…'}` : g.name; };
 function renderGrupo(){
   if (S.gview === 'amigos'){ renderFriends(); return; }
-  if (S.friends === undefined){ S.friends = null; rpc('api_friends', P()).then(f => { S.friends = f; if (f.incoming.length && S.tab === 'grupo') renderGrupo(); }).catch(() => { S.friends = undefined; }); }
+  if (S.friends === undefined){ S.friends = null; rpc('api_friends', P()).then(f => { S.friends = f; if ((f.incoming.length || (f.suggest || []).length) && S.tab === 'grupo' && !$('#layer').innerHTML) renderGrupo(); }).catch(() => { S.friends = undefined; }); }
   const gs = S.me.groups;
   if (!gs.length){
     $('#main').innerHTML = `
@@ -3020,6 +3021,7 @@ function renderGrupo(){
     await rpc('api_delete_photo', { ...P(), p_photo: b.dataset.delphoto }); await loadGroup(); renderGrupo(); toast('Foto borrada');
   }));
   document.querySelectorAll('[data-member]').forEach(row => bindPress(row, () => memberSheet(G, row.dataset.member)));
+  const sg = $('#sugg'); if (sg) bindFriendAdd(sg, () => {});
   document.querySelectorAll('[data-gsub]').forEach(b => b.onclick = () => { S.gsub = b.dataset.gsub; LS.set('fueguitos_gsub', S.gsub); renderGrupo(); });
   if (S.gsub === 'racha') loadWeek(G.group.id);
   if (S.gsub === 'compartido') renderShared(G);
@@ -3119,6 +3121,13 @@ function benchBackSheet(G){
     catch(err){ toast(err.message); e.target.disabled = false; }
   };
 }
+// Amigos de tus amigos, en el grupo: los 3 con más amigos en común, y "Ver más" lleva a Amigos.
+function suggestCard(){
+  const l = (S.friends && S.friends.suggest) || []; if (!l.length) return '';
+  return `<div class="week gst" id="sugg"><div class="row between" style="align-items:baseline;margin-bottom:4px"><b class="small">🌱 Quizás conozcas</b><button class="link small" data-friends>Ver más ›</button></div>
+    ${l.slice(0, 3).map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 32)}<div><b>${esc(u.nick)}</b><div class="small muted">${u.mutual > 1 ? `${u.mutual} amigos en común` : `amigo de ${esc(u.via)}`}</div></div></div>
+      <button class="btn sm" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>`;
+}
 function grupoRacha(G, members){
   return `
     ${benchBanner(G)}
@@ -3127,6 +3136,7 @@ function grupoRacha(G, members){
     <div class="section-title" style="margin-top:4px"><h2>Hoy</h2></div>
     <div class="board">${members.map(memberRow).join('')}</div>
     ${nudgeBanner(G, members)}
+    ${suggestCard()}
     ${privateHint(G)}
 
     <div class="section">
@@ -3889,12 +3899,18 @@ function memberSheet(G, uid){
     <div class="stack section">
       ${!m.is_me && !m.habits.some(h => h.done_today) ? `<button class="btn ${m.nudged ? 'ghost' : ''}" id="ms-nudge" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '👋 Ya le mandaste un empujón hoy' : '👋 Mandale un empujón'}</button>` : ''}
       ${canGift ? '<button class="btn ice" id="ms-gift">🎁 Regalarle un hielito</button>' : ''}
-      ${m.is_me ? '<button class="btn ghost" id="ms-me">Ver mi perfil</button>' : ''}
+      ${m.is_me ? '<button class="btn ghost" id="ms-me">Ver mi perfil</button>' : '<button class="btn ghost" id="ms-prof">👤 Ver su perfil</button>'}
     </div>
+    ${m.is_me ? '' : '<div id="ms-friends"><div class="small muted" style="margin-top:14px">Buscando sus amigos…</div></div>'}
     ${canKick ? `<div style="text-align:center;margin-top:18px"><button class="link small danger" id="ms-kick">Sacar del grupo</button></div>` : ''}`);
   const gb = $('#ms-gift', el); if (gb) gb.onclick = () => giftSheet(G, uid);
   const nb = $('#ms-nudge', el); if (nb) nb.onclick = () => { closeSheet(); nudgeFriend(G, m); };
   const me = $('#ms-me', el); if (me) me.onclick = () => { closeSheet(); go('perfil'); };
+  const pf = $('#ms-prof', el); if (pf) pf.onclick = () => friendSheet(uid);
+  if (!m.is_me) rpc('api_friend_profile', { ...P(), p_user: uid }).then(p => {
+    const box = $('#ms-friends', el); if (!box) return;
+    box.innerHTML = friendsOfHTML(p); bindFriendsOf(box);
+  }).catch(() => { const box = $('#ms-friends', el); if (box) box.innerHTML = ''; });
   const kb = $('#ms-kick', el); if (kb) kb.onclick = () => confirmSheet(`¿Sacar a ${m.nick}?`, 'Deja de estar en el grupo y desaparece para todos. Su racha no se toca y puede volver con el código.', 'Sacar del grupo', async () => {
     await rpc('api_kick_member', { ...P(), p_group: G.group.id, p_user: uid }); await loadGroup(); renderGrupo(); toast(`${m.nick} ya no está en el grupo`);
   });
@@ -4050,6 +4066,18 @@ function addFriendSheet(){
     } catch(err){ toast(err.message, 3500); e.target.disabled = false; }
   };
 }
+// "Amigos de X": los que ya son tus amigos se tocan para ver su perfil; al resto lo agregás con un toque.
+function friendsOfHTML(p){
+  const l = p.friends || [];
+  if (!l.length) return `<div class="small muted" style="margin-top:14px">👥 ${esc(p.nick)} todavía no tiene otros amigos en la app.</div>`;
+  const nw = l.filter(u => u.rel !== 'amigo').length;
+  return `<div class="row between" style="align-items:baseline;margin-top:14px"><b class="small">👥 Amigos de ${esc(p.nick)} (${l.length})</b>${nw ? `<span class="small muted">${nw} que no tenés</span>` : ''}</div>
+    <div class="card" style="margin-top:6px">${l.map(u => `<div class="hrow"><div class="row ${u.rel === 'amigo' ? 'tapme' : ''}" style="gap:10px;align-items:center" ${u.rel === 'amigo' ? `data-fo="${u.id}" role="button" tabindex="0"` : ''}>${userAv(u.nick, u.avatar, 32)}<b>${esc(u.nick)}</b>${u.rel === 'amigo' ? ' <span class="small muted">›</span>' : ''}</div>${relBtn(u)}</div>`).join('')}</div>`;
+}
+function bindFriendsOf(root){
+  bindFriendAdd(root, () => { if (S.tab === 'grupo' && S.gview === 'amigos') renderGrupo(); });
+  root.querySelectorAll('[data-fo]').forEach(r => r.onclick = () => friendSheet(r.dataset.fo));
+}
 async function friendSheet(uid){
   let p; try { p = await rpc('api_friend_profile', { ...P(), p_user: uid }); } catch(e){ toast(e.message); return; }
   const hs = p.habits || [], pairWith = p.common.some(g => g.pair);
@@ -4057,7 +4085,7 @@ async function friendSheet(uid){
     <div class="card section">${hs.length ? hs.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
       <span class="small" style="font-weight:700">${h.free ? `✨ ${h.streak}` : `🔥 ${h.streak}${h.best > h.streak ? ` · 🏆 ${h.best}` : ''}`}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no tiene hábitos para mostrar.</p>'}</div>
     <div id="fs-shares"></div>
-    ${(p.friends || []).length ? `<div class="small" style="font-weight:700;margin-top:14px">👥 Sus amigos (${p.friends.length})</div><div class="card" style="margin-top:6px">${p.friends.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 32)}<b>${esc(u.nick)}</b></div>${relBtn(u)}</div>`).join('')}</div>` : ''}
+    ${friendsOfHTML(p)}
     ${p.common.length ? `<div class="small" style="font-weight:700;margin-top:14px">Grupos en común</div><div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${p.common.map(g => `<button class="chip" data-fg="${g.id}">${g.pair ? '👯 Racha de a dos' : `${esc(g.emoji || '🔥')} ${esc(g.name)}`}</button>`).join('')}</div>` : ''}
     ${p.open.length ? `<div class="small" style="font-weight:700;margin-top:14px">🔓 Sus grupos abiertos</div><div class="stack" style="margin-top:6px">${p.open.map(g => `<div class="hrow"><div><b>${esc(g.emoji || '🔥')} ${esc(g.name)}</b><div class="small muted">${g.members} ${g.members === 1 ? 'miembro' : 'miembros'}</div></div>
       ${g.requested ? '<span class="pill">Pedido ✓</span>' : `<button class="btn sm" data-fjr="${g.id}">Pedir unirme</button>`}</div>`).join('')}</div>` : ''}
@@ -4067,7 +4095,7 @@ async function friendSheet(uid){
       ${pairWith ? '' : '<button class="btn ghost" id="fs-pair">👯 Armar una racha de a dos</button>'}
     </div>
     ${p.manual ? '<div style="text-align:center;margin-top:14px"><button class="link small danger" id="fs-rm">Quitar de amigos</button></div>' : ''}`);
-  bindFriendAdd(el, () => { if (S.tab === 'grupo' && S.gview === 'amigos') renderGrupo(); });
+  bindFriendsOf(el);
   rpc('api_profile_shares', { ...P(), p_user: p.id }).then(l => {
     const box = $('#fs-shares', el); if (!box || !l.length) return;
     const paintFs = () => { box.innerHTML = `<div class="small" style="font-weight:700;margin-top:14px">📌 En su perfil</div><div class="card" style="margin-top:6px">${l.map(x => shareRow(x, { noUser: true })).join('')}</div>`;
