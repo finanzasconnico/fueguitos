@@ -1725,7 +1725,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v58'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v59'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -4497,6 +4497,9 @@ function habitEditor(h, groupId = null, after){
     { e: '🧹', t: 'Ordenar el cuarto', name: 'Ordenar el cuarto', wpp: 'Orden', free: true, color: '#4FB3E8' },
   ];
   let free = h ? !!h.free : false, color = h ? (h.color || null) : null;
+  // "Veces por semana": todos los días con 7 − X descansos (igual que en 📅 Mis días).
+  const wk0 = !!h && (h.days || []).length === 7 && (h.rest_per_week || 0) >= 3;
+  let dmode = wk0 ? 'week' : 'fixed', times = wk0 ? 7 - h.rest_per_week : 3;
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
       ${h ? '' : `<div class="field"><span>Empezá con uno armado (o armá el tuyo abajo)</span><div class="chips" style="margin-bottom:0">${TPL.map((t, i) => `<button type="button" class="chip" data-tpl="${i}">${t.e} ${t.t}</button>`).join('')}</div></div>`}
@@ -4512,8 +4515,13 @@ function habitEditor(h, groupId = null, after){
         <button type="button" class="fmt" data-hm="0"><b>🔥 Con racha</b><span class="small">Días fijos. Si faltás, usás un hielito.</span></button>
         <button type="button" class="fmt" data-hm="1"><b>✨ Libre</b><span class="small">Lo anotás cuando lo hacés. Sin presión. Ej: skincare.</span></button></div></div>
       <div class="field"><span>Color en tu calendario</span><div class="colors">${HCOLORS.map(([c, n]) => `<button type="button" class="cdot" data-hc="${c}" style="background:${c}" aria-label="${n}"></button>`).join('')}</div></div>
-      <div class="field" id="h-days-box"><span>Días que cuenta</span><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
-        <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div>
+      <div class="field" id="h-days-box"><span>¿Cuándo te toca?</span><div class="grid2" style="margin-bottom:10px">
+        <button type="button" class="fmt" data-dm="fixed"><b>📅 Días fijos</b><span class="small">Ej: domingo, martes y viernes.</span></button>
+        <button type="button" class="fmt" data-dm="week"><b>🔢 Veces por semana</b><span class="small">Cualquier día. Ej: 3 veces.</span></button></div>
+        <div id="h-week"><div class="chips" style="margin:0;flex-wrap:wrap">${[1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="chip" data-tw="${n}">${n === 1 ? '1 vez' : `${n} veces`}</button>`).join('')}</div>
+        <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito. Solo te avisamos cuando ya no te alcanzan los días.</div></div>
+        <div id="h-fixed"><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
+        <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div></div>
       <details class="more" id="h-more" ${h && (h.goal || h.next_day || h.deadline || h.cue) ? 'open' : ''}><summary>＋ Más opciones: cuándo, cantidad, de la noche, hora límite</summary><div class="stack">
       <label class="field"><span>¿Cuándo lo hacés? (opcional)</span><input class="input" id="h-cue" maxlength="40" placeholder="Ej: después del café" value="${esc(h && h.cue ? h.cue : '')}">
         <div class="hint">Atarlo a algo que ya hacés ayuda a no olvidarte. Aparece en la tarjeta y en el aviso.</div></label>
@@ -4546,6 +4554,8 @@ function habitEditor(h, groupId = null, after){
     el.querySelectorAll('[data-hc]').forEach(b => b.classList.toggle('on', b.dataset.hc === cur));
     $('#h-mode-box', el).style.display = kind === 'evitar' ? 'none' : '';
     $('#h-days-box', el).style.display = kind === 'hacer' && free ? 'none' : '';
+    if (kind === 'evitar' && dmode === 'week'){ dmode = 'fixed'; $('#h-week', el).style.display = 'none'; $('#h-fixed', el).style.display = ''; }
+    el.querySelector('[data-dm]').parentElement.style.display = kind === 'evitar' ? 'none' : '';
     $('#h-ices', el).style.display = $('#h-rule', el).style.display = $('#h-more', el).style.display = kind === 'evitar' ? 'none' : '';
     $('#h-goal-box', el).style.display = $('#h-next', el).checked ? 'none' : '';
     $('#h-dl-box', el).style.display = $('#h-next', el).checked || $('#h-goal', el).value ? 'none' : '';
@@ -4559,11 +4569,17 @@ function habitEditor(h, groupId = null, after){
   el.querySelectorAll('[data-hc]').forEach(b => b.onclick = () => { color = b.dataset.hc; paintKind(); });
   const paint = () => {
     el.querySelectorAll('[data-day]').forEach(b => b.classList.toggle('on', days.includes(+b.dataset.day)));
-    if (autoIce) $('#h-ice', el).textContent = Math.max(1, days.length * 2);
+    el.querySelectorAll('[data-dm]').forEach(b => b.classList.toggle('on', b.dataset.dm === dmode));
+    el.querySelectorAll('[data-tw]').forEach(b => b.classList.toggle('on', +b.dataset.tw === times));
+    $('#h-week', el).style.display = dmode === 'week' ? '' : 'none'; $('#h-fixed', el).style.display = dmode === 'week' ? 'none' : '';
+    const perWeek = dmode === 'week' ? times : days.length;
+    if (autoIce) $('#h-ice', el).textContent = Math.max(1, perWeek * 2);
     const name = $('#h-wpp', el).value || $('#h-name', el).value || 'Hábito';
     $('#h-prev', el).textContent = `${name} día 6${$('#h-emoji', el).value}🔥`;
-    $('#h-rule', el).textContent = `${days.length} veces por semana → un hielo cada ${$('#h-ice', el).textContent} días (el doble del hábito semanal).`;
+    $('#h-rule', el).textContent = `${perWeek === 1 ? '1 vez' : `${perWeek} veces`} por semana → un hielo cada ${$('#h-ice', el).textContent} días (el doble del hábito semanal).`;
   };
+  el.querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { dmode = b.dataset.dm; paint(); });
+  el.querySelectorAll('[data-tw]').forEach(b => b.onclick = () => { times = +b.dataset.tw; paint(); });
   el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { const d = +b.dataset.day; days = days.includes(d) ? days.filter(x => x !== d) : [...days, d]; if (!days.length) days = [d]; paint(); });
   el.querySelectorAll('[data-em]').forEach(b => b.onclick = () => { $('#h-emoji', el).value = b.dataset.em; $('#h-emoji', el).dataset.touched = '1'; paint(); });
   ['#h-name','#h-wpp','#h-emoji'].forEach(s => $(s, el).oninput = paint);
@@ -4606,10 +4622,13 @@ function habitEditor(h, groupId = null, after){
     e.target.disabled = true;
     try {
       const saved = await rpc('api_save_habit', { ...P(), p_group: h ? (h.group_id || null) : groupId, p_id: h ? h.id : null, p_name: name, p_emoji: $('#h-emoji', el).value, p_wpp: $('#h-wpp', el).value,
-        p_days: days.sort(), p_ice_every: +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind, p_deadline: kind === 'hacer' && !$('#h-next', el).checked ? ($('#h-dl', el).value || null) : null, p_next: kind === 'hacer' && $('#h-next', el).checked,
+        p_days: dmode === 'week' ? [0, 1, 2, 3, 4, 5, 6] : days.sort(), p_ice_every: dmode === 'week' && kind === 'hacer' && !free ? Math.max(1, Math.round(+$('#h-ice', el).textContent * 7 / times)) : +$('#h-ice', el).textContent, p_max_ice: +$('#h-max', el).textContent, p_kind: kind, p_deadline: kind === 'hacer' && !$('#h-next', el).checked ? ($('#h-dl', el).value || null) : null, p_next: kind === 'hacer' && $('#h-next', el).checked,
         p_goal: kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2 ? Math.round(+$('#h-goal', el).value) : null, p_unit: $('#h-unit', el).value.trim() || null, p_remind: $('#h-remind', el).checked, p_cue: $('#h-cue', el).value.trim() || null, p_free: kind === 'hacer' && free, p_color: color });
       // Un hábito nuevo queda activado para quien lo creó.
       if (!h) await rpc('api_set_habit', { ...P(), p_habit: saved.id, p_active: true, p_streak: 0, p_ice: 0, p_left: saved.ice_every });
+      // Veces por semana se guarda como tus días: todos, con 7 − X descansos. Si lo pasás a días fijos, sin descansos.
+      if (kind === 'hacer' && !free && (dmode === 'week' || wk0))
+        await rpc('api_set_habit_rules', { ...P(), p_habit: saved.id, p_days: dmode === 'week' ? [0, 1, 2, 3, 4, 5, 6] : days.sort(), p_rest: dmode === 'week' ? 7 - times : 0 });
       if (!h && kind === 'evitar'){
         if (APP_RX.test(name)) setTimeout(() => appBlockSheet({ name }), 600);
         else if (SMOKE_RX.test(name)) setTimeout(() => { const nh = S.me.habits.find(x => x.name === name && x.kind === 'evitar'); if (nh) savingSheet(nh); }, 900);
