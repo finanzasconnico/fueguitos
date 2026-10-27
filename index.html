@@ -1725,7 +1725,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v59'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v60'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Grupo', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -4308,23 +4308,31 @@ function readRules(el){
   const rest = +((el.querySelector('[data-rr].on') || {}).dataset || {}).rr || 0;
   return { days, rest };
 }
+// "Veces por semana" con aviso en días elegidos: esos días llega el recordatorio (si no lo hiciste y no llegaste a la meta).
+const remindDaysHTML = (sel) => `<div class="field" style="margin-top:12px"><span>🔔 ¿Qué días te aviso? (opcional)</span>
+  <div class="days">${WEEK.map(d => `<button type="button" class="day ${sel.includes(d) ? 'on' : ''}" data-rmd="${d}" aria-label="${DAY_NAMES[d]}">${DAYS[d]}</button>`).join('')}</div>
+  <div class="hint">Esos días te llega el recordatorio a tu hora de siempre, salvo que ya lo hayas hecho o ya llegaste a la meta de la semana. Si un día no podés, lo hacés otro y la racha sigue.</div></div>`;
+const bindRemindDays = (el, sel) => el.querySelectorAll('[data-rmd]').forEach(b => b.onclick = () => {
+  const d = +b.dataset.rmd, i = sel.indexOf(d); if (i >= 0) sel.splice(i, 1); else sel.push(d); b.classList.toggle('on', i < 0); });
+const saveRemindDays = (hid, sel) => rpc('api_set_remind_days', { ...P(), p_habit: hid, p_days: [...sel].sort() });
 // Mis días para un hábito activo.
 function rulesSheet(h, after){
   const wk0 = (h.days || []).length === 7 && (h.rest_per_week || 0) >= 3;
   let mode = wk0 ? 'week' : 'fixed', times = wk0 ? 7 - h.rest_per_week : 3;
+  const rsel = [...(h.remind_days || [])];
   const el = openSheet(`<h2>${esc(h.emoji)} Mis días de ${esc(h.name)}</h2>
     <p class="muted">Elegí cuándo te toca. Vale de hoy en adelante: lo que ya pasó no cambia.</p>
     <div class="stack section">
       ${h.kind === 'evitar' ? '' : `<div class="grid2"><button type="button" class="fmt" data-rm="fixed"><b>📅 Días fijos</b><span class="small">Ej: lunes, miércoles y viernes.</span></button>
         <button type="button" class="fmt" data-rm="week"><b>🔢 Veces por semana</b><span class="small">Cualquier día. Ej: 3 veces.</span></button></div>
       <div class="field" id="ru-week"><span>¿Cuántas veces por semana?</span><div class="chips" style="margin:0">${[1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="chip" data-rw="${n}">${n === 1 ? '1 vez' : `${n} veces`}</button>`).join('')}</div>
-        <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito. Solo te avisamos cuando ya no te alcanzan los días.</div></div>`}
+        <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito.</div>${remindDaysHTML(rsel)}</div>`}
       <div id="ru-fixed" class="stack">${rulesFields(h.days, wk0 ? 0 : h.rest_per_week)}</div>
       ${h.kind === 'evitar' ? '<style>#layer .rest-field{display:none}</style><p class="hint" style="margin:0">En los hábitos para dejar algo no hay descansos.</p>' : ''}
       ${h.kind === 'evitar' || !h.max_ice ? '' : '<p class="hint" id="ru-ice" style="margin:0"></p>'}
       ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
       <button class="btn" id="ru-save">Guardar</button></div>`);
-  bindRules(el);
+  bindRules(el); bindRemindDays(el, rsel);
   const base = h.base_ice || h.ice_every, defN = (h.default_days || []).length || 7;
   const paintIce = () => {
     const ic = $('#ru-ice', el); if (!ic) return;
@@ -4343,7 +4351,9 @@ function rulesSheet(h, after){
   el.querySelectorAll('[data-rw]').forEach(b => b.onclick = () => { times = +b.dataset.rw; paintMode(); });
   paintMode(); paintIce();
   const save = async (days, rest) => {
-    try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: days, p_rest: rest }); closeSheet(); (after || renderMain)();
+    try { S.me.habits = await rpc('api_set_habit_rules', { ...P(), p_habit: h.id, p_days: days, p_rest: rest });
+      if (mode === 'week' || (h.remind_days || []).length) S.me.habits = await saveRemindDays(h.id, mode === 'week' ? rsel : []);
+      closeSheet(); (after || renderMain)();
       const nh = S.me.habits.find(x => x.id === h.id); toast(`Listo: ${ruleText(days, rest)}${nh && nh.max_ice && nh.kind !== 'evitar' ? ` · hielito cada ${nh.ice_every}` : ''}`, 3500); }
     catch(e){ toast(e.message); }
   };
@@ -4500,6 +4510,7 @@ function habitEditor(h, groupId = null, after){
   // "Veces por semana": todos los días con 7 − X descansos (igual que en 📅 Mis días).
   const wk0 = !!h && (h.days || []).length === 7 && (h.rest_per_week || 0) >= 3;
   let dmode = wk0 ? 'week' : 'fixed', times = wk0 ? 7 - h.rest_per_week : 3;
+  const rsel = [...((h && h.remind_days) || [])];
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
       ${h ? '' : `<div class="field"><span>Empezá con uno armado (o armá el tuyo abajo)</span><div class="chips" style="margin-bottom:0">${TPL.map((t, i) => `<button type="button" class="chip" data-tpl="${i}">${t.e} ${t.t}</button>`).join('')}</div></div>`}
@@ -4519,7 +4530,7 @@ function habitEditor(h, groupId = null, after){
         <button type="button" class="fmt" data-dm="fixed"><b>📅 Días fijos</b><span class="small">Ej: domingo, martes y viernes.</span></button>
         <button type="button" class="fmt" data-dm="week"><b>🔢 Veces por semana</b><span class="small">Cualquier día. Ej: 3 veces.</span></button></div>
         <div id="h-week"><div class="chips" style="margin:0;flex-wrap:wrap">${[1, 2, 3, 4, 5, 6].map(n => `<button type="button" class="chip" data-tw="${n}">${n === 1 ? '1 vez' : `${n} veces`}</button>`).join('')}</div>
-        <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito. Solo te avisamos cuando ya no te alcanzan los días.</div></div>
+        <div class="hint">De lunes a domingo, los días que quieras. Mientras llegues, la racha sigue; si no llegás, se usa un hielito.</div>${remindDaysHTML(rsel)}</div>
         <div id="h-fixed"><div class="days" id="h-days">${DAYS.map((d,i) => `<button type="button" class="day" data-day="${i}" aria-label="${DAY_NAMES[i]}">${d}</button>`).join('')}</div>
         <div class="hint">Los días sin marcar son libres: no suman obligación ni cortan la racha.</div></div></div>
       <details class="more" id="h-more" ${h && (h.goal || h.next_day || h.deadline || h.cue) ? 'open' : ''}><summary>＋ Más opciones: cuándo, cantidad, de la noche, hora límite</summary><div class="stack">
@@ -4579,6 +4590,7 @@ function habitEditor(h, groupId = null, after){
     $('#h-rule', el).textContent = `${perWeek === 1 ? '1 vez' : `${perWeek} veces`} por semana → un hielo cada ${$('#h-ice', el).textContent} días (el doble del hábito semanal).`;
   };
   el.querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { dmode = b.dataset.dm; paint(); });
+  bindRemindDays(el, rsel);
   el.querySelectorAll('[data-tw]').forEach(b => b.onclick = () => { times = +b.dataset.tw; paint(); });
   el.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { const d = +b.dataset.day; days = days.includes(d) ? days.filter(x => x !== d) : [...days, d]; if (!days.length) days = [d]; paint(); });
   el.querySelectorAll('[data-em]').forEach(b => b.onclick = () => { $('#h-emoji', el).value = b.dataset.em; $('#h-emoji', el).dataset.touched = '1'; paint(); });
@@ -4629,6 +4641,8 @@ function habitEditor(h, groupId = null, after){
       // Veces por semana se guarda como tus días: todos, con 7 − X descansos. Si lo pasás a días fijos, sin descansos.
       if (kind === 'hacer' && !free && (dmode === 'week' || wk0))
         await rpc('api_set_habit_rules', { ...P(), p_habit: saved.id, p_days: dmode === 'week' ? [0, 1, 2, 3, 4, 5, 6] : days.sort(), p_rest: dmode === 'week' ? 7 - times : 0 });
+      if (kind === 'hacer' && !free && (dmode === 'week' ? rsel.length || (h && (h.remind_days || []).length) : h && (h.remind_days || []).length))
+        await saveRemindDays(saved.id, dmode === 'week' ? rsel : []);
       if (!h && kind === 'evitar'){
         if (APP_RX.test(name)) setTimeout(() => appBlockSheet({ name }), 600);
         else if (SMOKE_RX.test(name)) setTimeout(() => { const nh = S.me.habits.find(x => x.name === name && x.kind === 'evitar'); if (nh) savingSheet(nh); }, 900);
