@@ -8,14 +8,14 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => !k.startsWith('pechera-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => !k.startsWith('casaca-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // Supabase y fuentes van directo
-  if (url.pathname.startsWith('/pechera/')) return; // Pechera tiene su propio service worker
+  if (url.pathname.startsWith('/lacasaca/')) return; // La Casaca tiene su propio service worker
   // Primero la red (para recibir actualizaciones), si no hay señal, lo guardado.
   e.respondWith(
     fetch(e.request)
