@@ -864,6 +864,7 @@ async function boot(){
   if (q.get('anotar')) S.quick = q.get('anotar');
   S.rapido = q.get('rapido') === '1';
   S.rutina = q.get('rutina');
+  S.habito = q.get('habito');
   if (['hoy','grupo','torneos','rutinas','perfil'].includes(q.get('tab'))) S.tab = q.get('tab');
   if (q.get('strava')) S.stravaBack = { code: q.get('code'), state: q.get('state'), error: q.get('error') };
   // Dentro de WhatsApp/Instagram se deja el link intacto, para que "Abrir en el navegador" conserve la invitación.
@@ -896,6 +897,7 @@ async function afterLogin(){
     } catch(e){ toast(e.message, 3500); }
     S.pendingJoin = null;
   }
+  if (S.habito) await addPresetHabit();
   if (!S.me.habits.length){ S.onboarding = true; renderOnboarding(); return; }
   renderShell();
   loadAvatar();
@@ -1432,6 +1434,31 @@ function shopSheet(slot = 'p'){
 }
 
 /* ============ Arranque: elegir → primer fueguito → avisos ============ */
+// Hábitos para futbolistas: La Casaca abre ?habito=<clave> y queda creado (o activado si ya lo tenía).
+const FUTBOL_TPL = {
+  entrenar: { e: '🏃', name: 'Entrenar', wpp: 'Entreno', days: [1,2,3,4,5] },
+  prevencion: { e: '🦵', name: 'Prevención de lesiones', wpp: 'Prevención', days: [1,3,5] },
+  elongar: { e: '🧘', name: 'Elongar 10 minutos', wpp: 'Elongar' },
+  dormir: { e: '😴', name: 'Dormir 8 horas', wpp: 'Dormir', next: true },
+  agua: { e: '💧', name: 'Tomar agua', wpp: 'Agua', goal: 8, unit: 'vasos', remind: true },
+  comer: { e: '🥗', name: 'Comer bien', wpp: 'Comida' },
+};
+async function addPresetHabit(){
+  const t = FUTBOL_TPL[S.habito]; S.habito = null;
+  if (!t) return;
+  try {
+    const had = (S.me.available || []).find(h => h.name.toLowerCase() === t.name.toLowerCase());
+    if (had && had.active){ toast(`Ya tenés «${t.name}» 🔥`); return; }
+    if (had) await rpc('api_set_habit', { ...P(), p_habit: had.id, p_active: true, p_streak: 0, p_ice: 0, p_left: had.ice_every });
+    else {
+      const h = await rpc('api_save_habit', { ...P(), p_group: null, p_id: null, p_name: t.name, p_emoji: t.e, p_wpp: t.wpp, p_days: t.days || [0,1,2,3,4,5,6],
+        p_ice_every: 14, p_max_ice: 2, p_kind: 'hacer', p_next: !!t.next, p_goal: t.goal || null, p_unit: t.unit || null, p_remind: !!t.remind });
+      await rpc('api_set_habit', { ...P(), p_habit: h.id, p_active: true, p_streak: 0, p_ice: 0, p_left: h.ice_every });
+    }
+    S.me = await rpc('api_me', P());
+    toast(`🔥 Sumaste «${t.name}». Anotalo cada día que lo cumplas.`, 4000);
+  } catch(e){ toast(e.message, 3500); }
+}
 const ONB_TPL = [
   { e: '💧', name: 'Tomar agua', wpp: 'Agua', goal: 8, unit: 'vasos', remind: true },
   { e: '🌙', name: 'Dormirme antes de las 12', wpp: 'Dormir', next: true },
