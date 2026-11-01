@@ -236,6 +236,12 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .de-tg:disabled{opacity:.35;cursor:default}
 .de-tg.busy{opacity:.5}
 .tapme{cursor:pointer}
+.ptop{display:flex;gap:16px;align-items:center;margin:8px 0 14px}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:center}
+.pstats>*{display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;color:inherit;font:inherit}
+.pstats b{font-size:18px;font-weight:900;white-space:nowrap}.pstats span{font-size:12px;color:var(--muted);font-weight:700}
+#p-friends{cursor:pointer}
+.pdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--fire);vertical-align:top;margin-left:3px}
 .de-ph{background:none;border:0;font-size:20px;cursor:pointer;padding:4px}
 .wg-c.fut{background:transparent;border:2px dashed var(--line);width:16px;height:16px}
 .wg-n{text-align:right;font-size:14px}
@@ -1752,7 +1758,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v62'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v63'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -1769,6 +1775,7 @@ function renderShell(){
 function go(tab){
   if (tab === 'grupo' && S.tab === 'grupo' && !S.gopenNext){ S.gopen = false; S.gview = null; }
   if (S.gopenNext){ S.gopen = true; S.gopenNext = false; }
+  if (tab === 'perfil') S.pview = null;
   S.tab = tab;
   document.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === navTab()); b.setAttribute('aria-current', b.dataset.tab === navTab() ? 'page' : 'false'); });
   window.scrollTo(0,0);
@@ -3030,7 +3037,7 @@ const gName = (g) => { const m = ((S.me && S.me.groups) || []).find(x => x.id ==
 function renderHome(){
   const H = S.home, F = S.friends;
   const reqs = F && F.incoming.length ? `<button class="week gst" data-friends style="width:100%;text-align:left"><b class="small">🙋 ${F.incoming.length === 1 ? '1 persona te quiere agregar' : `${F.incoming.length} personas te quieren agregar`}</b> <span class="small muted">· Ver ›</span></button>` : '';
-  const top = `<div class="top"><h1>Amigos</h1><div class="row" style="gap:8px;flex:none"><button class="btn sm ghost" data-friends>👥 Todos</button><button class="btn sm ice" id="fh-add">+ Agregar</button></div></div>`;
+  const top = `<div class="top"><h1>Amigos</h1><button class="btn sm ice" id="fh-add" style="flex:none">+ Agregar</button></div>`;
   if (!H){
     $('#main').innerHTML = `${top}${reqs}<div class="spinner"></div>`;
     bindChips(); $('#fh-add').onclick = addFriendSheet; if (S.home === undefined){ S.home = null; refreshGroup(); } return;
@@ -4110,11 +4117,13 @@ async function reactSheet(photoId){
 
 /* ============ Amigos ============ */
 // Amigos = los que comparten un grupo con vos (automático) + los que agregaste con su apodo.
+// La lista de todos tus amigos se abre desde Perfil (el numerito, como en Instagram) o desde Amigos.
+const friendsOpen = () => (S.tab === 'grupo' && S.gview === 'amigos') || (S.tab === 'perfil' && S.pview === 'amigos');
 async function renderFriends(){
   const paint = () => {
     const F = S.friends, gs = S.me.groups;
     const chips = '';
-    $('#main').innerHTML = `${backToFriends()}<div class="top"><h1>Todos tus amigos</h1><button class="btn sm ice" id="fr-add">+ Agregar</button></div>${chips}
+    $('#main').innerHTML = `${S.tab === 'perfil' ? '<button class="link" data-pback style="margin:0 0 6px;font-weight:800">‹ Perfil</button>' : backToFriends()}<div class="top"><h1>${F ? `${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}` : 'Amigos'}</h1><button class="btn sm ice" id="fr-add">+ Agregar</button></div>${chips}
       ${!F ? '<div class="spinner"></div>' : `
       ${F.incoming.length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">🙋 Te quieren agregar</div>${F.incoming.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<b>${esc(u.nick)}</b></div>
         <div class="row" style="gap:6px"><button class="btn sm" data-fra="${u.id}">Aceptar</button><button class="btn sm ghost" data-frr="${u.id}">No</button></div></div>`).join('')}</div>` : ''}
@@ -4130,6 +4139,7 @@ async function renderFriends(){
       <p class="small muted">Los que están en un grupo con vos ya son tus amigos. Tocá a cualquiera para ver sus rachas, invitarlo a tus grupos o armar una racha de a dos.</p>
       <div class="section"><button class="btn ghost" id="fr-share">📲 Invitar a alguien que no tiene la app</button></div>`}`;
     bindChips();
+    const pb = $('[data-pback]'); if (pb) pb.onclick = () => { S.pview = null; renderMain(); window.scrollTo(0, 0); };
     $('#fr-add').onclick = addFriendSheet;
     const sh = $('#fr-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(`Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos: ${PUBLIC_URL}`); };
     document.querySelectorAll('[data-fp]').forEach(r => r.onclick = () => friendSheet(r.dataset.fp));
@@ -4140,7 +4150,7 @@ async function renderFriends(){
   };
   paint();
   try { S.friends = await rpc('api_friends', P()); } catch(e){ toast(e.message); }
-  if (S.tab === 'grupo' && S.gview === 'amigos') paint();
+  if (friendsOpen()) paint();
 }
 function relBtn(u){
   return u.rel === 'amigo' ? '<span class="pill ok">Amigos ✓</span>' : u.rel === 'enviada' ? '<span class="pill">Pedido ✓</span>'
@@ -4168,7 +4178,7 @@ function addFriendSheet(){
     try {
       const r = await rpc('api_friend_request', { ...P(), p_nick: n });
       closeSheet(); toast(r.accepted ? `🤝 ¡Ya son amigos con ${r.nick}!` : `👋 Le mandamos la solicitud a ${r.nick}`, 3500);
-      S.friends = await rpc('api_friends', P()); renderGrupo();
+      S.friends = await rpc('api_friends', P()); renderMain();
     } catch(err){ toast(err.message, 3500); e.target.disabled = false; }
   };
 }
@@ -4181,7 +4191,7 @@ function friendsOfHTML(p){
     <div class="card" style="margin-top:6px">${l.map(u => `<div class="hrow"><div class="row ${u.rel === 'amigo' ? 'tapme' : ''}" style="gap:10px;align-items:center" ${u.rel === 'amigo' ? `data-fo="${u.id}" role="button" tabindex="0"` : ''}>${userAv(u.nick, u.avatar, 32)}<b>${esc(u.nick)}</b>${u.rel === 'amigo' ? ' <span class="small muted">›</span>' : ''}</div>${relBtn(u)}</div>`).join('')}</div>`;
 }
 function bindFriendsOf(root){
-  bindFriendAdd(root, () => { if (S.tab === 'grupo' && S.gview === 'amigos') renderGrupo(); });
+  bindFriendAdd(root, () => { if (friendsOpen()) renderMain(); });
   root.querySelectorAll('[data-fo]').forEach(r => r.onclick = () => friendSheet(r.dataset.fo));
 }
 async function friendSheet(uid){
@@ -4226,7 +4236,7 @@ async function friendSheet(uid){
     catch(err){ toast(err.message); e.target.disabled = false; }
   };
   const rm = $('#fs-rm', el); if (rm) rm.onclick = () => confirmSheet(`¿Quitar a ${p.nick} de tus amigos?`, 'Si comparten un grupo, igual lo vas a seguir viendo ahí.', 'Quitar', async () => {
-    S.friends = await rpc('api_friend_remove', { ...P(), p_user: p.id }); renderGrupo(); toast('Listo');
+    S.friends = await rpc('api_friend_remove', { ...P(), p_user: p.id }); renderMain(); toast('Listo');
   });
 }
 // Invitación a un grupo: aviso al amigo (con el link); si no tiene avisos, por WhatsApp.
@@ -5513,10 +5523,17 @@ async function yearSheet(){
 }
 
 function renderPerfil(){
+  if (S.pview === 'amigos'){ renderFriends(); return; }
   const me = S.me;
   const best = me.habits.reduce((a,h) => Math.max(a, h.best ?? h.streak), 0);
+  if (S.friends === undefined){ S.friends = null; rpc('api_friends', P()).then(f => { S.friends = f; if (S.tab === 'perfil' && !S.pview) renderPerfil(); }).catch(() => { S.friends = undefined; }); }
+  const nF = S.friends ? S.friends.friends.length : null, nIn = S.friends ? S.friends.incoming.length : 0;
+  const now = Math.max(0, ...me.habits.filter(h => h.kind === 'hacer').map(h => h.streak || 0));
   $('#main').innerHTML = `
-    <div class="top"><div class="row">${userAv(me.user.nick, me.user.avatar, 56)}<h1>${esc(me.user.nick)}</h1></div></div>
+    <div class="ptop">${userAv(me.user.nick, me.user.avatar, 76)}
+      <div style="flex:1;min-width:0"><h1 style="margin:0 0 8px">${esc(me.user.nick)}</h1>
+        <div class="pstats"><div><b>🔥 ${now}</b><span>racha</span></div><div><b>🏆 ${best}</b><span>récord</span></div>
+          <button id="p-friends"><b>${nF === null ? '…' : nF}${nIn ? '<i class="pdot" title="Te quieren agregar"></i>' : ''}</b><span>${nIn ? `amigos · ${nIn} 🙋` : 'amigos'}</span></button></div></div></div>
     ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">💎 ${S.av.coins} ${S.av.coins === 1 ? 'diamante' : 'diamantes'} · 1 por fueguito</div>${nextCharLine()}<button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
       : eggCard()) : ''}
 
@@ -5593,6 +5610,7 @@ function renderPerfil(){
       <div class="small muted" style="margin-top:18px;opacity:.7">Fueguitos ${APP_VERSION}</div></div>
   `;
   bindHabitToggles(renderPerfil);
+  $('#p-friends').onclick = () => { S.pview = 'amigos'; renderMain(); window.scrollTo(0, 0); };
   const csb = $('#casaca'); if (csb) csb.onclick = casacaSheet;
   $('#h-new').onclick = () => habitEditor(null, null, renderPerfil);
   $('#year').onclick = yearSheet;
