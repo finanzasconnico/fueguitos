@@ -525,7 +525,7 @@ nav.tabs button.on{color:var(--fire-ink)}
 .party{background:radial-gradient(circle at 50% 34%, #6B240B 0, var(--party) 62%)}
 .party .hito{margin-top:14px;font-weight:800;font-size:22px}
 .party .hito.big{font-size:30px;color:var(--gold);animation:pop .6s .8s both}
-.party .count{font-size:88px;font-weight:800;line-height:1;margin-top:6px;color:var(--gold)}
+.party .count{font-size:112px;font-weight:900;font-variation-settings:"wdth" 62;line-height:.9;margin-top:6px;color:var(--gold)}
 .party .lbl{font-size:20px;font-weight:700;margin-top:4px}
 .party .others{margin-top:18px;display:grid;gap:8px;width:100%;max-width:340px}
 .party .others .o{background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;font-weight:700}
@@ -735,6 +735,13 @@ p,li{text-wrap:pretty}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<linearGradient id="fl-out" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#D42A10"/><stop offset=".42" stop-color="#FF5A1F"/><stop offset=".8" stop-color="#FF8F2E"/><stop offset="1" stop-color="#FFB547"/></linearGradient>
+<linearGradient id="fl-mid" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FF7A22"/><stop offset=".6" stop-color="#FFA53A"/><stop offset="1" stop-color="#FFD25C"/></linearGradient>
+<linearGradient id="fl-core" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFD15A"/><stop offset=".55" stop-color="#FFEBA0"/><stop offset="1" stop-color="#FFFBEA"/></linearGradient>
+<linearGradient id="fl-off" x1="0" y1="1" x2="0" y2="0"><stop offset="0" style="stop-color:var(--gray-flame)"/><stop offset="1" style="stop-color:var(--gray-flame-2)"/></linearGradient>
+<linearGradient id="fl-off2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" style="stop-color:var(--gray-flame-2)"/><stop offset="1" style="stop-color:var(--gray-flame)"/></linearGradient>
+</defs></svg>
 <div id="app"><div class="spinner" aria-label="Cargando"></div></div>
 <div id="layer"></div>
 
@@ -784,10 +791,9 @@ const daysLabel = (days) => {
   return [...days].sort((a,b)=>((a+6)%7)-((b+6)%7)).map(d => DAY_NAMES[d].slice(0,3)).join(', ');
 };
 
+// La llama en tres capas, cada una más luminosa hacia arriba (los degradés están una sola vez en el <body>).
 function flameSVG(on=true, cls=''){
-  const a = on ? 'var(--fire)' : 'var(--gray-flame)';
-  const b = on ? 'var(--gold)' : 'var(--gray-flame-2)';
-  return `<svg class="${cls}" viewBox="0 0 64 80" aria-hidden="true"><path d="M32 2c4 16 22 24 22 48a22 22 0 0 1-44 0c0-12 6-20 12-26 0 8 4 12 8 12C28 22 28 12 32 2z" fill="${a}"/><g class="inner-f"><path d="M32 40c3 8 12 11 12 22a12 12 0 0 1-24 0c0-6 4-10 6-12 0 4 2 6 4 6-1-6 0-12 2-16z" fill="${b}"/></g></svg>`;
+  return `<svg class="${cls}" viewBox="0 0 64 80" aria-hidden="true"><path d="M32 2c4 16 22 24 22 48a22 22 0 0 1-44 0c0-12 6-20 12-26 0 8 4 12 8 12C28 22 28 12 32 2z" fill="url(#${on ? 'fl-out' : 'fl-off'})"/>${on ? '<path d="M33 19c3 12 15 18 15 33a16 16 0 0 1-32 0c0-8 4-13 8-17 0 6 3 8 6 8C29.5 34 30 26 33 19z" fill="url(#fl-mid)"/>' : ''}<g class="inner-f"><path d="M32 40c3 8 12 11 12 22a12 12 0 0 1-24 0c0-6 4-10 6-12 0 4 2 6 4 6-1-6 0-12 2-16z" fill="url(#${on ? 'fl-core' : 'fl-off2'})"/></g></svg>`;
 }
 const ICONS = {
   hoy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 5 7 7.5 7 13.5a7 7 0 0 1-14 0c0-3.5 2-6 3.8-7.8 0 2.4 1.2 3.6 2.4 3.6C10.6 7.6 11 4.8 12 2z"/></svg>',
@@ -1872,7 +1878,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v68'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v69'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
