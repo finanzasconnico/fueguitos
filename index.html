@@ -1834,7 +1834,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v66'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v67'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2496,7 +2496,7 @@ function habitStatus(h, lateNow){
   if (h.done_today) return hstat('ok', '✓ Anotado hoy');
   if (lateNow) return hstat('', 'Hoy se pasó la hora');
   if (!h.required_today) return hstat('', 'Hoy es libre');
-  if (h.deadline) return isEarly(h) ? hstat('', `⏰ Se anota desde las ${opensAt(h)}`) : hstat('fire', `⏰ Anotalo antes de las ${h.deadline}`);
+  if (h.deadline) return isEarly(h) ? hstat('', `Se anota desde las ${opensAt(h)}`) : hstat('fire', `Anotalo antes de las ${h.deadline}`);
   return hstat('fire', 'Te falta hoy');
 }
 // Color de cada hábito (el que eligió la persona, o uno según el nombre).
@@ -2525,7 +2525,7 @@ function freeCard(h){
     <div class="flamebox freebox"><span aria-hidden="true">${esc(h.emoji)}</span><div class="n">${n}</div></div>
     <div>
       <div class="name">${esc(h.name)}${h.private ? ' <span class="lock" title="Solo lo ves vos">🔒</span>' : ''}</div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
-      ${hstat(h.done_today ? 'ok' : '', `${h.done_today ? '✓ Hecho hoy' : '✨ Cuando quieras'} · ${n} ${n === 1 ? 'vez' : 'veces'} este mes`)}
+      ${hstat(h.done_today ? 'ok' : '', `${h.done_today ? '✓ Hecho hoy' : 'Cuando quieras'} · ${n} ${n === 1 ? 'vez' : 'veces'} este mes`)}
     </div>
   </button>
   ${hcheck(h, h.done_today, h.done_today ? 'undo' : 'do')}`;
