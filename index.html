@@ -30,7 +30,7 @@
   --field:#FFFFFF; --nav:rgba(255,255,255,.94); --party:#15131B; --toast:#1D1B26; --toast-ink:#FFFFFF;
   --ok-ink:#16653F; --ok-line:#BCE3CC; --fire-ink:#A8390A; --ice-ink:#155F88;
   --heat1:#FFD6C4; --heat2:#FF9E6E; --heat-ice:#A9D3EE;
-  --shadow:0 1px 2px rgba(29,27,38,.06),0 4px 14px rgba(29,27,38,.05); --toast-link:#FFB08A; --hc-pct:62%; --score:#D9420C;
+  --shadow:0 1px 2px rgba(29,27,38,.06),0 4px 14px rgba(29,27,38,.05); --toast-link:#FFB08A; --danger-ink:#B02A3C; --on-ice:#FFFFFF; --hc-pct:62%; --score:#D9420C;
   color-scheme:light;
 }
 /* Modo oscuro: se usa mucho de noche, antes del corte de las 5 AM */
@@ -43,7 +43,7 @@
     --field:#1A1722; --nav:rgba(21,19,27,.94); --party:#0D0B11; --toast:#EDEAF3; --toast-ink:#15131B;
     --ok-ink:#7DDBA8; --ok-line:#2A5540; --fire-ink:#FF9466; --ice-ink:#8FD2F7;
     --heat1:#5A2E22; --heat2:#B9552A; --heat-ice:#2A5F80;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); --toast-link:#A8390A; --hc-pct:100%; --score:#FF5A1F;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); --toast-link:#A8390A; --danger-ink:#FF7A88; --on-ice:#15131B; --hc-pct:100%; --score:#FF5A1F;
     color-scheme:dark;
   }
 }
@@ -96,7 +96,7 @@ h3{font-size:17px;font-weight:700}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:14px;font-weight:700;font-size:17px;background:var(--fire);color:var(--on-fire);box-shadow:none;transition:transform .06s,box-shadow .06s;width:100%}
 .btn:active{transform:scale(.97);filter:brightness(.95)}
 .btn[disabled]{opacity:.55;pointer-events:none}
-.btn.ice{background:var(--ice);color:#fff}
+.btn.ice{background:var(--ice);color:var(--on-ice)}
 .btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
 .btn.green{background:var(--ok);color:#fff}
 .btn.danger{background:var(--danger);color:#fff}
@@ -540,7 +540,7 @@ nav.tabs button.on{color:var(--fire-ink)}
 .board{display:grid;gap:10px}
 .member{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px}
 .member .who{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
-.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#1D1B26;flex:none}
 .mh{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .mh .m{display:inline-flex;align-items:center;gap:3px;font-weight:800;font-size:14px;padding:4px 8px;border-radius:10px;background:var(--bg);color:var(--muted)}
 .mh .m.done{background:var(--fire-soft);color:var(--fire-ink)}
@@ -694,6 +694,44 @@ html{scrollbar-color:var(--gray-flame) transparent}
 .week.pair .big.num.lit{color:var(--fire)}
 .wg-head em small{font-size:11px;opacity:1;color:var(--muted)}
 .st-pill.on{color:var(--fire-ink)}
+
+/* ============ Fogón: Amigos, grupos y listas ============ */
+.board{gap:0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.board .member{border:0;border-radius:0;border-top:1px solid var(--line);background:none;padding:12px 14px;min-height:60px}
+.board .member:first-child{border-top:0}
+.member:active{transform:none;background:var(--fire-soft)}
+.mfire{gap:5px;padding:2px 4px;background:none;color:var(--muted)}
+.mfire.on{background:none;color:var(--fire-ink)}
+.mfire b{font-variation-settings:"wdth" 62;font-weight:900;font-size:28px;line-height:.9;font-variant-numeric:tabular-nums}
+.mf-flame{width:18px;height:22px}
+.post{border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.react{border-width:1.5px}
+.empty{border:1.5px dashed var(--line);border-radius:18px}
+.hrow{border-bottom-width:1px}
+.week.gst{background:var(--card)}
+.week.pair .big.num.lit{color:var(--fire-ink)}
+
+/* ============ Fogón: Perfil ============ */
+.pstats b.num{font-size:34px;color:var(--ink)}
+.pstats div:first-child b.num{color:var(--score)}
+#p-friends b{font-variation-settings:"wdth" 62;font-weight:900;font-size:34px;line-height:.85}
+.pstats span{margin-top:4px}
+
+/* ============ Fogón: Rutinas ============ */
+.stack:has(>.card.routine){gap:0;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.stack>.card.routine{border:0;border-radius:0;box-shadow:none;border-top:1px solid var(--line);position:relative;padding-right:40px}
+.stack>.card.routine:first-child{border-top:0}
+.stack>.card.routine .ic{display:none}
+.stack>.card.routine::after{content:"";position:absolute;right:18px;top:50%;width:9px;height:9px;border-right:2.5px solid var(--muted);border-bottom:2.5px solid var(--muted);transform:translateY(-50%) rotate(-45deg)}
+.stack>.card.routine:active{background:var(--fire-soft)}
+.stack>.card.routine h3{font-size:17px}
+.music .ic{display:none}
+
+/* ============ Fogón: contraste y texto ============ */
+p,li{text-wrap:pretty}
+.link.danger{color:var(--danger-ink)}
+.hrow.bench>div:first-child{opacity:1}
+.hrow.bench .avatar,.hrow.bench .ava{filter:grayscale(.8)}
 </style>
 </head>
 <body>
@@ -731,7 +769,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const DAYS = ['D','L','M','M','J','V','S'];
 const DAY_NAMES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const AV_COLORS = ['#FF6B2C','#3AA9E6','#23A566','#8A5CF6','#E8457A','#E0A100','#1B1A2E'];
+const AV_COLORS = ['#FF8A54','#5BB8EE','#3CC07E','#B39BFF','#FF8FB1','#F2B705','#C9CBD6'];
 const avColor = (s) => { let h=0; for (const c of String(s)) h = (h*31 + c.charCodeAt(0))>>>0; return AV_COLORS[h % AV_COLORS.length]; };
 const parseDay = (d) => { const [y,m,dd] = d.split('-').map(Number); return new Date(y, m-1, dd); };
 const fmtDay = (d) => { const x = parseDay(d); return `${DAY_NAMES[x.getDay()][0].toUpperCase()+DAY_NAMES[x.getDay()].slice(1)} ${x.getDate()} de ${MONTHS[x.getMonth()]}`; };
@@ -1466,7 +1504,7 @@ function shopSheet(slot = 'p'){
     const pick = sel && cat[2].find(x => x[0] === sel);
     const look = pick && slot !== 'e' ? { ...eq, [slot]: sel } : eq;
     const cur = eq[slot] || (slot === 'c' ? 'c:naranja' : slot === 'p' ? 'p:chispita' : '');
-    box.innerHTML = `<div class="row between" style="align-items:center"><h2>🛍️ Tienda</h2><span class="coins">💎 ${a.coins}</span></div>
+    box.innerHTML = `<div class="row between" style="align-items:center"><h2>Tienda</h2><span class="coins">💎 ${a.coins}</span></div>
     <div style="display:grid;place-items:center;margin:10px 0">${userAv(S.me.user.nick, { h: true, eq: look }, 120)}<div class="small muted" style="margin-top:6px;font-weight:700">${pick ? (slot === 'e' ? `Elegiste ${esc(pick[1])} para reaccionar` : `Probándote: ${esc(label(pick[0], pick[1]))}`) : esc(a.name || 'Tu fueguito')}</div></div>
     ${pick ? `<div class="shopbuy">${pick[2] > a.coins ? `<button class="btn" disabled>Te faltan ${pick[2] - a.coins} 💎</button>` : `<button class="btn" id="sb-buy">Comprar ${esc(label(pick[0], pick[1]))} · 💎 ${pick[2]}</button>`}<button class="btn ghost" id="sb-no">Mejor no</button></div>` : ''}
     <div class="chips">${[['p', 'Personaje'], ...AV_SHOP, ['e', '😍 Reacciones']].map(c => `<button class="chip ${c[0] === slot ? 'on' : ''}" data-slot="${c[0]}">${c[1]}</button>`).join('')}</div>
@@ -1834,7 +1872,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v67'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v68'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -3180,7 +3218,7 @@ const gName = (g) => { const m = ((S.me && S.me.groups) || []).find(x => x.id ==
 // Panel de Amigos: todos tus amigos juntos. Quién anotó hoy, las fotos de todos, tus rachas en grupo y quién está en la banca.
 function renderHome(){
   const H = S.home, F = S.friends;
-  const reqs = F && F.incoming.length ? `<button class="week gst" data-friends style="width:100%;text-align:left"><b class="small">🙋 ${F.incoming.length === 1 ? '1 persona te quiere agregar' : `${F.incoming.length} personas te quieren agregar`}</b> <span class="small muted">· Ver ›</span></button>` : '';
+  const reqs = F && F.incoming.length ? `<button class="week gst" data-friends style="width:100%;text-align:left"><b class="small">${F.incoming.length === 1 ? '1 persona te quiere agregar' : `${F.incoming.length} personas te quieren agregar`}</b> <span class="small muted">· Ver ›</span></button>` : '';
   const top = `<div class="top"><h1>Amigos</h1><button class="btn sm ice" id="fh-add" style="flex:none">+ Agregar</button></div>`;
   if (!H){
     $('#main').innerHTML = `${top}${reqs}<div class="spinner"></div>`;
@@ -3193,14 +3231,14 @@ function renderHome(){
   const done = active.filter(didToday).length, alone = H.members.length <= 1;
   const teams = H.teams || [];
   const teamCard = (t) => { const st = t.streak || {}, miss = st.missing || [];
-    const msg = t.pair && !t.other ? 'Esperando que se sume' : st.today_ok ? 'Hoy cumplieron todos ✅' : miss.length ? `${miss.length === 1 ? 'Falta' : 'Faltan'} ${esc(miss.slice(0, 3).join(', '))}${miss.length > 3 ? ` y ${miss.length - 3} más` : ''}` : 'Hoy todavía no anotó nadie';
-    return `<button class="week pair" data-team="${t.id}" style="width:100%;text-align:left"><div class="row between" style="align-items:center"><b>${t.pair ? `👯 Vos y ${esc(t.other || '…')}` : `${esc(t.emoji || '🔥')} ${esc(t.name)}`}</b><span class="big">🔥 ${st.streak || 0}</span></div><div class="small" style="margin-top:2px">${msg}${t.pair ? '' : ` · ${t.count} ${t.count === 1 ? 'persona' : 'personas'}`}</div></button>`; };
+    const msg = t.pair && !t.other ? 'Esperando que se sume' : st.today_ok ? 'Hoy cumplieron todos' : miss.length ? `${miss.length === 1 ? 'Falta' : 'Faltan'} ${esc(miss.slice(0, 3).join(', '))}${miss.length > 3 ? ` y ${miss.length - 3} más` : ''}` : 'Hoy todavía no anotó nadie';
+    return `<button class="week pair" data-team="${t.id}" style="width:100%;text-align:left"><div class="row between" style="align-items:center"><b>${t.pair ? `Vos y ${esc(t.other || '…')}` : `${t.emoji ? esc(t.emoji) + ' ' : ''}${esc(t.name)}`}</b><span class="big num ${st.streak ? 'lit' : ''}">${st.streak || 0}</span></div><div class="small muted" style="margin-top:2px">${msg}${t.pair ? '' : `. ${t.count} ${t.count === 1 ? 'persona' : 'personas'}`}</div></button>`; };
   $('#main').innerHTML = `${top}${reqs}
     ${alone ? `<div class="empty">Todavía no tenés amigos en Fueguitos. Agregalos con su apodo o mandales el link: cuando se suman, ves sus fueguitos y sus fotos acá.</div>
       <div class="section"><button class="btn" id="fh-share">📲 Invitar amigos por WhatsApp</button></div>` : `
     <div class="section-title" style="margin-top:4px"><h2>Hoy</h2><span class="small muted">${done} de ${active.length} anotaron</span></div>
     <div class="board">${active.map(memberRow).join('')}</div>
-    ${nudgeBanner(G, active)}`}
+    `}
     <div class="section">
       <div class="section-title"><h2>Fotos de hoy</h2><span class="small muted">Duran 24 h</span></div>
       ${H.feed.length ? `<div class="stack">${H.feed.map(postCard).join('')}</div>` : '<div class="empty">Todavía nadie subió foto hoy. Anotá con una foto y arrancás vos.</div>'}
@@ -3210,9 +3248,9 @@ function renderHome(){
       <div class="stack">${teams.map(teamCard).join('')}<button class="btn ghost" data-gnew>＋ Nueva racha en grupo</button></div>
     </div>
     ${suggestCard()}
-    ${bench.length ? `<div class="section"><div class="section-title"><h2>🪑 En la banca</h2><span class="small muted">Más de 7 días sin fueguito</span></div>
+    ${bench.length ? `<div class="section"><div class="section-title"><h2>En la banca</h2><span class="small muted">Más de 7 días sin fueguito</span></div>
       <div class="card">${bench.map(m => `<div class="hrow bench"><div class="row" style="gap:10px;align-items:center" data-member="${m.id}" role="button" tabindex="0">${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 32)}<div><b>${esc(m.nick)}${m.is_me ? ' (vos)' : ''}</b><div class="small muted">${m.days_off} días sin fueguito</div></div></div>
-        ${m.is_me ? '' : `<button class="btn sm ${m.nudged ? 'ghost' : ''}" data-bnudge="${m.id}" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '✓' : '👋 Empujón'}</button>`}</div>`).join('')}</div>
+        ${m.is_me ? '' : `<button class="btn sm ghost" data-bnudge="${m.id}" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '✓' : 'Empujón'}</button>`}</div>`).join('')}</div>
       <p class="hint">Vuelven solos apenas anotan algo.</p></div>` : ''}`;
   bindChips();
   $('#fh-add').onclick = addFriendSheet;
@@ -3361,7 +3399,7 @@ function benchBanner(G){
 }
 function benchBlock(G){
   const b = G.members.filter(m => m.bench); if (!b.length) return '';
-  return `<div class="section"><div class="section-title"><h2>🪑 En la banca</h2><span class="small muted">Más de 7 días sin fueguito</span></div>
+  return `<div class="section"><div class="section-title"><h2>En la banca</h2><span class="small muted">Más de 7 días sin fueguito</span></div>
     <div class="card">${b.map(m => `<div class="hrow bench"><div><div style="font-weight:800">${esc(m.nick)}${m.is_me ? ' (vos)' : ''}</div>
       <div class="small muted">${m.bench_lit ? '🔥 Volvió a anotar · quiere volver' : `${m.bench_days} días sin fueguito${m.bench_request ? ' · 🙋 pide volver' : ''}`}</div></div>
       ${!m.is_me && !G.group.me_bench && m.bench_request ? `<button class="btn sm" data-back="${m.id}">Dejalo volver</button>` : ''}</div>`).join('')}</div></div>`;
@@ -3381,14 +3419,14 @@ function benchBackSheet(G){
 // Amigos de tus amigos, en el grupo: los 3 con más amigos en común, y "Ver más" lleva a Amigos.
 function suggestCard(){
   const l = (S.friends && S.friends.suggest) || []; if (!l.length) return '';
-  return `<div class="week gst" id="sugg"><div class="row between" style="align-items:baseline;margin-bottom:4px"><b class="small">🌱 Quizás conozcas</b><button class="link small" data-friends>Ver más ›</button></div>
+  return `<div class="week gst" id="sugg"><div class="row between" style="align-items:baseline;margin-bottom:4px"><b class="small">Quizás conozcas</b><button class="link small" data-friends>Ver más ›</button></div>
     ${l.slice(0, 3).map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 32)}<div><b>${esc(u.nick)}</b><div class="small muted">${u.mutual > 1 ? `${u.mutual} amigos en común` : `amigo de ${esc(u.via)}`}</div></div></div>
-      <button class="btn sm" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>`;
+      <button class="btn sm ghost" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>`;
 }
 function grupoRacha(G, members){
   return `
     ${benchBanner(G)}
-    ${(G.group.join_requests || []).length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">🙋 Quieren sumarse al grupo</div>${G.group.join_requests.map(u => `<div class="hrow"><b>${esc(u.nick)}</b>
+    ${(G.group.join_requests || []).length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">Quieren sumarse al grupo</div>${G.group.join_requests.map(u => `<div class="hrow"><b>${esc(u.nick)}</b>
       <div class="row" style="gap:6px"><button class="btn sm" data-jra="${u.id}">Aceptar</button><button class="btn sm ghost" data-jrr="${u.id}">No</button></div></div>`).join('')}</div>` : ''}
     <div class="section-title" style="margin-top:4px"><h2>Hoy</h2></div>
     <div class="board">${members.map(memberRow).join('')}</div>
@@ -4189,7 +4227,7 @@ async function nudgeFriend(G, m){
 }
 function nudgeBanner(G, members){
   const n = members.filter(m => m.never && !m.is_me); if (!n.length) return '';
-  return `<div class="week gst"><div class="small" style="font-weight:700">👋 Todavía no prendieron su primer fueguito</div>
+  return `<div class="week gst"><div class="small" style="font-weight:700">Todavía no prendieron su primer fueguito</div>
     <div class="nudges">${n.map(m => `<button class="chip" data-nudge="${m.id}" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '✓' : '👋'} ${esc(m.nick)}</button>`).join('')}</div>
     <div class="small muted" style="margin-top:6px">Tocá un nombre y le mandás un empujón.</div></div>`;
 }
@@ -4269,16 +4307,16 @@ async function renderFriends(){
     const chips = '';
     $('#main').innerHTML = `${S.tab === 'perfil' ? '<button class="link" data-pback style="margin:0 0 6px;font-weight:800">‹ Perfil</button>' : backToFriends()}<div class="top"><h1>${F ? `${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}` : 'Amigos'}</h1><button class="btn sm ice" id="fr-add">+ Agregar</button></div>${chips}
       ${!F ? '<div class="spinner"></div>' : `
-      ${F.incoming.length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">🙋 Te quieren agregar</div>${F.incoming.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<b>${esc(u.nick)}</b></div>
+      ${F.incoming.length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">Te quieren agregar</div>${F.incoming.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<b>${esc(u.nick)}</b></div>
         <div class="row" style="gap:6px"><button class="btn sm" data-fra="${u.id}">Aceptar</button><button class="btn sm ghost" data-frr="${u.id}">No</button></div></div>`).join('')}</div>` : ''}
-      <div class="section-title"><h2>🏆 Ranking de rachas</h2><span class="small muted">${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}</span></div>
+      <div class="section-title"><h2>Ranking de rachas</h2><span class="small muted">${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}</span></div>
       ${F.friends.length ? `<div class="board">${F.friends.map((u, i) => `<div class="member" role="button" tabindex="0" data-fp="${u.id}" aria-label="Ver a ${esc(u.nick)}">
         <div class="who"><span class="small muted" style="width:16px;font-weight:800">${i + 1}</span>${userAv(u.nick, u.avatar, 36)}<div>${esc(u.nick)}${u.done_today ? ' <span class="pill ok" style="font-size:11px">✓ hoy</span>' : ''}</div></div>
         <div class="mh"><span class="m ${u.done_today ? 'done' : ''}">🔥 ${u.top}</span></div></div>`).join('')}</div>`
         : '<div class="empty">Todavía no tenés amigos en la app. Agregalos con su apodo, o invitalos a tu grupo y quedan como amigos solos.</div>'}
-      ${(F.suggest || []).length ? `<div class="section-title" style="margin-top:18px"><h2>🌱 Quizás conozcas</h2><span class="small muted">Amigos de tus amigos</span></div>
+      ${(F.suggest || []).length ? `<div class="section-title" style="margin-top:18px"><h2>Quizás conozcas</h2><span class="small muted">Amigos de tus amigos</span></div>
         <div class="card">${F.suggest.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<div><b>${esc(u.nick)}</b><div class="small muted">${u.mutual > 1 ? `${u.mutual} amigos en común` : `amigo de ${esc(u.via)}`}</div></div></div>
-          <button class="btn sm" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>` : ''}
+          <button class="btn sm ghost" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>` : ''}
       ${F.outgoing.length ? `<p class="small muted">⏳ Esperando respuesta: ${F.outgoing.map(u => esc(u.nick)).join(', ')}</p>` : ''}
       <p class="small muted">Los que están en un grupo con vos ya son tus amigos. Tocá a cualquiera para ver sus rachas, invitarlo a tus grupos o armar una racha de a dos.</p>
       <div class="section"><button class="btn ghost" id="fr-share">📲 Invitar a alguien que no tiene la app</button></div>`}`;
@@ -4298,7 +4336,7 @@ async function renderFriends(){
 }
 function relBtn(u){
   return u.rel === 'amigo' ? '<span class="pill ok">Amigos ✓</span>' : u.rel === 'enviada' ? '<span class="pill">Pedido ✓</span>'
-    : u.rel === 'recibida' ? `<button class="btn sm" data-fadd="${esc(u.nick)}">Aceptar</button>` : `<button class="btn sm" data-fadd="${esc(u.nick)}">+ Agregar</button>`;
+    : u.rel === 'recibida' ? `<button class="btn sm" data-fadd="${esc(u.nick)}">Aceptar</button>` : `<button class="btn sm ghost" data-fadd="${esc(u.nick)}">+ Agregar</button>`;
 }
 // Mandar solicitud desde una lista (amigos de amigos). Si el otro ya te había pedido, quedan amigos al toque.
 function bindFriendAdd(root, after){
@@ -5281,9 +5319,9 @@ const YOGA = [
   { who: 'Yoga with Adriene', d: 'En inglés · la más conocida del mundo', q: 'Yoga with Adriene yoga for beginners' },
 ];
 const ytSearch = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
-const yogaRows = () => YOGA.map(y => `<a class="hrow" href="${ytSearch(y.q)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div><b>🧘 ${esc(y.who)}</b><div class="small muted">${esc(y.d)}</div></div><span class="small" style="font-weight:800;color:var(--fire-ink)">Ver ›</span></a>`).join('');
+const yogaRows = () => YOGA.map(y => `<a class="hrow" href="${ytSearch(y.q)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div><b>${esc(y.who)}</b><div class="small muted">${esc(y.d)}</div></div><span class="small" style="font-weight:800;color:var(--fire-ink)">Ver ›</span></a>`).join('');
 function yogaSheet(){
-  const el = openSheet(`<h2>🧘 Yoga y movilidad</h2><p class="muted small" style="margin:4px 0 12px">Elegí una clase de 15 a 20 minutos. Al terminar, anotá tu día.</p><div class="card">${yogaRows()}</div>
+  const el = openSheet(`<h2>Yoga y movilidad</h2><p class="muted small" style="margin:4px 0 12px">Elegí una clase de 15 a 20 minutos. Al terminar, anotá tu día.</p><div class="card">${yogaRows()}</div>
     <div class="section"><button class="btn ghost" data-close-sheet>Listo</button></div>`);
   el.querySelector('[data-close-sheet]').onclick = closeSheet;
 }
@@ -5431,12 +5469,12 @@ function planWeeksSheet(){
 function renderRutinas(){
   $('#main').innerHTML = `
     <div class="top"><h1>Rutinas</h1></div>
-    <div class="section" style="margin-top:0"><div class="section-title"><h2>📅 Tu plan de la semana</h2></div>${planBlock()}</div>
-    <p class="muted" style="margin-top:-8px">Las del grupo, con cronómetro. Al terminar, anotás el día directo.</p>
+    <div class="section" style="margin-top:0"><div class="section-title"><h2>Tu plan de la semana</h2></div>${planBlock()}</div>
     <div class="section"><div class="section-title"><h2>Planes de running</h2></div>
       ${S.me.user.plan ? planCard(false) : `<div class="stack">${Object.entries(PLANES).map(([id, pl]) => `<button class="card routine" data-plan="${id}"><div class="ic" style="background:var(--fire-soft)">${pl.emoji}</div><div><h3>${esc(pl.name)}</h3><div class="small muted">${pl.weeks} semanas · ${pl.days.length} salidas por semana</div></div></button>`).join('')}</div>`}
     </div>
-    <div class="stack section">
+    <div class="section"><div class="section-title"><h2>Para hacer ahora</h2></div><p class="muted small" style="margin:-4px 0 10px">Con cronómetro. Al terminar, anotás el día directo.</p></div>
+    <div class="stack">
       <button class="card routine" data-r="flex"><div class="ic" style="background:var(--fire-soft)">💯</div><div><h3>100 flexiones</h3><div class="small muted">El básico para salvar el día · en las series que quieras</div></div></button>
       <button class="card routine" data-r="qty"><div class="ic" style="background:var(--fire-soft)">💪</div><div><h3>Rutina por cantidad</h3><div class="small muted">4 series · 1 min de descanso entre series</div></div></button>
       <button class="card routine" data-r="time"><div class="ic" style="background:var(--ice-soft)">⏱️</div><div><h3>Rutina por tiempo · 12 min</h3><div class="small muted">Arrancás con 1 de cada una y sumás 1 por ronda</div></div></button>
@@ -5449,7 +5487,7 @@ function renderRutinas(){
     <div class="section"><div class="section-title"><h2>Mis marcas del gym</h2><button class="link" id="lift-add">+ Cargar peso</button></div>
       <div class="card" id="lifts">${liftsBlock()}</div>
     </div>
-    <div class="section"><div class="section-title"><h2>🧘 Yoga y movilidad</h2><span class="small muted">Abre YouTube</span></div><div class="card">${yogaRows()}</div></div>
+    <div class="section"><div class="section-title"><h2>Yoga y movilidad</h2><span class="small muted">Abre YouTube</span></div><div class="card">${yogaRows()}</div></div>
     <div class="section"><div class="section-title"><h2>Música para darle</h2><span class="small muted">Abre Spotify</span></div>
       <div class="card">
         ${myPlaylist() ? musicRow('⭐', 'Tu playlist', 'La que guardaste vos', myPlaylist()) : ''}
@@ -5677,9 +5715,9 @@ function renderPerfil(){
   $('#main').innerHTML = `
     <div class="ptop">${userAv(me.user.nick, me.user.avatar, 76)}
       <div style="flex:1;min-width:0"><h1 style="margin:0 0 8px">${esc(me.user.nick)}</h1>
-        <div class="pstats"><div><b>🔥 ${now}</b><span>racha</span></div><div><b>🏆 ${best}</b><span>récord</span></div>
-          <button id="p-friends"><b>${nF === null ? '…' : nF}${nIn ? '<i class="pdot" title="Te quieren agregar"></i>' : ''}</b><span>${nIn ? `amigos · ${nIn} 🙋` : 'amigos'}</span></button></div></div></div>
-    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">💎 ${S.av.coins} ${S.av.coins === 1 ? 'diamante' : 'diamantes'} · 1 por fueguito</div>${nextCharLine()}<button class="btn sm" id="shop">🛍️ Tienda</button></div></div>`
+        <div class="pstats"><div><b class="num">${now}</b><span>racha</span></div><div><b class="num">${best}</b><span>récord</span></div>
+          <button id="p-friends"><b>${nF === null ? '…' : nF}${nIn ? '<i class="pdot" title="Te quieren agregar"></i>' : ''}</b><span>${nIn ? `amigos, ${nIn} ${nIn === 1 ? 'nueva' : 'nuevas'}` : 'amigos'}</span></button></div></div></div>
+    ${S.av ? (S.av.hatched ? `<div class="card avcard">${userAv(me.user.nick, me.user.avatar, 84)}<div style="flex:1"><b style="font-size:18px">${esc(S.av.name || 'Tu fueguito')}</b><div class="small muted" style="margin:2px 0 4px">💎 ${S.av.coins} ${S.av.coins === 1 ? 'diamante' : 'diamantes'} · 1 por fueguito</div>${nextCharLine()}<button class="btn sm ghost" id="shop">Tienda</button></div></div>`
       : eggCard()) : ''}
 
     ${weekCard()}
@@ -5689,11 +5727,11 @@ function renderPerfil(){
     </div>
     ${stravaBlock()}
 
-    <div class="section"><div class="section-title"><h2>📌 En mi perfil</h2><button class="link" id="ps-add">+ Agregar</button></div>
+    <div class="section"><div class="section-title"><h2>En mi perfil</h2><button class="link" id="ps-add">+ Agregar</button></div>
       <div id="myshares">${mySharesBlock()}</div>
     </div>
 
-    <div class="section"><button class="week pair" id="year"><b>🎉 Tu ${me.today.slice(0, 4)} en Fueguitos</b><div class="small muted" style="margin-top:2px">Tus números del año, listos para compartir</div></button></div>
+    <div class="section"><button class="week pair" id="year"><b>Tu ${me.today.slice(0, 4)} en Fueguitos</b><div class="small muted" style="margin-top:2px">Tus números del año, listos para compartir</div></button></div>
 
     <div class="section"><div class="section-title"><h2>Mis hábitos</h2><button class="link" id="h-new">+ Crear hábito</button></div>
       <div class="card">${habitToggleRows(me.available, true)}</div>
@@ -5703,8 +5741,8 @@ function renderPerfil(){
     <div class="section"><div class="section-title"><h2>Mis datos</h2></div>
       <form class="card stack" id="prof">
         <label class="field"><span>Apodo</span><input class="input" id="p-nick" maxlength="30" value="${esc(me.user.nick)}"></label>
-        <label class="field"><span>Mail para recuperar tu PIN</span><input class="input" id="p-mail" type="email" autocomplete="email" placeholder="tu@mail.com" value="${esc(me.user.email || '')}"><div class="hint">${me.user.email ? '✅ Vinculado. ' : ''}Si te olvidás el PIN, te mandamos un código acá. No lo usamos para nada más.</div></label>
-        <button class="btn sm" type="submit" style="width:100%">Guardar datos</button>
+        <label class="field"><span>Mail para recuperar tu PIN</span><input class="input" id="p-mail" type="email" autocomplete="email" placeholder="tu@mail.com" value="${esc(me.user.email || '')}"><div class="hint">${me.user.email ? 'Vinculado. ' : ''}Si te olvidás el PIN, te mandamos un código acá. No lo usamos para nada más.</div></label>
+        <button class="btn sm ghost" type="submit" style="width:100%">Guardar datos</button>
       </form>
     </div>
 
@@ -5714,7 +5752,7 @@ function renderPerfil(){
 
     <div class="section"><div class="section-title"><h2>Entrar desde otro celu</h2></div>
       <div class="card">
-        <p style="margin-top:0">${me.user.has_pin ? `✅ Entrás con tu apodo <b>${esc(me.user.nick)}</b> y tu PIN, desde cualquier celu o compu.` : 'Creá un PIN de 4 números: con tu apodo y el PIN entrás a tu cuenta desde cualquier dispositivo.'}</p>
+        <p style="margin-top:0">${me.user.has_pin ? `Entrás con tu apodo <b>${esc(me.user.nick)}</b> y tu PIN, desde cualquier celu o compu.` : 'Creá un PIN de 4 números: con tu apodo y el PIN entrás a tu cuenta desde cualquier dispositivo.'}</p>
         <button class="btn ${me.user.has_pin ? 'ghost' : ''} sm" id="pin-set" style="width:100%">${me.user.has_pin ? 'Cambiar mi PIN' : 'Crear mi PIN'}</button>
         <details class="more" style="margin-top:12px"><summary>Link de acceso (alternativa)</summary>
           <p class="small muted">Abre tu cuenta sin PIN. No lo compartas: con ese link cualquiera entra como vos.</p>
@@ -5742,17 +5780,17 @@ function renderPerfil(){
           <li>En Scriptable: <b>+</b> arriba a la derecha, pegá, y ponele de nombre Fueguitos.</li>
           <li>Mantené apretada la pantalla de inicio → <b>+</b> → Scriptable → tamaño <b>mediano</b> → tocá el widget → Script: <b>Fueguitos</b>.</li>
         </ol>
-        <button class="btn sm" id="wid" style="width:100%">Copiar mi widget</button>
+        <button class="btn sm ghost" id="wid" style="width:100%">Copiar mi widget</button>
         <p class="hint">Tiene tu llave adentro: no lo compartas.</p>
         <p style="margin:14px 0 0"><b>Android</b>: mantené apretado el ícono de Fueguitos y arrastrá <i>Anotar Deporte</i> a la pantalla: un toque y queda anotado, con opción de desanotar. El widget con la racha a la vista llega con la versión de Play Store.</p>
       </div>
 `}
     </div>
 
-    <div class="section" style="text-align:center"><button class="link small" id="casaca">⚽🏑 ¿Jugás en un equipo? Probá La Casaca DT</button></div>
+    <div class="section" style="text-align:center"><button class="link small" id="casaca">¿Jugás en un equipo? Probá La Casaca DT</button></div>
     <div class="section" style="text-align:center"><button class="link danger" id="logout">Cerrar sesión en este celu</button>
       <div style="margin-top:18px"><button class="link small muted" id="del-acc">Borrar mi cuenta</button></div>
-      <div class="small muted" style="margin-top:18px;opacity:.7">Fueguitos ${APP_VERSION}</div></div>
+      <div class="small muted" style="margin-top:18px">Fueguitos ${APP_VERSION}</div></div>
   `;
   bindHabitToggles(renderPerfil);
   $('#p-friends').onclick = () => { S.pview = 'amigos'; renderMain(); window.scrollTo(0, 0); };
