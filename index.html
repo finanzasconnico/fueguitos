@@ -30,7 +30,7 @@
   --field:#FFFFFF; --nav:rgba(255,255,255,.94); --party:#15131B; --toast:#1D1B26; --toast-ink:#FFFFFF;
   --ok-ink:#16653F; --ok-line:#BCE3CC; --fire-ink:#A8390A; --ice-ink:#155F88;
   --heat1:#FFD6C4; --heat2:#FF9E6E; --heat-ice:#A9D3EE;
-  --shadow:0 1px 2px rgba(29,27,38,.06),0 4px 14px rgba(29,27,38,.05); --toast-link:#FFB08A; --danger-ink:#B02A3C; --on-ice:#FFFFFF; --hc-pct:62%; --score:#D9420C;
+  --shadow:0 1px 2px rgba(29,27,38,.06),0 4px 14px rgba(29,27,38,.05); --toast-link:#FFB08A; --glow-k:.55; --glow-a:#FF8F2E; --glow-b:#FFB547; --danger-ink:#B02A3C; --on-ice:#FFFFFF; --hc-pct:62%; --score:#D9420C;
   color-scheme:light;
 }
 /* Modo oscuro: se usa mucho de noche, antes del corte de las 5 AM */
@@ -43,7 +43,7 @@
     --field:#1A1722; --nav:rgba(21,19,27,.94); --party:#0D0B11; --toast:#EDEAF3; --toast-ink:#15131B;
     --ok-ink:#7DDBA8; --ok-line:#2A5540; --fire-ink:#FF9466; --ice-ink:#8FD2F7;
     --heat1:#5A2E22; --heat2:#B9552A; --heat-ice:#2A5F80;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); --toast-link:#A8390A; --danger-ink:#FF7A88; --on-ice:#15131B; --hc-pct:100%; --score:#FF5A1F;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); --toast-link:#A8390A; --glow-k:1; --glow-a:#FF5A1F; --glow-b:#D42A10; --danger-ink:#FF7A88; --on-ice:#15131B; --hc-pct:100%; --score:#FF5A1F;
     color-scheme:dark;
   }
 }
@@ -662,7 +662,8 @@ html{scrollbar-color:var(--gray-flame) transparent}
 .hwrap .habit .undo{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;margin-top:8px;border-radius:12px;background:var(--bg);color:var(--ink);text-decoration:none;font-size:14px;font-weight:700}
 .hwrap .flamebox{width:60px;height:auto;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .hwrap .flamebox .num{font-size:44px;color:var(--hcx)}
-.hwrap .flamebox .num.n4{font-size:32px}
+.hwrap .flamebox .num.n3{font-size:36px}
+.hwrap .flamebox .num.n4{font-size:28px}
 .hwrap .flamebox .nl{font-size:12px;font-weight:700;color:var(--muted);margin-top:4px}
 .hwrap .flamebox.freebox{width:56px;height:56px;margin:0 2px}
 .hwrap .habit .name{font-size:18px}
@@ -732,6 +733,10 @@ p,li{text-wrap:pretty}
 .link.danger{color:var(--danger-ink)}
 .hrow.bench>div:first-child{opacity:1}
 .hrow.bench .avatar,.hrow.bench .ava{filter:grayscale(.8)}
+
+/* ============ Fogón: luz de fogata en Hoy ============ */
+body.hoyglow{background:radial-gradient(120% 55% at 50% -8%,color-mix(in srgb,var(--glow-a) calc(34% * var(--glow,.3) * var(--glow-k)),transparent) 0%,color-mix(in srgb,var(--glow-b) calc(16% * var(--glow,.3) * var(--glow-k)),transparent) 45%,transparent 75%) no-repeat,var(--bg)}
+body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);border-bottom-color:transparent}
 </style>
 </head>
 <body>
@@ -1886,7 +1891,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v71'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v72'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -1912,6 +1917,8 @@ function go(tab){
 }
 function renderMain(){
   syncWidget();
+  // La luz de fogata vive solo en Hoy; arranca tenue y se enciende a medida que anotás.
+  document.body.classList.toggle('hoyglow', S.tab === 'hoy'); if (S.tab === 'hoy') document.body.style.setProperty('--glow', .3);
   if (S.me) cacheSet('me', S.me);
   if (!$('#main')) return;
   renderStatus();
@@ -1929,6 +1936,7 @@ function renderMain(){
 function scoreboard(hs){
   const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return '';
   const lit = req.filter(h => h.done_today), full = lit.length === req.length, prev = S.litPrev, now = Date.now();
+  document.body.style.setProperty('--glow', full ? 1 : (.3 + .55 * lit.length / req.length).toFixed(2));
   S.litPrev = new Set(lit.map(h => h.id)); S.ignAt = S.ignAt || {};
   lit.forEach(h => { if (prev && !prev.has(h.id)) S.ignAt[h.id] = now; });
   const ign = (h) => { const e = now - (S.ignAt[h.id] || 0); return h.done_today && e < 750 ? ` ignite" style="animation-delay:-${e}ms` : ''; };
@@ -2293,7 +2301,7 @@ function renderHoy(){
     <header class="hoyhead"><div class="date">${fmtDay(me.today)}</div><h1 class="vh">Hoy</h1>${scoreboard(hs)}</header>
     ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
-    ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
+    ${allDone ? `<div class="banner ok"><span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
       (hs.every(h => !h.streak) && !(S.history || []).length ? `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>` : '')}
     ${planTodayCard()}
@@ -2514,7 +2522,7 @@ async function countTap(h, d){
 
 // El número de la racha, como marcador: condensado, grande y en el color del hábito.
 const hcheck = (h, on, act) => `<button type="button" class="hcheck ${on ? 'on' : ''}" ${act === 'undo' ? `data-undo="${h.id}"` : `data-habit="${h.id}"`} aria-label="${act === 'undo' ? 'Deshacer' : 'Anotar'} ${esc(h.name)}">${on ? CHECK_SVG : ''}</button>`;
-const streakNum = (h) => `<b class="num ${h.streak >= 1000 ? 'n4' : ''}">${h.streak}</b><span class="nl">${h.streak === 1 ? 'día' : 'días'}</span>`;
+const streakNum = (h) => `<b class="num ${h.streak >= 1000 ? 'n4' : h.streak >= 100 ? 'n3' : ''}">${h.streak}</b><span class="nl">${h.streak === 1 ? 'día' : 'días'}</span>`;
 const CHECK_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function habitCard(h){
   if (h.kind === 'evitar') return quitCard(h);
