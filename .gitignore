@@ -1,3 +1,7 @@
 CLAUDE.md
 
 .vercel
+
+# Impeccable: estado temporal del servidor de revisión y configuración local
+.impeccable/live/
+.impeccable/config.local.json
