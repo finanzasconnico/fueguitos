@@ -2,3 +2,7 @@ CLAUDE.md
 .gitignore
 ios/
 .github/
+.impeccable/
+.claude/
+PRODUCT.md
+DESIGN.md

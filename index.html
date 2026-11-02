@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fueguitos</title>
 <meta name="description" content="Mantené el fueguito de deporte, lectura y meditación con tus amigos.">
-<meta name="theme-color" content="#FFF4EC" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#170E0B" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EEF0F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15131B" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,29 +17,33 @@
 <link rel="icon" type="image/png" href="icons/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#FFF4EC; --card:#FFFFFF; --ink:#26140E; --muted:#7A5F55; --line:#F2DDD0;
-  --fire:#FF5A1F; --fire-dark:#CC3F0B; --fire-soft:#FFE3D3;
-  --gold:#FFB800; --ember:#FF2E63; --ice:#3AA9E6; --ice-dark:#1E86C0; --ice-soft:#E2F3FC;
-  --ok:#23A566; --ok-soft:#DDF5E8; --danger:#D6364A;
-  --gray-flame:#DCC9BF; --gray-flame-2:#EFE1D8;
+  /* Fogón de día: ceniza fría y tinta carbón. La brasa queda para el fuego y la acción principal. */
+  --bg:#EEF0F4; --card:#FFFFFF; --ink:#1D1B26; --muted:#5F5C6B; --line:#DCDFE7;
+  --fire:#FF5A1F; --fire-dark:#D9420C; --fire-soft:#FFE6DA; --on-fire:#1D1B26;
+  --gold:#FFB547; --ember:#FF2E63; --ice:#1A72A6; --ice-dark:#155E8A; --ice-soft:#E1EEF7;
+  --ok:#1E8A55; --ok-soft:#DFF2E7; --danger:#C62F43;
+  --gray-flame:#C9CBD6; --gray-flame-2:#E2E4EC;
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
-  --field:#FFFFFF; --nav:rgba(255,255,255,.96); --party:#1E0F0A; --toast:#26140E; --toast-ink:#FFFFFF;
-  --ok-ink:#16603F; --ok-line:#BFE8D2; --fire-ink:#8A3208; --ice-ink:#155F88;
-  --heat1:#FFD3BC; --heat2:#FF9E6E; --heat-ice:#A9DCF6;
+  --field:#FFFFFF; --nav:rgba(255,255,255,.94); --party:#15131B; --toast:#1D1B26; --toast-ink:#FFFFFF;
+  --ok-ink:#16653F; --ok-line:#BCE3CC; --fire-ink:#A8390A; --ice-ink:#155F88;
+  --heat1:#FFD6C4; --heat2:#FF9E6E; --heat-ice:#A9D3EE;
+  --shadow:0 1px 2px rgba(29,27,38,.06),0 4px 14px rgba(29,27,38,.05); --toast-link:#FFB08A; --hc-pct:62%; --score:#D9420C;
   color-scheme:light;
 }
 /* Modo oscuro: se usa mucho de noche, antes del corte de las 5 AM */
 @media (prefers-color-scheme:dark){
   :root{
-    --bg:#170E0B; --card:#241611; --ink:#FBEFE8; --muted:#C2A69A; --line:#3E2A21;
-    --fire-dark:#B83A0C; --fire-soft:#41200F; --ice-soft:#132A38; --ice-dark:#4DB5EE; --ok-soft:#14301F;
-    --gray-flame:#5A4439; --gray-flame-2:#735A4D;
-    --field:#1D120E; --nav:rgba(23,14,11,.94); --party:#0E0705; --toast:#FBEFE8; --toast-ink:#170E0B;
-    --ok-ink:#7DDBA8; --ok-line:#2C5A40; --fire-ink:#FFB08A; --ice-ink:#8FD2F7;
-    --heat1:#6A3420; --heat2:#B9552A; --heat-ice:#2A5F80;
+    /* Fogón de noche: carbón violáceo, ceniza clara y la brasa encendida. */
+    --bg:#15131B; --card:#201D29; --ink:#EDEAF3; --muted:#A6A1B5; --line:#2F2B3B;
+    --fire-dark:#E04A12; --fire-soft:#3A2019; --ice:#4DB5EE; --ice-soft:#16283A; --ice-dark:#6CC3F2; --ok:#2FB673; --ok-soft:#15301F;
+    --gray-flame:#4A4558; --gray-flame-2:#625C73;
+    --field:#1A1722; --nav:rgba(21,19,27,.94); --party:#0D0B11; --toast:#EDEAF3; --toast-ink:#15131B;
+    --ok-ink:#7DDBA8; --ok-line:#2A5540; --fire-ink:#FF9466; --ice-ink:#8FD2F7;
+    --heat1:#5A2E22; --heat2:#B9552A; --heat-ice:#2A5F80;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); --toast-link:#A8390A; --hc-pct:100%; --score:#FF5A1F;
     color-scheme:dark;
   }
 }
@@ -48,7 +52,7 @@ input{caret-color:var(--fire)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);touch-action:manipulation;-webkit-text-size-adjust:100%}
 button,a,label,input,.habit{touch-action:manipulation}
-body{font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.4;min-height:100dvh;overscroll-behavior-y:none}
+body{font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;font-variation-settings:"wdth" 100;font-size:16px;line-height:1.4;min-height:100dvh;overscroll-behavior-y:none}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;padding:0}
 a{color:var(--ice-dark)}
@@ -64,7 +68,8 @@ a{color:var(--ice-dark)}
 .st-pill{display:flex;align-items:center;gap:5px;border:0;background:none;font:inherit;font-size:17px;font-weight:800;color:var(--muted);padding:6px 8px;border-radius:12px}
 .st-pill b{font-weight:800}
 .st-pill.on{color:var(--fire)}
-.st-pill.gem{color:#1CB0F6}
+.st-pill.gem{color:var(--ice)}
+.st-gem{width:20px;height:20px;display:block}
 .st-pill:active{background:var(--line)}
 .st-flame{width:20px;height:22px;display:block}
 .icon-btn{width:40px;height:40px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);display:grid;place-items:center;padding:0}
@@ -88,19 +93,19 @@ h3{font-size:17px;font-weight:700}
 .section-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 
 /* Botones gorditos */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:16px;font-weight:700;font-size:17px;background:var(--fire);color:#fff;box-shadow:0 4px 0 var(--fire-dark);transition:transform .06s,box-shadow .06s;width:100%}
-.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--fire-dark)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:14px;font-weight:700;font-size:17px;background:var(--fire);color:var(--on-fire);box-shadow:none;transition:transform .06s,box-shadow .06s;width:100%}
+.btn:active{transform:scale(.97);filter:brightness(.95)}
 .btn[disabled]{opacity:.55;pointer-events:none}
-.btn.ice{background:var(--ice);box-shadow:0 4px 0 var(--ice-dark)}
-.btn.ghost{background:var(--card);color:var(--ink);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
-.btn.green{background:var(--ok);box-shadow:0 4px 0 #17804E}
-.btn.danger{background:var(--danger);box-shadow:0 4px 0 #A12233}
+.btn.ice{background:var(--ice);color:#fff}
+.btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn.green{background:var(--ok);color:#fff}
+.btn.danger{background:var(--danger);color:#fff}
 .link.muted{color:var(--muted);font-weight:600}
-.btn.sm{min-height:40px;font-size:15px;padding:0 14px;border-radius:12px;width:auto}
+.btn.sm{min-height:44px;font-size:15px;padding:0 14px;border-radius:12px;width:auto}
 .link{color:var(--ice-dark);font-weight:700;font-size:15px}
 .link.danger{color:var(--danger)}
 
-.card{background:var(--card);border-radius:20px;padding:16px;border:2px solid var(--line)}
+.card{background:var(--card);border-radius:18px;padding:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
 .field{display:block}
 .field span{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
 .input{width:100%;min-height:50px;border:2px solid var(--line);border-radius:14px;padding:0 14px;background:var(--field);font-size:17px}
@@ -172,7 +177,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .mleg{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px}
 .mleg span{font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}
 .mleg i{width:10px;height:10px;border-radius:50%;display:block}
-.btn.strava{background:#FC4C02;box-shadow:0 4px 0 #B83700}
+.btn.strava{background:#FC4C02;color:#fff}
 .ava{position:relative;display:inline-block;flex:none;border-radius:50%;overflow:visible}
 .ava svg{position:absolute;left:10%;top:8%;width:80%;height:84%}
 .ava i{position:absolute;font-style:normal;line-height:1;transform:translateX(-50%)}
@@ -220,7 +225,7 @@ textarea.input{padding:12px 14px;min-height:80px;resize:vertical}
 .wg{display:grid;gap:7px}
 .wg-row{display:grid;grid-template-columns:minmax(0,1fr) repeat(7,28px) 26px;align-items:center}
 .wg-head em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted);text-align:center}
-.wg-head em.today{color:var(--fire)}
+.wg-head em.today{color:var(--fire-ink)}
 .wg-h{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
 .wg-c{width:20px;height:20px;border-radius:50%;justify-self:center;background:var(--line);display:block}
 .wg-c.on{background:var(--hc)}
@@ -357,7 +362,7 @@ details.more[open] summary{margin-bottom:8px}
 .plist{margin:0 0 12px;padding-left:18px}.plist li{margin:2px 0}
 
 /* Subsecciones del grupo */
-.week{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px;margin-bottom:12px}
+.week{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}
 .wrow{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:4px;font-size:15px}
 .wrow b{font-size:20px;font-variant-numeric:tabular-nums}
 .gav{display:inline-grid;place-items:center;border-radius:18px;background:var(--fire-soft);object-fit:cover;flex:none}
@@ -481,7 +486,7 @@ details.more[open] summary{margin-bottom:8px}
 .bigtick{width:120px;height:120px;border-radius:50%;background:var(--ok);display:grid;place-items:center;font-size:70px;font-weight:800;margin-bottom:18px;animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
 .tickscreen .lbl{font-size:20px;font-weight:700;margin:6px 0 0;color:var(--gold)}
 .tickscreen .btns{width:100%;max-width:340px;margin-top:28px;display:grid;gap:14px}
-.tickscreen .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);box-shadow:0 4px 0 rgba(255,255,255,.12)}
+.tickscreen .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25)}
 
 /* Barra de acción */
 .actionbar{position:fixed;left:0;right:0;bottom:calc(74px + var(--safe-b));padding:0 16px;z-index:20;pointer-events:none}
@@ -493,7 +498,7 @@ nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--nav);backdrop-f
 nav.tabs .inner{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
 nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 0 8px;font-size:12px;font-weight:700;color:var(--muted)}
 nav.tabs button svg{width:26px;height:26px}
-nav.tabs button.on{color:var(--fire)}
+nav.tabs button.on{color:var(--fire-ink)}
 
 /* Hojas (modales desde abajo) */
 .scrim{position:fixed;inset:0;background:rgba(38,20,14,.5);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
@@ -526,11 +531,11 @@ nav.tabs button.on{color:var(--fire)}
 .party .others .o{background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;font-weight:700}
 .party .gotice{margin-top:16px;background:var(--ice);color:#fff;border-radius:16px;padding:12px 16px;font-weight:800;font-size:18px;animation:pop .6s .5s both}
 .party .btns{width:100%;max-width:340px;margin-top:28px;display:grid;gap:14px}
-.party .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);box-shadow:0 4px 0 rgba(255,255,255,.12)}
+.party .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25)}
 
 /* Grupo */
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
-.chip{flex:none;padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--card);font-weight:700;font-size:15px}
+.chip{flex:none;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-weight:700;font-size:15px}
 .chip.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .board{display:grid;gap:10px}
 .member{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px}
@@ -614,11 +619,81 @@ nav.tabs button.on{color:var(--fire)}
 .net.sync{background:var(--ice-dark);color:#fff}
 .snack{position:fixed;left:12px;right:12px;bottom:calc(92px + var(--safe-b));display:flex;align-items:center;gap:4px;background:var(--toast);color:var(--toast-ink);padding:8px 8px 8px 16px;border-radius:16px;z-index:80;animation:up .2s;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:520px;margin:0 auto}
 .snack span{flex:1;font-size:15px}
-.snack button{color:#FFB37A;font-weight:800;font-size:15px;padding:10px 10px;border-radius:10px;font-family:inherit;background:none;border:0}
+.snack button{color:var(--toast-link);font-weight:800;font-size:15px;padding:10px 10px;border-radius:10px;font-family:inherit;background:none;border:0}
 .toast{position:fixed;left:50%;bottom:calc(150px + var(--safe-b));transform:translateX(-50%);background:var(--toast);color:var(--toast-ink);padding:12px 18px;border-radius:14px;font-weight:700;z-index:80;max-width:88vw;text-align:center;animation:up .2s}
 .spinner{width:28px;height:28px;border:4px solid var(--line);border-top-color:var(--fire);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ============ Fogón: Hoy ============ */
+::selection{background:var(--fire);color:var(--on-fire)}
+html{scrollbar-color:var(--gray-flame) transparent}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variation-settings:"wdth" 62;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:.85}
+.hoyhead{margin:2px 0 8px}
+.hoyhead .date{font-size:15px;color:var(--muted);font-weight:600}
+.score{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:16px;align-items:end;margin-top:6px}
+.scorenum{grid-row:1 / span 2;display:flex;align-items:baseline}
+.scorenum b.num{font-size:96px;color:var(--score)}
+.scorenum .of{font-size:44px;color:var(--muted)}
+.score.full .scorenum b.num{color:var(--ok)}
+.brasas{display:flex;flex-wrap:wrap;gap:2px 4px}
+.brasa svg{width:24px;height:30px;display:block;transform-origin:50% 90%}
+.scorecap{font-size:15px;font-weight:700;color:var(--muted);margin-top:6px;padding-bottom:8px}
+.score.full .scorecap{color:var(--ok-ink)}
+@keyframes ignite{0%{transform:scale(.3) translateY(8px);opacity:.2;filter:brightness(2.2)}55%{transform:scale(1.25)}100%{transform:none;opacity:1;filter:none}}
+.brasa.ignite svg{animation:ignite .75s cubic-bezier(.16,1,.3,1) both;animation-delay:inherit}
+@media (prefers-reduced-motion:reduce){.brasa.ignite svg{animation:none}}
+.hsec{font-size:20px;font-weight:800;margin:22px 0 10px}
+.habits{gap:10px}
+.hwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+.hwrap:has(.habit.sel){border-color:var(--fire)}
+.hwrap>.habit{background:none;border:0;border-radius:0;box-shadow:none;grid-template-columns:60px 1fr;padding:14px 10px 14px 8px}
+.hwrap>.habit.sel{background:var(--fire-soft)}
+.hwrap{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;--hcx:color-mix(in srgb,var(--hc) var(--hc-pct),var(--ink))}
+.hwrap>.habit{grid-column:1}
+.hwrap>.habit.count,.hwrap>.habit.night{grid-column:1 / -1;grid-template-columns:60px 1fr auto}
+.hwrap>.hfoot{grid-column:1 / -1}
+.hwrap>.habit.count:not(.done) .check{display:none}
+.hcheck{width:48px;height:48px;margin-right:12px;border-radius:50%;border:2.5px solid var(--hcx);background:none;color:#fff;display:grid;place-items:center;font-weight:900;font-size:20px}
+.hcheck.on{background:var(--hc);border-color:var(--hc);color:#1D1B26}
+.hcheck.x{background:var(--danger);border-color:var(--danger)}
+.hcheck:active{transform:scale(.92)}
+.hwrap .habit .undo{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;margin-top:8px;border-radius:12px;background:var(--bg);color:var(--ink);text-decoration:none;font-size:14px;font-weight:700}
+.hwrap .flamebox{width:60px;height:auto;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hwrap .flamebox .num{font-size:44px;color:var(--hcx)}
+.hwrap .flamebox .num.n4{font-size:32px}
+.hwrap .flamebox .nl{font-size:12px;font-weight:700;color:var(--muted);margin-top:4px}
+.hwrap .flamebox.freebox{width:56px;height:56px;margin:0 2px}
+.hwrap .habit .name{font-size:18px}
+.hwrap .check{width:44px;height:44px;border:2.5px solid var(--hc);color:#fff}
+.hwrap .check svg{display:block}
+.hwrap.done{background:color-mix(in srgb,var(--hc) 8%,var(--card))}
+.hwrap.done .check,.hwrap .habit.sel .check{background:var(--hc);border-color:var(--hc)}
+.hwrap .check.x{background:var(--danger);border-color:var(--danger)}
+.hwrap.done>.habit{padding-top:8px;padding-bottom:8px}
+.hwrap.done .flamebox{min-height:40px}
+.hwrap.done .flamebox .num{font-size:32px}
+.hwrap.done .flamebox .nl,.hwrap.done .incu,.hwrap.done .cue,.hwrap.done .progress{display:none}
+.hwrap.done .habit .name{font-size:16px}
+.hwrap.done .hstat{font-size:13px;margin-top:1px}
+.hwrap .hfoot{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 12px 76px;margin:0}
+.hwrap.done .hfoot{padding-bottom:10px}
+.hwrap .hfoot .undo{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;margin:0;border-radius:12px;background:var(--bg);color:var(--ink);text-decoration:none;font-size:14px;font-weight:700}
+.hwrap .hfoot .undo.yest{color:var(--fire-ink)}
+.hwrap .hfoot .undo.save{color:var(--ok-ink)}
+.hwrap .nightq .btn{min-height:44px}
+.hwrap>.habit.count,.hwrap>.habit.night{padding-bottom:14px}
+.newsline{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:16px 0 0;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:15px;color:var(--ink)}
+.newsline .ndot{width:8px;height:8px;border-radius:50%;background:var(--fire);flex:none}
+.newsline .ntx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.newsline .ngo{color:var(--fire-ink);font-weight:800}
+.shareday{border-width:1px;background:var(--card)}
+.shareday .link{color:var(--fire-ink)}
+.week.pair .big.num{font-size:34px;color:var(--muted)}
+.week.pair .big.num.lit{color:var(--fire)}
+.wg-head em small{font-size:11px;opacity:1;color:var(--muted)}
+.st-pill.on{color:var(--fire-ink)}
 </style>
 </head>
 <body>
@@ -1348,7 +1423,7 @@ function nextCharLine(){
 }
 function eggCard(){
   const a = S.av; if (!a || a.hatched) return '';
-  return `<button class="week eggcard" id="egg"><span class="eggimg">${eggSVG(a.fed)}</span><span><b>🥚 Tu huevito</b><span class="small" style="display:block;margin-top:2px">Comé un fueguito por día: en ${a.need} días distintos nace tu muñequito.</span>
+  return `<button class="week eggcard" id="egg"><span class="eggimg">${eggSVG(a.fed)}</span><span><b>Tu huevito</b><span class="small" style="display:block;margin-top:2px">Comé un fueguito por día: en ${a.need} días distintos nace tu muñequito.</span>
     <span class="progress" style="margin-top:8px;display:block"><i style="width:${Math.round(a.fed / a.need * 100)}%"></i></span><span class="small muted" style="display:block;margin-top:4px">${a.fed} de ${a.need} días</span></span></button>`;
 }
 function unlockSheet(ids){
@@ -1721,6 +1796,7 @@ function mainFire(){
   if (!hs.length) return null;
   return hs.find(h => h.id === S.me.user.show_habit) || hs.reduce((a, h) => h.streak > a.streak ? h : a, hs[0]);
 }
+const GEM_SVG = '<svg class="st-gem" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h11l4 5.5L12 21 2.5 9z" fill="currentColor" opacity=".9"/><path d="M2.5 9h19M8 3.5 12 21l4-17.5M6.5 3.5 8 9l4-5.5L16 9l1.5-5.5" fill="none" stroke="var(--card)" stroke-width="1.2" stroke-linejoin="round" opacity=".55"/></svg>';
 function renderStatus(){
   const el = $('#status'); if (!el || !S.me) return;
   const f = mainFire(), a = S.av;
@@ -1728,7 +1804,7 @@ function renderStatus(){
     <button class="st-av" id="st-av" aria-label="${a && a.hatched ? 'Tu avatar: abrir la tienda' : 'Tu huevito'}">${a && a.hatched ? userAv(S.me.user.nick, S.me.user.avatar, 34) : `<span class="st-egg">${eggSVG(a ? a.fed : 0)}</span>`}</button>
     <div class="st-right">
       <button class="st-pill ${f && f.done_today ? 'on' : ''}" id="st-fire" aria-label="Tus rachas">${flameSVG(!!(f && f.done_today), 'st-flame')}<b>${f ? f.streak : 0}</b></button>
-      <button class="st-pill gem" id="st-gem" aria-label="Diamantes: abrir la tienda">💎<b>${a ? a.coins ?? 0 : '–'}</b></button>
+      <button class="st-pill gem" id="st-gem" aria-label="Diamantes: abrir la tienda">${GEM_SVG}<b>${a ? a.coins ?? 0 : '–'}</b></button>
     </div></div>`;
   $('#st-av', el).onclick = () => { if (a && a.hatched) shopSheet('p'); else if (a) toast(`Tu huevito nace con ${a.need - a.fed === 1 ? '1 día más' : `${a.need - a.fed} días más`} con fueguito 🥚`, 3000); };
   $('#st-fire', el).onclick = streaksSheet;
@@ -1758,7 +1834,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v65'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v66'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -1797,6 +1873,19 @@ function renderMain(){
 
 /* ============ HOY ============ */
 // Anillo del día: cuánto de lo de hoy ya cerraste (los de cantidad suman de a poco).
+// Marcador del día: cuántos hábitos prendiste hoy, y una brasa por cada uno que se prende al anotarlo.
+function scoreboard(hs){
+  const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return '';
+  const lit = req.filter(h => h.done_today), full = lit.length === req.length, prev = S.litPrev, now = Date.now();
+  S.litPrev = new Set(lit.map(h => h.id)); S.ignAt = S.ignAt || {};
+  lit.forEach(h => { if (prev && !prev.has(h.id)) S.ignAt[h.id] = now; });
+  const ign = (h) => { const e = now - (S.ignAt[h.id] || 0); return h.done_today && e < 750 ? ` ignite" style="animation-delay:-${e}ms` : ''; };
+  return `<div class="score ${full ? 'full' : ''}" role="img" aria-label="Hoy: ${lit.length} de ${req.length} hábitos anotados">
+    <div class="scorenum" aria-hidden="true"><b class="num">${lit.length}</b><span class="num of">/${req.length}</span></div>
+    <div class="brasas" aria-hidden="true">${req.map(h => `<span class="brasa ${h.done_today ? 'on' : ''}${ign(h)}">${flameSVG(h.done_today)}</span>`).join('')}</div>
+    <div class="scorecap">${full ? 'Día completo' : lit.length ? (lit.length === 1 ? 'prendido hoy' : 'prendidos hoy') : 'Todavía no prendiste ninguno hoy'}</div>
+  </div>`;
+}
 function dayRing(hs){
   const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return '';
   const done = req.filter(h => h.done_today).length;
@@ -1859,7 +1948,7 @@ function weekGrid(mon){
       return `<i class="wg-c ${cls}" style="--hc:${c}" title="${esc(h.name)} · ${fmtDay(d)}"${d <= t ? ` data-dd="${d}" data-dh="${h.id}"` : ''}></i>`;
     }).join('');
     total += n; want += Math.min(sched, 7 - ((h.rest_per_week || 0) >= 3 ? h.rest_per_week : 0));
-    return `<div class="wg-row"><span class="wg-h">${esc(h.emoji)} <span>${esc(h.name)}</span></span>${cells}<b class="wg-n" style="color:${n ? c : 'var(--muted)'}">${n}</b></div>`;
+    return `<div class="wg-row"><span class="wg-h">${esc(h.emoji)} <span>${esc(h.name)}</span></span>${cells}<b class="wg-n" style="color:${n ? `color-mix(in srgb,${c} var(--hc-pct),var(--ink))` : 'var(--muted)'}">${n}</b></div>`;
   }).join('');
   return { total, days: any.size, pct: want ? Math.min(100, Math.round(total / want * 100)) : 0,
     html: `<div class="wg"><div class="wg-row wg-head"><span></span>${days.map(d => `<em class="${d === t ? 'today' : ''}"${d <= t ? ` data-dd="${d}"` : ''}>${DAYS[parseDay(d).getDay()]}<small>${parseDay(d).getDate()}</small></em>`).join('')}<span></span></div>${rows}</div>` };
@@ -1867,7 +1956,7 @@ function weekGrid(mon){
 function weekCard(){
   if (!calHabits().length) return '';
   const w = weekGrid(mondayOf(S.me.today));
-  return `<button class="card section weekcard" data-wk-open><div class="row between" style="align-items:center;margin-bottom:10px"><h3 style="margin:0">Tu semana</h3><span class="small" style="font-weight:800;color:var(--fire-ink)">🔥 ${w.total} · Ver calendario ›</span></div>${w.html}</button>`;
+  return `<button class="card section weekcard" data-wk-open><div class="row between" style="align-items:center;margin-bottom:10px"><h2 style="margin:0;font-size:20px">Tu semana</h2><span class="small" style="font-weight:800;color:var(--fire-ink)">Ver calendario</span></div>${w.html}</button>`;
 }
 // El año en 12 mini meses. "Todos": más color = más hábitos ese día. Con un hábito elegido, su color.
 function yearHTML(yr, only){
@@ -2024,7 +2113,7 @@ function pairCards(){
     const st = g.streak || {}, miss = st.missing || [], o = g.other;
     const msg = !o ? 'Esperando que se sume. Tocá para mandarle el link.' : st.today_ok ? 'Hoy cumplieron los dos ✅'
       : miss.length === 2 ? 'Hoy faltan los dos' : miss.includes(me) ? 'Hoy te falta a vos' : miss.length ? `Hoy le falta a ${esc(o)}` : 'Hoy todavía no anotó ninguno';
-    return `<button class="week pair" data-pair="${g.id}"><div class="row between" style="align-items:center"><b>👯 Vos y ${esc(o || '…')}</b><span class="big">🔥 ${st.streak || 0}</span></div><div class="small" style="margin-top:2px">${msg}</div></button>`;
+    return `<button class="week pair" data-pair="${g.id}"><div class="row between" style="align-items:center"><b>Vos y ${esc(o || '…')}</b><span class="big num ${st.streak ? 'lit' : ''}">${st.streak || 0}</span></div><div class="small" style="margin-top:2px">${msg}</div></button>`;
   }).join('')}</div></div>`;
 }
 
@@ -2108,12 +2197,18 @@ function easeCard(){
     <p class="small" style="margin:0 0 12px">En las últimas 4 semanas lo hiciste unas ${vez(avg)} por semana, y tu meta es ${vez(x.target)}. Bajar la meta no es rendirse: una racha de ${vez(x.to)} por semana que se sostiene vale más que una que se corta.</p>
     <div class="grid2"><button class="btn sm ghost" style="width:100%" id="ease-no">Sigo así</button><button class="btn sm" style="width:100%" id="ease-go">Bajar a ${vez(x.to)}</button></div></div>`;
 }
+// Novedades: un renglón debajo de los hábitos; el detalle se abre en una hoja.
 function newsCard(){
   if (LS.get('fueguitos_news') === NEWS.id) return '';
-  const it = NEWS.items, more = it.length - 2;
-  return `<div class="card section news"><h3 style="margin:0 0 8px">${NEWS.title}</h3><ul class="small plist" style="margin-bottom:${more > 0 ? 4 : 12}px">${it.slice(0, 2).map(i => `<li>${i}</li>`).join('')}</ul>
-    ${more > 0 ? `<details class="newsmore"><summary class="small">Ver ${more === 1 ? 'una más' : `las otras ${more}`}</summary><ul class="small plist">${it.slice(2).map(i => `<li>${i}</li>`).join('')}</ul></details>` : ''}
-    <div class="grid2"><button class="btn sm ghost" style="width:100%" id="news-casaca">⚽ Ver La Casaca</button><button class="btn sm" style="width:100%" id="news-ok">¡Entendido!</button></div></div>`;
+  const first = (NEWS.items[0].match(/<b>(.*?)<\/b>/) || [])[1] || '';
+  return `<button class="newsline" id="news-open"><span class="ndot" aria-hidden="true"></span><span class="ntx"><b>Novedades</b> ${first}</span><span class="ngo">Ver</span></button>`;
+}
+function newsSheet(){
+  const el = openSheet(`<h2>Novedades en Fueguitos</h2><ul class="plist" style="margin-top:12px">${NEWS.items.map(i => `<li>${i}</li>`).join('')}</ul>
+    <div class="stack section"><button class="btn" id="news-ok">Entendido</button><button class="btn ghost" id="news-casaca">Ver La Casaca DT</button></div>`);
+  const done = () => { LS.set('fueguitos_news', NEWS.id); closeSheet(); renderHoy(); };
+  $('#news-ok', el).onclick = done;
+  $('#news-casaca', el).onclick = () => { done(); casacaSheet(); };
 }
 // App hermana para equipos (fútbol, hockey): se ofrece en Novedades y con un renglón al fondo de Perfil.
 const CASACA_URL = 'https://lacasacadt.vercel.app/';
@@ -2138,23 +2233,24 @@ function renderHoy(){
   const rests = (S.history || []).filter(x => x.kind === 'descanso' && x.day >= addDays(me.today, -3));
   const restMsg = rests.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
   const iceMsg = ices.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
+  // Primero lo que falta prender; lo ya hecho va abajo, en una línea.
+  const lit = (h) => h.kind === 'evitar' ? !h.failed_today : !!h.done_today;
+  const pendH = hs.filter(h => !lit(h)), doneH = hs.filter(lit);
+  const hwrap = (h) => `<div class="hwrap ${lit(h) ? 'done' : ''}" style="--hc:${habitColor(h)}">${habitCard(h)}</div>`;
   $('#main').innerHTML = `
-    <div class="top">
-      <div><div class="date">${fmtDay(me.today)}</div><h1>Hola, ${esc(me.user.nick)}</h1></div>
-      ${dayRing(hs)}
-    </div>
-    <div class="quote"><span class="qmark" aria-hidden="true">“</span><p>${esc(fraseDelDia(me.today))}</p></div>
-    ${newsCard()}
+    <header class="hoyhead"><div class="date">${fmtDay(me.today)}</div><h1 class="vh">Hoy</h1>${scoreboard(hs)}</header>
     ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok">✅ <span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
       (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
       (hs.every(h => !h.streak) && !(S.history || []).length ? `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>` : '')}
     ${planTodayCard()}
-    <div class="habits">${hs.map(habitCard).join('')}</div>
+    ${pendH.length ? `<h2 class="hsec">Te falta</h2><div class="habits">${pendH.map(hwrap).join('')}</div>` : ''}
+    ${doneH.length ? `<h2 class="hsec">${pendH.length ? 'Ya prendiste' : 'Todo prendido'}</h2><div class="habits">${doneH.map(hwrap).join('')}</div>` : ''}
+    ${newsCard()}
     ${easeCard()}
     ${weekCard()}
-    ${hs.some(h => h.done_today && h.kind !== 'evitar') ? `<div class="shareday"><span>📲 Contale al grupo</span><span class="row" style="gap:16px"><button class="link" id="wa-copy">Copiar</button><button class="link" id="wa-send" style="color:var(--ok-ink)">Mandar</button></span></div>` : ''}
+    ${hs.some(h => h.done_today && h.kind !== 'evitar') ? `<div class="shareday"><span>Contale al grupo</span><span class="row" style="gap:16px"><button class="link" id="wa-copy">Copiar</button><button class="link" id="wa-send">Mandar</button></span></div>` : ''}
     ${eggCard()}
     ${mateCard()}
     ${pairCards()}
@@ -2163,11 +2259,7 @@ function renderHoy(){
     ${!me.groups.length ? `<div class="card section"><h3>Sumá a tus amigos</h3><p class="muted small">Si un amigo ya armó el grupo, pedile el código. Si no, armalo vos y pasales el link.</p><div class="grid2"><button class="btn sm ice" style="width:100%" id="to-join">🔑 Unirme</button><button class="btn sm" style="width:100%" id="to-group">+ Crear grupo</button></div></div>` : ''}
   `;
   document.querySelectorAll('[data-habit]').forEach(b => b.onclick = (e) => {
-    if (e.target.closest('[data-undo]')) return;
     const h = hs.find(x => x.id === b.dataset.habit);
-    if (e.target.closest('[data-yday]')){ anotarDia(h, addDays(S.me.today, -1)); return; }
-    if (e.target.closest('[data-appblock]')){ appBlockSheet(h); return; }
-    if (e.target.closest('[data-saving]')){ savingSheet(h); return; }
     if (h.kind === 'evitar'){ quitSheet(h); return; }
     if (h.done_today){ S.sel = new Set([h.id]); openCheckinSheet(); return; } // ya anotado: sumarle foto o detalle
     if (h.deadline){
@@ -2178,6 +2270,9 @@ function renderHoy(){
     quickAnotar(h);
   });
   const byId = (id) => hs.find(x => x.id === id);
+  document.querySelectorAll('[data-yday]').forEach(b => b.onclick = () => anotarDia(byId(b.dataset.yday), addDays(S.me.today, -1)));
+  document.querySelectorAll('[data-appblock]').forEach(b => b.onclick = () => appBlockSheet(byId(b.dataset.appblock)));
+  document.querySelectorAll('[data-saving]').forEach(b => b.onclick = () => savingSheet(byId(b.dataset.saving)));
   document.querySelectorAll('.habits .flamebox').forEach(f => f.onclick = (e) => {
     e.stopPropagation(); const c = f.closest('[data-habit],[data-hid]'); if (c) calendarSheet(byId(c.dataset.habit || c.dataset.hid));
   });
@@ -2215,10 +2310,9 @@ function renderHoy(){
   const tj = $('#to-join'); if (tj) tj.onclick = () => joinGroupSheet();
   const ino = $('#inst-no'); if (ino) ino.onclick = () => { LS.set('fueguitos_no_install', '1'); renderHoy(); toast('Lo tenés en Perfil cuando quieras'); };
   const npin = $('#n-pin'); if (npin) npin.onclick = pinSheet;
-  const nok = $('#news-ok'); if (nok) nok.onclick = () => { LS.set('fueguitos_news', NEWS.id); renderHoy(); };
+  const nop = $('#news-open'); if (nop) nop.onclick = newsSheet;
   const ez = $('#ease-go'); if (ez) ez.onclick = () => { const x = easeSuggest(); if (x) rulesSheet(x.h, renderMain, { mode: 'week', times: x.to }); };
   const en = $('#ease-no'); if (en) en.onclick = () => { const x = easeSuggest(); if (x) LS.set('fueguitos_ease_' + x.h.id, S.me.today); renderHoy(); };
-  const ncs = $('#news-casaca'); if (ncs) ncs.onclick = () => { LS.set('fueguitos_news', NEWS.id); renderHoy(); casacaSheet(); };
   const nml = $('#n-mail'); if (nml) nml.onclick = mailSheet;
   const nmn = $('#n-mail-no'); if (nmn) nmn.onclick = () => { LS.set('fueguitos_mail_snooze', String(Date.now())); renderHoy(); toast('Lo tenés en Perfil → Mis datos cuando quieras'); };
   bindPlanCard();
@@ -2318,15 +2412,15 @@ function nightCard(h){
   const no = !h.done_today && saidNo(h);
   const status = h.done_today ? hstat('ok', '✓ Anoche cumpliste') : no ? hstat('', 'Anoche no se pudo') : hstat('fire', '¿Anoche cumpliste?');
   return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}" data-hid="${h.id}">
-    <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
+    <div class="flamebox ${h.done_today ? '' : 'off'}">${streakNum(h)}</div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
       ${status}
       ${h.done_today ? `<button type="button" class="undo" data-undo="${h.id}">Deshacer</button>`
         : no ? `<button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>`
         : `<div class="nightq"><button type="button" class="btn sm green" data-night-yes="${h.id}">Sí ✓</button><button type="button" class="btn sm ghost" data-night-no="${h.id}">No</button></div>`}
     </div>
-    <div class="check" aria-hidden="true">${h.done_today ? '✓' : ''}</div>
+    <div class="check" aria-hidden="true">${h.done_today ? CHECK_SVG : ''}</div>
   </div>`;
 }
 
@@ -2335,15 +2429,15 @@ function countCard(h){
   const done = h.done_today, n = done ? h.goal : Math.min(h.count_today || 0, h.goal), u = h.unit ? ' ' + esc(h.unit) : '';
   const less = `<button type="button" class="undo" data-count="${h.id}" data-d="-1">Restar uno</button>`;
   return `<div class="habit count ${done ? 'done' : ''}" data-hid="${h.id}">
-    <div class="flamebox ${done ? '' : 'off'}">${flameSVG(done)}<div class="n">${h.streak}</div></div>
+    <div class="flamebox ${done ? '' : 'off'}">${streakNum(h)}</div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
       ${hstat(done ? 'ok' : 'fire', `${done ? '✓ ' : ''}${n} de ${h.goal}${u}`)}
       <div class="progress" style="margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="${h.goal}" aria-valuenow="${n}"><i style="width:${Math.round(n / h.goal * 100)}%"></i></div>
       ${done ? less
         : `<div class="nightq"><button type="button" class="btn sm" data-count="${h.id}" data-d="1" aria-label="Sumar uno a ${esc(h.name)}">+1</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="${h.goal}">Todo ✓</button></div>${n > 0 ? less : ''}`}
     </div>
-    <div class="check" aria-hidden="true">${done ? '✓' : ''}</div>
+    <div class="check" aria-hidden="true">${done ? CHECK_SVG : ''}</div>
   </div>`;
 }
 async function countTap(h, d){
@@ -2366,6 +2460,10 @@ async function countTap(h, d){
   } catch(e){ S.me.habits = prev; renderHoy(); toast(e.message, 3500); }
 }
 
+// El número de la racha, como marcador: condensado, grande y en el color del hábito.
+const hcheck = (h, on, act) => `<button type="button" class="hcheck ${on ? 'on' : ''}" ${act === 'undo' ? `data-undo="${h.id}"` : `data-habit="${h.id}"`} aria-label="${act === 'undo' ? 'Deshacer' : 'Anotar'} ${esc(h.name)}">${on ? CHECK_SVG : ''}</button>`;
+const streakNum = (h) => `<b class="num ${h.streak >= 1000 ? 'n4' : ''}">${h.streak}</b><span class="nl">${h.streak === 1 ? 'día' : 'días'}</span>`;
+const CHECK_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function habitCard(h){
   if (h.kind === 'evitar') return quitCard(h);
   if (h.next_day) return nightCard(h);
@@ -2374,15 +2472,15 @@ function habitCard(h){
   const sel = S.sel.has(h.id);
   const lateNow = h.deadline && !h.done_today && isLate(h);
   return `<button class="habit ${h.done_today ? 'done' : ''} ${sel ? 'sel' : ''} ${lateNow ? 'late' : ''}" data-habit="${h.id}" aria-pressed="${sel}">
-    <div class="flamebox ${h.done_today ? '' : 'off'}">${flameSVG(h.done_today)}<div class="n">${h.streak}</div></div>
+    <div class="flamebox ${h.done_today ? '' : 'off'}">${streakNum(h)}</div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
       ${habitStatus(h, lateNow)}
       ${incubator(h)}
-      ${hfoot(h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : '', yesterdayLink(h))}
     </div>
-    <div class="check" aria-hidden="true">${h.done_today || sel ? '✓' : ''}</div>
-  </button>`;
+  </button>
+  ${hcheck(h, h.done_today || sel, h.done_today ? 'undo' : 'do')}
+  ${hfoot(yesterdayLink(h))}`;
 }
 // Una sola línea de estado por hábito (en vez de varias etiquetas).
 const hstat = (cls, txt) => `<div class="hstat ${cls}">${txt}</div>`;
@@ -2426,12 +2524,11 @@ function freeCard(h){
   return `<button class="habit free ${h.done_today ? 'done' : ''}" data-habit="${h.id}" style="--hc:${c}" aria-label="${esc(h.name)}: ${h.done_today ? 'hecho hoy' : 'tocá para anotarlo'}">
     <div class="flamebox freebox"><span aria-hidden="true">${esc(h.emoji)}</span><div class="n">${n}</div></div>
     <div>
-      <div class="name">${esc(h.name)}${h.private ? ' <span class="lock" title="Solo lo ves vos">🔒</span>' : ''}</div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
+      <div class="name">${esc(h.name)}${h.private ? ' <span class="lock" title="Solo lo ves vos">🔒</span>' : ''}</div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
       ${hstat(h.done_today ? 'ok' : '', `${h.done_today ? '✓ Hecho hoy' : '✨ Cuando quieras'} · ${n} ${n === 1 ? 'vez' : 'veces'} este mes`)}
-      ${h.done_today ? `<span class="undo" role="button" tabindex="0" data-undo="${h.id}">Deshacer</span>` : ''}
     </div>
-    <div class="check" aria-hidden="true">${h.done_today ? '✓' : ''}</div>
-  </button>`;
+  </button>
+  ${hcheck(h, h.done_today, h.done_today ? 'undo' : 'do')}`;
 }
 
 // Link en la tarjeta para anotar ayer, si ayer tocaba y no quedó anotado (o se usó un hielito).
@@ -2441,7 +2538,7 @@ function yesterdayLink(h){
   if (!(h.days || []).includes(parseDay(y).getDay())) return '';
   const lost = h.lost_day === y && h.lost_streak > 0, ice = hist.some(x => x.habit_id === h.id && x.day === y && x.kind === 'hielo');
   if (!lost && !ice && !hist.some(x => x.habit_id === h.id && x.day < y) && !h.streak) return ''; // recién empezado
-  return `<span class="undo yest" role="button" tabindex="0" data-yday="${h.id}">${lost ? `🔥 ¿Lo hiciste ayer? Recuperá tus ${h.lost_streak} días` : ice ? '🧊 ¿Lo hiciste ayer? Anotalo y te devolvemos el hielito' : '↩️ ¿Lo hiciste ayer? Anotalo'}</span>`;
+  return `<button type="button" class="undo yest" data-yday="${h.id}">${lost ? `¿Lo hiciste ayer? Recuperá tus ${h.lost_streak} días` : ice ? '¿Lo hiciste ayer? Anotalo y te devolvemos el hielito' : '¿Lo hiciste ayer? Anotalo'}</button>`;
 }
 // Qué objetivo mostrar: el récord si está al alcance, si no, el próximo hito.
 const HITO_LIST = [3, 7, 14, 21, 30, 50, 100, 150, 200, 365, 500, 730, 1000];
@@ -2481,24 +2578,23 @@ const opensAt = (h) => { const [hh, mm] = h.deadline.split(':').map(Number); con
 function quitCard(h){
   const ok = !h.failed_today;
   return `<button class="habit quit ${ok ? 'done' : 'failed'}" data-habit="${h.id}" aria-label="${esc(h.name)}: ${ok ? 'vas bien hoy' : 'hoy caíste'}. Tocá para cambiarlo">
-    <div class="flamebox ${ok ? '' : 'off'}">${flameSVG(ok)}<div class="n">${h.streak}</div></div>
+    <div class="flamebox ${ok ? '' : 'off'}">${streakNum(h)}</div>
     <div>
-      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">🕒 ${esc(h.cue)}</div>` : ''}
-      ${ok ? hstat('ok', `✓ Vas bien hoy · récord ${h.best || 0}`) : hstat('fire', 'Hoy caíste · mañana arrancás de nuevo')}
-      ${savingLine(h)}
-      ${APP_RX.test(h.name) ? `<span class="undo" role="button" tabindex="0" data-appblock="${h.id}">¿Cómo frenar ${esc(appName(h.name))}?</span>` : ''}
+      <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
+      ${ok ? hstat('ok', `Vas bien hoy. Récord: ${h.best || 0}`) : hstat('fire', 'Hoy caíste. Mañana arrancás de nuevo')}
     </div>
-    <div class="check ${ok ? '' : 'x'}" aria-hidden="true">${ok ? '✓' : '✕'}</div>
-  </button>`;
+  </button>
+  <button type="button" class="hcheck ${ok ? 'on' : 'x'}" data-habit="${h.id}" aria-label="${esc(h.name)}: ${ok ? 'vas bien hoy' : 'hoy caíste'}. Cambiar">${ok ? CHECK_SVG : '✕'}</button>
+  ${hfoot(savingLine(h), APP_RX.test(h.name) ? `<button type="button" class="undo" data-appblock="${h.id}">¿Cómo frenar ${esc(appName(h.name))}?</button>` : '')}`;
 }
 // Ahorro por dejar algo: se calcula con lo que gastaba por día × días sin (en total, así una caída no borra lo ahorrado).
 const SMOKE_RX = /fum|cigarr|pucho|tabaco|vape|vapeo/i;
 const money = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
 function savingLine(h){
   const sv = h.saving;
-  if (!sv || !sv.per_day) return SMOKE_RX.test(h.name) ? `<span class="undo save" role="button" tabindex="0" data-saving="${h.id}">💰 ¿Cuánto te estás ahorrando? Calculalo</span>` : '';
+  if (!sv || !sv.per_day) return SMOKE_RX.test(h.name) ? `<button type="button" class="undo save" data-saving="${h.id}">💰 ¿Cuánto te estás ahorrando? Calculalo</button>` : '';
   const days = h.total_clean || 0, saved = days * sv.per_day;
-  return `<span class="undo save" role="button" tabindex="0" data-saving="${h.id}">💰 Ahorraste <b>${money(saved)}</b>${sv.cpd ? ` · ${Math.round(days * sv.cpd).toLocaleString('es-AR')} cigarrillos sin fumar` : ''}</span>`;
+  return `<button type="button" class="undo save" data-saving="${h.id}">💰 Ahorraste <b>${money(saved)}</b>${sv.cpd ? ` · ${Math.round(days * sv.cpd).toLocaleString('es-AR')} cigarrillos sin fumar` : ''}</button>`;
 }
 function savingSheet(h, after){
   const sv = h.saving || {}, smoke = SMOKE_RX.test(h.name);
@@ -3901,7 +3997,7 @@ function paintTournament(){
   root.querySelectorAll('[data-m]').forEach(b => b.onclick = () => resultSheet(matches.find(m => m.id === b.dataset.m), P_));
   const tk = $('#to-ko', root); if (tk) tk.onclick = () => toKnockout();
   const d = $('#tv-del', root); if (d) d.onclick = () => tSheet(`<h2>¿Borrar ${esc(t.name)}?</h2><p class="muted">Se borra para todo el grupo, con todos los resultados.</p>
-    <div class="stack section"><button class="btn" id="ts-yes" style="background:var(--danger);box-shadow:0 4px 0 #A5243A">Borrar torneo</button><button class="btn ghost" data-tclose>Cancelar</button></div>`, (el) => {
+    <div class="stack section"><button class="btn" id="ts-yes" style="background:var(--danger);color:#fff">Borrar torneo</button><button class="btn ghost" data-tclose>Cancelar</button></div>`, (el) => {
       $('#ts-yes', el).onclick = async () => { try { await rpc('api_tournament_delete', { ...P(), p_t: t.id }); closeSheet(); if (S.group){ await loadTourns(S.group.group.id); renderMain(); } toast('Torneo borrado'); } catch(e){ toast(e.message); } };
     });
 }
@@ -4608,7 +4704,7 @@ function shareInvite(g){
   const sh = $('#sh-share', el); if (sh) sh.onclick = () => navigator.share({ title: 'Fueguitos', text, url: link }).catch(() => {});
 }
 function confirmSheet(title, body, cta, fn){
-  const el = openSheet(`<h2>${esc(title)}</h2><p class="muted">${esc(body)}</p><div class="stack section"><button class="btn" id="c-yes" style="background:var(--danger);box-shadow:0 4px 0 #A5243A">${esc(cta)}</button><button class="btn ghost" id="c-no">Cancelar</button></div>`);
+  const el = openSheet(`<h2>${esc(title)}</h2><p class="muted">${esc(body)}</p><div class="stack section"><button class="btn" id="c-yes" style="background:var(--danger);color:#fff">${esc(cta)}</button><button class="btn ghost" id="c-no">Cancelar</button></div>`);
   $('#c-no', el).onclick = closeSheet;
   $('#c-yes', el).onclick = async (e) => { e.target.disabled = true; try { await fn(); closeSheet(); } catch(err){ toast(err.message); e.target.disabled = false; } };
 }
