@@ -999,6 +999,9 @@ async function boot(){
   const q = new URLSearchParams(location.search);
   if (q.get('k')) { S.token = q.get('k'); LS.set('racha_token', S.token); }
   if (q.get('g')) S.pendingJoin = q.get('g').toUpperCase();
+  // Link de invitación a la app: quien entra con él queda amigo de quien lo mandó.
+  if (/^[0-9a-f-]{36}$/i.test(q.get('amigo') || '')) LS.set('fueguitos_amigo', q.get('amigo'));
+  S.pendingFriend = LS.get('fueguitos_amigo');
   if (q.get('anotar')) S.quick = q.get('anotar');
   S.rapido = q.get('rapido') === '1';
   S.rutina = q.get('rutina');
@@ -1035,6 +1038,13 @@ async function afterLogin(){
     } catch(e){ toast(e.message, 3500); }
     S.pendingJoin = null;
   }
+  if (S.pendingFriend){
+    try {
+      const r = await rpc('api_friend_link', { ...P(), p_from: S.pendingFriend });
+      if (r.ok && !r.already) toast(`🤝 Ya sos amigo de ${r.nick}`, 3500);
+    } catch(e){}
+    S.pendingFriend = null; LS.del('fueguitos_amigo');
+  }
   if (S.habito) await addPresetHabit();
   if (!S.me.habits.length){ S.onboarding = true; renderOnboarding(); return; }
   renderShell();
@@ -1063,7 +1073,7 @@ function maybeInstallGuide(){
   const iosOther = isIOS && /CriOS|FxiOS|EdgiOS/i.test(UA);
   // En iPhone la app instalada no comparte datos con Safari: se lleva la invitación o la cuenta copiando un link.
   const hasPin = !!(S.me && S.me.user.has_pin);
-  const carry = S.token && !hasPin ? `${appBase()}?k=${S.token}` : (!S.token && S.pendingJoin ? inviteLink(S.pendingJoin) : '');
+  const carry = S.token && !hasPin ? `${appBase()}?k=${S.token}` : (!S.token && S.pendingJoin ? inviteLink(S.pendingJoin) : !S.token && S.pendingFriend ? `${appBase()}?amigo=${S.pendingFriend}` : '');
   let arrow = 'tr', title, steps;
   if (inApp){
     title = 'Abrila en el navegador';
@@ -1138,7 +1148,8 @@ function haveAccountSheet(){
   const p = $('#h-paste', el); if (p) p.onclick = async () => { try { $('#h-link', el).value = (await navigator.clipboard.readText()).trim(); } catch(e){ toast('Mantené apretado el cuadro y tocá Pegar'); } };
   $('#h-go', el).onclick = () => {
     const raw = $('#h-link', el).value.trim(); let k = null, g = null;
-    try { const u = new URL(raw); k = u.searchParams.get('k'); g = u.searchParams.get('g'); } catch(e){}
+    try { const u = new URL(raw); k = u.searchParams.get('k'); g = u.searchParams.get('g');
+      const a = u.searchParams.get('amigo'); if (/^[0-9a-f-]{36}$/i.test(a || '')){ LS.set('fueguitos_amigo', a); S.pendingFriend = a; if (!k && !g){ closeSheet(); renderWelcome(); toast('Invitación lista. Poné tu apodo 🔥'); return; } } } catch(e){}
     if (!k && /^[0-9a-f-]{36}$/i.test(raw)) k = raw;
     if (!g && /^[a-z0-9]{6}$/i.test(raw)) g = raw;
     if (k){ LS.set('racha_token', k); location.replace(location.pathname); return; }
@@ -1331,6 +1342,7 @@ function renderWelcome(){
       <div class="row" style="gap:10px;margin-top:6px;align-items:center"><span class="invcode">${esc(S.pendingJoin)}</span><button class="btn sm ghost" type="button" id="inv-copy">Copiar código</button></div>
       </div>
       <div class="small muted" style="font-weight:700;margin-bottom:8px">¿Primera vez en Fueguitos? Creá tu cuenta:</div>` : ''}
+    ${!S.pendingJoin && S.pendingFriend ? `<div class="card invite" id="inv-friend" style="text-align:left;margin-bottom:18px;display:none"></div>` : ''}
     <form id="reg" class="stack">
       <label class="field"><span>¿Cómo te dicen?</span>
         <input class="input" id="nick" maxlength="30" autocomplete="username" placeholder="Tu nombre o apodo" required>
@@ -1349,6 +1361,12 @@ function renderWelcome(){
     $('#inv-copy').onclick = async () => { (await copy(S.pendingJoin)) ? toast('Código copiado. Ahora abrí la app 👇', 3000) : toast(S.pendingJoin, 5000); };
     rpc('api_group_preview', { p_code: S.pendingJoin }).then(g => { const n = $('#inv-name'); if (g && n) n.textContent = g.pair ? `una racha de a dos con ${g.admin} 👯` : `${g.emoji || '🔥'} ${g.name} · ${g.members} ${g.members === 1 ? 'miembro' : 'miembros'}`; }).catch(() => {});
   }
+  if (!S.pendingJoin && S.pendingFriend) rpc('api_inviter_preview', { p_id: S.pendingFriend }).then(u => {
+    const c = $('#inv-friend'); if (!u || !c) return;
+    c.innerHTML = `<div class="row" style="gap:12px;align-items:center">${userAv(u.nick, u.avatar, 48)}<div><div style="font-size:20px;font-weight:800">${esc(u.nick)} te invitó 🔥</div>
+      <div class="small muted">Cuando entres, quedan amigos: ven sus rachas y se empujan.</div></div></div>`;
+    c.style.display = '';
+  }).catch(() => {});
   $('#reg').onsubmit = async (e) => {
     e.preventDefault();
     const nick = $('#nick').value.trim(); if (!nick) return;
@@ -3282,7 +3300,7 @@ function renderHome(){
       <p class="hint">Vuelven solos apenas anotan algo.</p></div>` : ''}`;
   bindChips();
   $('#fh-add').onclick = addFriendSheet;
-  const sh = $('#fh-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(`Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos: ${PUBLIC_URL}`); };
+  const sh = $('#fh-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(friendInviteText()); };
   document.querySelectorAll('[data-member]').forEach(row => bindPress(row, () => memberSheet(G, row.dataset.member)));
   document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => { const m = H.members.find(x => x.id === b.dataset.nudge); if (m) nudgeFriend(G, m); });
   document.querySelectorAll('[data-bnudge]').forEach(b => b.onclick = () => { const m = H.members.find(x => x.id === b.dataset.bnudge); if (m) nudgeFriend(G, m); });
@@ -4351,7 +4369,7 @@ async function renderFriends(){
     bindChips();
     const pb = $('[data-pback]'); if (pb) pb.onclick = () => { S.pview = null; renderMain(); window.scrollTo(0, 0); };
     $('#fr-add').onclick = addFriendSheet;
-    const sh = $('#fr-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(`Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos: ${PUBLIC_URL}`); };
+    const sh = $('#fr-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(friendInviteText()); };
     document.querySelectorAll('[data-fp]').forEach(r => r.onclick = () => friendSheet(r.dataset.fp));
     bindFriendAdd($('#main'), paint);
     const respond = async (id, ok) => { try { S.friends = await rpc('api_friend_respond', { ...P(), p_user: id, p_accept: ok }); paint(); toast(ok ? '🤝 ¡Ahora son amigos!' : 'Listo'); } catch(e){ toast(e.message); } };
@@ -4378,6 +4396,8 @@ function bindFriendAdd(root, after){
     } catch(e){ toast(e.message); b.disabled = false; }
   });
 }
+// Invitación a la app con tu link: quien entra con él queda tu amigo solo.
+const friendInviteText = () => `Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos. Entrá con este link y quedamos amigos: ${PUBLIC_URL}?amigo=${S.me.user.id}`;
 function addFriendSheet(){
   const el = openSheet(`<h2>👥 Agregar un amigo</h2><p class="muted">Poné su apodo de Fueguitos. Le llega tu solicitud y, cuando acepta, son amigos.</p>
     <div class="stack section"><input class="input" id="af-n" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Su apodo"><button class="btn" id="af-ok">Mandar solicitud</button></div>`);

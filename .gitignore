@@ -5,3 +5,6 @@ CLAUDE.md
 # Impeccable: estado temporal del servidor de revisión y configuración local
 .impeccable/live/
 .impeccable/config.local.json
+# graphify (grafo de conocimiento, derivado y regenerable)
+graphify-src/
+graphify-out/

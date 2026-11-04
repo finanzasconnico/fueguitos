@@ -6,3 +6,7 @@ ios/
 .claude/
 PRODUCT.md
 DESIGN.md
+
+# graphify (grafo de conocimiento, derivado y regenerable)
+graphify-src/
+graphify-out/
