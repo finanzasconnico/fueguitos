@@ -1003,6 +1003,7 @@ async function boot(){
   if (/^[0-9a-f-]{36}$/i.test(q.get('amigo') || '')) LS.set('fueguitos_amigo', q.get('amigo'));
   S.pendingFriend = LS.get('fueguitos_amigo');
   if (q.get('anotar')) S.quick = q.get('anotar');
+  if (/^[0-9a-f-]{36}$/i.test(q.get('noche') || '')) S.noche = q.get('noche');
   S.rapido = q.get('rapido') === '1';
   S.rutina = q.get('rutina');
   S.habito = q.get('habito');
@@ -1050,6 +1051,7 @@ async function afterLogin(){
   renderShell();
   loadAvatar();
   if (S.rutina === 'tiempo'){ S.rutina = null; runTime(); }
+  if (S.noche){ const h = S.me.habits.find(x => x.id === S.noche); S.noche = null; if (h && h.next_day) quickToggle(h); }
   if (S.quick){
     const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
     S.quick = null;
@@ -1303,6 +1305,11 @@ const pushState = () => IS_NATIVE ? (S.npush || 'default') : !pushSupported() ? 
 async function quickToggle(h){
   const show = (html) => { $('#layer').innerHTML = `<div class="tickscreen" role="dialog" aria-modal="true">${html}</div>`; pushLayer(); };
   try {
+    if (h.next_day && !h.done_today && nightPhase() !== 'noche'){
+      if (nightPhase() === 'tarde'){ toast('Ya pasaron las 12: esta noche no se puede anotar. Mañana te preguntamos 🌙', 4000); return; }
+      if (askLastNight(h)) anotarDia(h, addDays(S.me.today, -1)); else toast('Se anota a la noche, desde las 20 h 😴', 3500);
+      return;
+    }
     if (!h.done_today){
       const r = await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: null });
       S.me.habits = r.habits; renderMain();
@@ -1311,7 +1318,7 @@ async function quickToggle(h){
       const x = (r.results || [])[0] || {}, hh = S.me.habits.find(y => y.id === h.id) || h;
       vibrate([30, 60, 30]); beep(660, .12); setTimeout(() => beep(990, .16), 120);
       const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-      show(`<div class="bigtick">✓</div><h2>${h.next_day ? `¡Anoche cumpliste! ${esc(h.emoji)}` : `${esc(h.name)} anotado${h.deadline ? ` a las ${hora}` : ''}`}</h2><p class="lbl">Día ${hh.streak} 🔥${x.earned_ice ? ' · ¡ganaste un hielito! 🧊' : ''}</p>
+      show(`<div class="bigtick">✓</div><h2>${h.next_day ? `¡A dormir! Quedó anotado 😴` : `${esc(h.name)} anotado${h.deadline ? ` a las ${hora}` : ''}`}</h2><p class="lbl">Día ${hh.streak} 🔥${x.earned_ice ? ' · ¡ganaste un hielito! 🧊' : ''}</p>
         <div class="btns"><button class="btn" id="t-ok">Listo</button><button class="btn ghost" id="t-undo">Me equivoqué, desanotar</button></div>`);
     } else {
       show(`<div class="bigtick">✓</div><h2>${esc(h.name)} ya está anotado hoy</h2><p class="lbl">Día ${h.streak} 🔥</p>
@@ -1663,7 +1670,7 @@ function renderOnboarding(){
       <h1>¿Ya hiciste alguno hoy? 🔥</h1>
       <p class="muted lead">Anotalo y prendés tu primer fueguito ahora mismo.</p>
       <div class="stack">${can.map(h => `<button class="onb-do ${h.done_today ? 'done' : ''}" data-first="${h.id}" ${h.done_today ? 'disabled' : ''}><span class="e" aria-hidden="true">${esc(h.emoji)}</span><b>${esc(h.name)}</b><span class="tag">${h.done_today ? '✓ Anotado' : h.goal ? `Ya hice los ${h.goal} ${esc(h.unit || '')}` : 'Ya lo hice'}</span></button>`).join('')}</div>
-      ${hs.some(h => h.kind === 'evitar' || h.next_day) ? '<p class="hint">Los de dejar algo se tildan solos, y los de la noche se confirman a la mañana siguiente.</p>' : ''}
+      ${hs.some(h => h.kind === 'evitar' || h.next_day) ? '<p class="hint">Los de dejar algo se tildan solos, y los de la noche se anotan a la noche con «Me voy a dormir» (o a la mañana, si te olvidaste).</p>' : ''}
       <div class="section"><button class="btn ${any ? '' : 'ghost'}" id="onb-next">${any ? 'Seguir' : 'Todavía no, después'}</button></div></div>`;
     document.querySelectorAll('[data-first]').forEach(b => b.onclick = async () => {
       const h = hs.find(x => x.id === b.dataset.first); b.disabled = true;
@@ -2310,7 +2317,7 @@ function casacaSheet(){
 function renderHoy(){
   const me = S.me, hs = me.habits;
   const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
-  const relaxed = (h) => { const w = weeklyInfo(h); return w && !w.urgent && !h.done_today; };
+  const relaxed = (h) => { if (h.next_day && !h.done_today && nightPhase() !== 'noche') return true; const w = weeklyInfo(h); return w && !w.urgent && !h.done_today; };
   const allDone = req.some(h => h.done_today) && req.every(h => h.done_today || relaxed(h));
   const pend = req.filter(h => !h.done_today && !(h.deadline && isLate(h)) && !(h.next_day && saidNo(h)) && !relaxed(h)), corte = hastaCorte();
   // La cuenta regresiva es hasta el corte de las 5 AM. Los de la noche ("¿Anoche cumpliste?") no van:
@@ -2365,7 +2372,8 @@ function renderHoy(){
     e.stopPropagation(); const c = f.closest('[data-habit],[data-hid]'); if (c) calendarSheet(byId(c.dataset.habit || c.dataset.hid));
   });
   document.querySelectorAll('[data-count]').forEach(b => b.onclick = () => countTap(byId(b.dataset.count), +b.dataset.d));
-  document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightYes)));
+  document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => anotarDia(byId(b.dataset.nightYes), addDays(S.me.today, -1)));
+  document.querySelectorAll('[data-night-go]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightGo)));
   document.querySelectorAll('[data-night-no]').forEach(b => b.onclick = () => {
     const h = byId(b.dataset.nightNo); LS.set('fueguitos_no_' + h.id, S.me.today); renderHoy();
     toast(h.ice > 0 ? 'Anotado. Esta noche se usa un hielito y la racha sigue 🧊' : 'Gracias por la honestidad. Esta noche hay revancha 🌙', 3800);
@@ -2494,21 +2502,43 @@ function hoyNudge(){
   return '';
 }
 
-// Hábitos de la noche (dormirme temprano): no se anotan de noche, se confirman al día siguiente.
+// Hábitos de la noche (dormirme temprano). La noche de HOY se anota en el día de hoy:
+// - Desde las 20 h y hasta las 12: botón "😴 Me voy a dormir" (y a las 22:30 llega un aviso que lo anota con un toque).
+// - Pasadas las 12 (hasta el corte de las 5 AM) ya no se anota esa noche.
+// - A la mañana, si anoche no quedó anotado, se pregunta "¿Anoche cumpliste?" y el Sí se anota en el día de ayer
+//   (el servidor devuelve el hielito o recupera la racha, igual que "¿Lo hiciste ayer?").
 const saidNo = (h) => LS.get('fueguitos_no_' + h.id) === S.me.today;
+const nightPhase = () => { const x = new Date().getHours(); return x >= 20 ? 'noche' : x < 5 ? 'tarde' : 'dia'; };
+// ¿Hay que preguntar por anoche? Solo de día, si ayer tocaba, no quedó anotado y no dijo que no.
+function askLastNight(h){
+  const y = addDays(S.me.today, -1), hist = S.history || [];
+  if (nightPhase() !== 'dia' || doneOn(h, y) || saidNo(h)) return false;
+  if (!(h.days || []).includes(parseDay(y).getDay())) return false;
+  return hist.some(x => x.habit_id === h.id) || h.streak > 0 || h.lost_day === y; // recién creado: no se pregunta
+}
 function nightCard(h){
-  const no = !h.done_today && saidNo(h);
-  const status = h.done_today ? hstat('ok', '✓ Anoche cumpliste') : no ? hstat('', 'Anoche no se pudo') : hstat('fire', '¿Anoche cumpliste?');
-  return `<div class="habit night ${h.done_today ? 'done' : ''} ${no ? 'late' : ''}" data-hid="${h.id}">
-    <div class="flamebox ${h.done_today ? '' : 'off'}">${streakNum(h)}</div>
+  const ph = nightPhase(), y = addDays(S.me.today, -1), lastOk = doneOn(h, y), ask = askLastNight(h);
+  const no = ph === 'dia' && !lastOk && saidNo(h);
+  const ok = h.done_today || (ph === 'dia' && lastOk);
+  const status = h.done_today ? hstat('ok', '✓ Esta noche: anotado. ¡A dormir! 😴')
+    : ph === 'noche' ? hstat('fire', 'Cuando te acuestes, tocá el botón (antes de las 12)')
+    : ph === 'tarde' ? hstat('', 'Ya pasaron las 12. Mañana a la mañana te preguntamos 🌙')
+    : ask ? hstat('fire', '¿Anoche cumpliste?')
+    : no ? hstat('', 'Anoche no se pudo · Esta noche hay revancha')
+    : lastOk ? hstat('ok', '✓ Anoche cumpliste · Esta noche, desde las 20 h')
+    : hstat('', 'Esta noche, desde las 20 h, tocá «Me voy a dormir»');
+  return `<div class="habit night ${ok ? 'done' : ''} ${no ? 'late' : ''}" data-hid="${h.id}">
+    <div class="flamebox ${ok ? '' : 'off'}">${streakNum(h)}</div>
     <div>
       <div class="name">${esc(h.name)} <span aria-hidden="true">${esc(h.emoji)}</span></div>${h.cue ? `<div class="small muted cue">${esc(h.cue)}</div>` : ''}
       ${status}
       ${h.done_today ? `<button type="button" class="undo" data-undo="${h.id}">Deshacer</button>`
-        : no ? `<button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>`
-        : `<div class="nightq"><button type="button" class="btn sm green" data-night-yes="${h.id}">Sí ✓</button><button type="button" class="btn sm ghost" data-night-no="${h.id}">No</button></div>`}
+        : ph === 'noche' ? `<div class="nightq"><button type="button" class="btn sm" data-night-go="${h.id}">😴 Me voy a dormir</button></div>`
+        : ph === 'tarde' ? ''
+        : ask ? `<div class="nightq"><button type="button" class="btn sm green" data-night-yes="${h.id}">Sí ✓</button><button type="button" class="btn sm ghost" data-night-no="${h.id}">No</button></div>`
+        : no ? `<button type="button" class="undo" data-night-reset="${h.id}">Cambiar respuesta</button>` : ''}
     </div>
-    <div class="check" aria-hidden="true">${h.done_today ? CHECK_SVG : ''}</div>
+    <div class="check" aria-hidden="true">${ok ? CHECK_SVG : ''}</div>
   </div>`;
 }
 
@@ -4900,7 +4930,7 @@ function habitEditor(h, groupId = null, after){
         <div class="row" style="gap:10px;margin-top:8px"><span class="small">💧 ¿Agua? Tu peso:</span><input class="input" id="h-kg" type="number" inputmode="numeric" placeholder="kg" style="max-width:90px"></div>
         <div class="hint" id="h-kg-out">Te calcula los vasos por día.</div>
         <label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" id="h-remind" ${h && h.remind_day ? 'checked' : ''}> 🔔 Avisarme durante el día si vengo atrasado (máximo 3 avisos)</label></div>
-      <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo confirmo a la mañana siguiente</label>
+      <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo anoto al acostarme (o a la mañana siguiente)</label>
         <div class="hint">Para no agarrar el celu antes de dormir. Al otro día la app te pregunta "¿Anoche cumpliste?" y contestás con un toque.</div></div>
       <div class="field" id="h-dl-box"><span>¿Tiene hora límite? (opcional)</span>
         <div class="row" style="gap:10px"><input class="input" id="h-dl" type="time" style="max-width:150px" value="${esc(h && h.deadline ? h.deadline : '')}"><button type="button" class="link small" id="h-dl-x">Sin hora</button></div>
