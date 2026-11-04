@@ -2313,6 +2313,9 @@ function renderHoy(){
   const relaxed = (h) => { const w = weeklyInfo(h); return w && !w.urgent && !h.done_today; };
   const allDone = req.some(h => h.done_today) && req.every(h => h.done_today || relaxed(h));
   const pend = req.filter(h => !h.done_today && !(h.deadline && isLate(h)) && !(h.next_day && saidNo(h)) && !relaxed(h)), corte = hastaCorte();
+  // La cuenta regresiva es hasta el corte de las 5 AM. Los de la noche ("¿Anoche cumpliste?") no van:
+  // a las 23 h "quedan 5 h para Dormirme antes de las 12" confunde. Los de hora límite muestran su hora.
+  const pendCut = pend.filter(h => !h.next_day && !h.deadline), pendDl = pend.filter(h => !h.next_day && h.deadline);
   const ices = (S.history || []).filter(x => x.kind === 'hielo' && x.day >= addDays(me.today, -3));
   const rests = (S.history || []).filter(x => x.kind === 'descanso' && x.day >= addDays(me.today, -3));
   const restMsg = rests.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
@@ -2326,7 +2329,7 @@ function renderHoy(){
     ${iceMsg.length ? `<div class="banner ice">🧊 <span>Se usó un hielito en ${esc(iceMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${restMsg.length ? `<div class="banner ok">😴 <span>Usaste tu día de descanso: ${esc(restMsg.join(' y '))}. La racha sigue.</span></div>` : ''}
     ${allDone ? `<div class="banner ok"><span>Día completo. Ya podés mandar tu mensaje al grupo.</span></div>` :
-      (pend.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pend.map(h => h.name).join(' y '))}${pend.some(h => h.streak) ? ` (${pend.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.</span></div>` :
+      (pendCut.length && corte.min <= 6*60) ? `<div class="banner fire urgent">⏳ <span>Quedan <b>${corte.txt}</b> para salvar ${esc(pendCut.map(h => h.name).join(' y '))}${pendCut.some(h => h.streak) ? ` (${pendCut.reduce((a,h) => a + h.streak, 0)} días en juego)` : ''}.${pendDl.length ? ` ${esc(pendDl.map(h => `${h.name}: hasta las ${h.deadline}`).join(' · '))}.` : ''}</span></div>` :
       (hs.every(h => !h.streak) && !(S.history || []).length ? `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>` : '')}
     ${planTodayCard()}
     ${pendH.length ? `<h2 class="hsec">Te falta</h2><div class="habits">${pendH.map(hwrap).join('')}</div>` : ''}
@@ -2354,6 +2357,7 @@ function renderHoy(){
     quickAnotar(h);
   });
   const byId = (id) => hs.find(x => x.id === id);
+  document.querySelectorAll('[data-addphoto]').forEach(b => b.onclick = () => { S.sel = new Set([b.dataset.addphoto]); openCheckinSheet(); });
   document.querySelectorAll('[data-yday]').forEach(b => b.onclick = () => anotarDia(byId(b.dataset.yday), addDays(S.me.today, -1)));
   document.querySelectorAll('[data-appblock]').forEach(b => b.onclick = () => appBlockSheet(byId(b.dataset.appblock)));
   document.querySelectorAll('[data-saving]').forEach(b => b.onclick = () => savingSheet(byId(b.dataset.saving)));
@@ -2564,8 +2568,10 @@ function habitCard(h){
     </div>
   </button>
   ${hcheck(h, h.done_today || sel, h.done_today ? 'undo' : 'do')}
-  ${hfoot(yesterdayLink(h))}`;
+  ${hfoot(photoLink(h), yesterdayLink(h))}`;
 }
+// Ya anotado hoy: botón a la vista para sumarle la foto (antes solo se podía tocando la tarjeta, y nadie lo sabía).
+const photoLink = (h) => h.done_today ? `<button type="button" class="undo" data-addphoto="${h.id}">📸 Sumar foto</button>` : '';
 // Una sola línea de estado por hábito (en vez de varias etiquetas).
 const hstat = (cls, txt) => `<div class="hstat ${cls}">${txt}</div>`;
 const hfoot = (...links) => { const l = links.filter(Boolean); return l.length ? `<div class="hfoot">${l.join('')}</div>` : ''; };
@@ -2612,7 +2618,8 @@ function freeCard(h){
       ${hstat(h.done_today ? 'ok' : '', `${h.done_today ? '✓ Hecho hoy' : 'Cuando quieras'} · ${n} ${n === 1 ? 'vez' : 'veces'} este mes`)}
     </div>
   </button>
-  ${hcheck(h, h.done_today, h.done_today ? 'undo' : 'do')}`;
+  ${hcheck(h, h.done_today, h.done_today ? 'undo' : 'do')}
+  ${hfoot(photoLink(h))}`;
 }
 
 // Link en la tarjeta para anotar ayer, si ayer tocaba y no quedó anotado (o se usó un hielito).
@@ -2844,7 +2851,7 @@ function openCheckinSheet(){
       const wi = saveInten(); if (wi) await wi;
       const fresh = (r.results || []).filter(x => !x.already);
       if (day){ toast(fresh.some(x => x.restored) ? '🔥 ¡Recuperaste la racha!' : photoData ? `Foto de ${dayName(day)} compartida 📸` : `Listo: ${dayName(day)} anotado ✅`, 3500); }
-      else if (fresh.length) celebrate(fresh); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
+      else if (fresh.length) celebrate(fresh, !!photoData); else toast(photoData ? 'Foto compartida con tu grupo 📸' : 'Listo');
       S.group = null;
       if (!r0.queued && !day) loadMates().then(celebrateMates);
       rpc('api_history', P()).then(h => { S.history = h || []; if (day) renderMain(); }).catch(()=>{});
@@ -2919,7 +2926,7 @@ async function quickAnotar(h){
     const hh = S.me.habits.find(y => y.id === h.id) || h, rb = hh.run_best || 0;
     if (!hh.free && (HITOS[hh.streak] || x.earned_ice || (rb >= 7 && hh.streak === rb + 1))) celebrate([{ habit_id: h.id, name: h.name, emoji: h.emoji, streak: hh.streak, ice: hh.ice, left_for_ice: hh.left_for_ice, earned_ice: !!x.earned_ice }]);
     else {
-      const sn = snack(`<span>${hh.free ? '✨' : '🔥'} <b>${esc(h.name)}</b> · ${hh.free ? `${monthCount(hh)} este mes` : `día ${hh.streak}`}${r0.queued ? ' ☁️' : ''}</span><button data-sf>📸 Foto</button><button data-su>Deshacer</button>`);
+      const sn = snack(`<span>${hh.free ? '✨' : '🔥'} <b>${esc(h.name)}</b> · ${hh.free ? `${monthCount(hh)} este mes` : `día ${hh.streak}`}${r0.queued ? ' ☁️' : ''}</span><button data-sf>📸 Foto</button><button data-su>Deshacer</button>`, 10000);
       $('[data-sf]', sn).onclick = () => { sn.remove(); S.sel = new Set([h.id]); openCheckinSheet(); };
       $('[data-su]', sn).onclick = async () => { sn.remove(); try { S.me.habits = await rpc('api_undo_checkin', { ...P(), p_habit: h.id }); renderHoy(); toast(`${h.name} desanotado`); } catch(e){ toast(e.message, 3500); } };
     }
@@ -3195,7 +3202,7 @@ function compress(file, max = 1080, limit = 900000){
 }
 
 /* ============ Festejo ============ */
-function celebrate(results){
+function celebrate(results, hasPhoto = false){
   const main = results[0];
   const earned = results.filter(r => r.earned_ice);
   const layer = $('#layer');
@@ -3214,6 +3221,7 @@ function celebrate(results){
     ${earned.length ? `<div class="gotice">🧊 ¡Ganaste un hielito en ${esc(earned.map(r => r.name).join(' y '))}!</div>` :
       `<p style="opacity:.75;margin-top:14px">⌛ ${main.left_for_ice} días para el próximo hielito</p>`}
     <div class="btns">
+      ${hasPhoto ? '' : '<button class="btn" id="p-photo">📸 Sumar una foto</button>'}
       <button class="btn green" id="p-wa">Mandar al grupo de WhatsApp</button>
       ${pushState() === 'default' ? '<button class="btn ice" id="p-push">🔔 Avisame si me olvido</button>' : ''}
       <button class="btn ghost" id="p-ok">Listo</button>
@@ -3223,6 +3231,7 @@ function celebrate(results){
   vibrate([30, 60, 30]);
   setTimeout(() => { const c = $('#cnt'); if (c){ c.textContent = main.streak; c.animate && c.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}], {duration:380, easing:'cubic-bezier(.2,1.6,.4,1)'}); beep(660, .12); setTimeout(() => beep(990, .16), 120); } }, 650);
   $('#p-ok').onclick = () => { closeSheet(); if (S.tab === 'hoy') renderHoy(); };
+  const pf = $('#p-photo'); if (pf) pf.onclick = () => { closeSheet(); S.sel = new Set([main.habit_id]); openCheckinSheet(); };
   const pp = $('#p-push'); if (pp) pp.onclick = async () => { if (await enablePush()){ pp.remove(); } };
   $('#p-wa').onclick = () => {
     const done = S.me.habits.filter(h => h.done_today);
