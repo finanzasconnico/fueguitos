@@ -737,6 +737,10 @@ p,li{text-wrap:pretty}
 /* ============ Fogón: luz de fogata en Hoy ============ */
 body.hoyglow{background:radial-gradient(120% 55% at 50% -8%,color-mix(in srgb,var(--glow-a) calc(34% * var(--glow,.3) * var(--glow-k)),transparent) 0%,color-mix(in srgb,var(--glow-b) calc(16% * var(--glow,.3) * var(--glow-k)),transparent) 45%,transparent 75%) no-repeat,var(--bg)}
 body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);border-bottom-color:transparent}
+
+.addme{display:grid;gap:10px;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.addme .btn{width:100%}
+.addme .pill{justify-self:start}
 </style>
 </head>
 <body>
@@ -1916,7 +1920,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v73'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v77'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -4289,7 +4293,7 @@ function memberSheet(G, uid){
   const pf = $('#ms-prof', el); if (pf) pf.onclick = () => friendSheet(uid);
   if (!m.is_me) rpc('api_friend_profile', { ...P(), p_user: uid }).then(p => {
     const box = $('#ms-friends', el); if (!box) return;
-    box.innerHTML = friendsOfHTML(p); bindFriendsOf(box);
+    box.innerHTML = addMeHTML(p) + friendsOfHTML(p); bindFriendsOf(box);
   }).catch(() => { const box = $('#ms-friends', el); if (box) box.innerHTML = ''; });
   const kb = $('#ms-kick', el); if (kb) kb.onclick = () => confirmSheet(`¿Sacar a ${m.nick}?`, 'Deja de estar en el grupo y desaparece para todos. Su racha no se toca y puede volver con el código.', 'Sacar del grupo', async () => {
     await rpc('api_kick_member', { ...P(), p_group: G.group.id, p_user: uid }); await loadGroup(); renderGrupo(); toast(`${m.nick} ya no está en el grupo`);
@@ -4452,6 +4456,13 @@ function addFriendSheet(){
   };
 }
 // "Amigos de X": los que ya son tus amigos se tocan para ver su perfil; al resto lo agregás con un toque.
+// Agregar como amigo a alguien que hoy solo ves por compartir un grupo: así siguen siendo amigos aunque alguno salga.
+function addMeHTML(p){
+  if (p.manual) return '';
+  const btn = p.pending === 'enviada' ? '<span class="pill">Pedido ✓</span>'
+    : `<button class="btn sm ice" data-fadd="${esc(p.nick)}">${p.pending === 'recibida' ? 'Aceptar amistad' : '+ Agregar a mis amigos'}</button>`;
+  return `<div class="addme"><div class="small muted">${p.pending === 'recibida' ? `${esc(p.nick)} te quiere agregar.` : 'Lo ves porque comparten un grupo. Si lo agregás, siguen siendo amigos aunque alguno salga.'}</div>${btn}</div>`;
+}
 function friendsOfHTML(p){
   const l = p.friends || [];
   if (!l.length) return `<div class="small muted" style="margin-top:14px">👥 ${esc(p.nick)} todavía no tiene otros amigos en la app.</div>`;
@@ -4470,6 +4481,7 @@ async function friendSheet(uid){
     <div class="card section">${hs.length ? hs.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
       <span class="small" style="font-weight:700">${h.free ? `✨ ${h.streak}` : `🔥 ${h.streak}${h.best > h.streak ? ` · 🏆 ${h.best}` : ''}`}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no tiene hábitos para mostrar.</p>'}</div>
     <div id="fs-shares"></div>
+    ${addMeHTML(p)}
     ${friendsOfHTML(p)}
     ${p.common.length ? `<div class="small" style="font-weight:700;margin-top:14px">Grupos en común</div><div class="chips" style="margin:6px 0 0;flex-wrap:wrap">${p.common.map(g => `<button class="chip" data-fg="${g.id}">${g.pair ? '👯 Racha de a dos' : `${esc(g.emoji || '🔥')} ${esc(g.name)}`}</button>`).join('')}</div>` : ''}
     ${p.open.length ? `<div class="small" style="font-weight:700;margin-top:14px">🔓 Sus grupos abiertos</div><div class="stack" style="margin-top:6px">${p.open.map(g => `<div class="hrow"><div><b>${esc(g.emoji || '🔥')} ${esc(g.name)}</b><div class="small muted">${g.members} ${g.members === 1 ? 'miembro' : 'miembros'}</div></div>
