@@ -1920,7 +1920,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v78'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v79'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2610,31 +2610,45 @@ function habitCard(h){
 // Ya anotado hoy: botón a la vista para sumarle la foto (antes solo se podía tocando la tarjeta, y nadie lo sabía).
 const photoLink = (h) => h.done_today ? `<button type="button" class="undo" data-addphoto="${h.id}">📸 Sumar foto</button>` : '';
 // Modo lesión: la racha de deporte queda a salvo; la kinesio y lo que se pueda hacer suman.
+const isPhysical = (h) => isSport(h) || /yoga|pilates|camin|trot|flexi|abdomin|sentadill|crossfit|tenis|p[aá]del|hockey|rugby|b[aá]squet|v[oó]ley|box|danza|baile|escal|surf|movilidad|estir|fuerza|pesas|patin|skate|remo|spinning|zumba|funcional|calistenia|pasos/i.test(h.name);
 function injuryLinks(h){
-  if (h.injury) return `<button type="button" class="undo kine" data-kine="${h.id}">Fui a kinesio</button><button type="button" class="undo" data-injury="${h.id}">Modo lesión</button>`;
-  return isSport(h) && h.streak > 0 && !h.done_today ? `<button type="button" class="undo" data-injury="${h.id}">Me lesioné</button>` : '';
+  if (h.injury) return `${h.injury.total ? `<button type="button" class="undo kine" data-kine="${h.id}">Fui a la sesión</button>` : ''}<button type="button" class="undo" data-injury="${h.id}">Pausa por lesión</button>`;
+  return h.kind === 'hacer' && !h.free && isPhysical(h) && h.streak > 0 && !h.done_today ? `<button type="button" class="undo" data-injury="${h.id}">Me lesioné</button>` : '';
 }
+// Qué se puede hacer según la lesión (guía general; manda lo que diga el médico o el kinesiólogo).
+const INJ_AREAS = [['pierna', 'Pierna, rodilla o tobillo'], ['brazo', 'Brazo, hombro o muñeca'], ['espalda', 'Espalda o cuello'], ['enfermedad', 'Estoy enfermo'], ['operacion', 'Me operaron'], ['otra', 'Otra cosa']];
+const INJ_TIPS = {
+  pierna: 'Tren superior sentado, abdominales y core en el piso, movilidad de cadera y los ejercicios que te den en kinesio.',
+  brazo: 'Caminar, bici fija, piernas (sentadillas, estocadas) y core sin apoyar el brazo.',
+  espalda: 'Caminar, movilidad suave y los estiramientos que te indiquen. Evitá cargar peso.',
+  enfermedad: 'Descansá. Cuando te sientas mejor, una caminata corta o unos estiramientos alcanzan.',
+  operacion: 'Lo que te indique el médico. Cuando te den el alta, caminatas cortas y los ejercicios de rehabilitación.',
+  otra: 'Lo que puedas hacer sin dolor: caminar, movilidad o ejercicios de respiración.'
+};
 const shortDay = (d) => { const x = parseDay(d); return `${x.getDate()}/${x.getMonth() + 1}`; };
 function injurySheet(h){
   const j = h.injury;
-  let days = j ? (j.open ? null : Math.round((parseDay(j.until) - parseDay(j.from)) / 864e5) + 1) : 7, total = j ? j.total : null;
+  let days = j ? (j.open ? null : Math.round((parseDay(j.until) - parseDay(j.from)) / 864e5) + 1) : 7, total = j ? j.total : null, area = j ? j.area : null;
   const el = openSheet('<div id="inj-in"></div>'), box = $('#inj-in', el);
   const save = async (fn, args) => { try { S.me.habits = await rpc(fn, args); closeSheet(); renderMain(); return true; } catch(e){ toast(e.message, 3500); return false; } };
   const paint = () => {
-    box.innerHTML = `<h2>Modo lesión: ${esc(h.name)}</h2>
-      <p class="muted" style="margin-top:6px">${j ? `Desde el ${shortDay(j.from)}${j.open ? ', hasta que vuelvas (máximo 4 semanas)' : ` hasta el ${shortDay(j.until)}`}.` : 'Mientras te recuperás, tu racha queda a salvo: los días sin anotar no gastan hielitos ni la cortan.'} Si hacés algo que puedas (kinesio, movilidad, tren superior), anotalo y la racha sigue sumando.</p>
-      <div class="field section"><span>¿Por cuánto tiempo?</span><div class="chips" style="flex-wrap:wrap;margin:0">${[[7, '1 semana'], [14, '2 semanas'], [21, '3 semanas'], [28, '4 semanas'], [null, 'Hasta que vuelva']].map(([d, l]) => `<button type="button" class="chip ${days === d ? 'on' : ''}" data-id="${d === null ? 'x' : d}">${l}</button>`).join('')}</div>
+    box.innerHTML = `<h2>Pausa por lesión: ${esc(h.name)}</h2>
+      <p class="muted" style="margin-top:6px">${j ? `Desde el ${shortDay(j.from)}${j.open ? ', hasta que vuelvas (máximo 4 semanas)' : ` hasta el ${shortDay(j.until)}`}.` : 'Mientras te recuperás, tu racha queda a salvo: los días sin anotar no gastan hielitos ni la cortan.'} Si hacés algo adaptado, anotalo y la racha sigue sumando.</p>
+      <div class="field section"><span>¿Qué te pasó?</span><div class="chips" style="flex-wrap:wrap;margin:0">${INJ_AREAS.map(([k, l]) => `<button type="button" class="chip ${area === k ? 'on' : ''}" data-area="${k}">${l}</button>`).join('')}</div>
+        ${area ? `<div class="card" style="margin-top:10px;padding:12px 14px"><b class="small">Qué podés hacer mientras</b><p class="small" style="margin:4px 0 0">${INJ_TIPS[area]}</p><p class="hint" style="margin:6px 0 0">Es una guía general: hacé lo que te indique tu médico o kinesiólogo, y pará si duele.</p></div>` : ''}</div>
+      <div class="field"><span>¿Por cuánto tiempo?</span><div class="chips" style="flex-wrap:wrap;margin:0">${[[7, '1 semana'], [14, '2 semanas'], [21, '3 semanas'], [28, '4 semanas'], [null, 'Hasta que vuelva']].map(([d, l]) => `<button type="button" class="chip ${days === d ? 'on' : ''}" data-id="${d === null ? 'x' : d}">${l}</button>`).join('')}</div>
         <div class="hint">"Hasta que vuelva" dura como máximo 4 semanas. Lo terminás cuando quieras.</div></div>
-      <label class="field"><span>Sesiones de kinesio (opcional)</span><input class="input" id="inj-n" type="number" inputmode="numeric" min="1" max="100" placeholder="Ej: 20" value="${total || ''}" style="max-width:140px">
-        <div class="hint">Cada vez que vayas tocás "Fui a kinesio": cuenta como un día de ${esc(h.name)} y ves cuántas te faltan.</div></label>
-      ${j && j.total ? `<div class="row between" style="align-items:center;margin-top:4px"><span class="small"><b>Kinesio: ${j.done} de ${j.total}</b></span><button class="link small" id="inj-minus">Restar una sesión</button></div>` : ''}
+      <label class="field"><span>Sesiones de tratamiento: kinesio, fisio, rehabilitación (opcional)</span><input class="input" id="inj-n" type="number" inputmode="numeric" min="1" max="100" placeholder="Ej: 20" value="${total || ''}" style="max-width:140px">
+        <div class="hint">Cada vez que vayas tocás "Fui a la sesión": cuenta como un día de ${esc(h.name)} y ves cuántas te faltan.</div></label>
+      ${j && j.total ? `<div class="row between" style="align-items:center;margin-top:4px"><span class="small"><b>Sesiones: ${j.done} de ${j.total}</b></span><button class="link small" id="inj-minus">Restar una sesión</button></div>` : ''}
       <div class="stack section"><button class="btn ice" id="inj-ok">${j ? 'Guardar cambios' : 'Activar modo lesión'}</button>
         ${j ? '<button class="btn ghost" id="inj-end">Ya me recuperé</button>' : '<button class="btn ghost" data-close-sheet>Cancelar</button>'}</div>`;
     box.querySelectorAll('[data-id]').forEach(b => b.onclick = () => { total = +$('#inj-n', box).value || null; days = b.dataset.id === 'x' ? null : +b.dataset.id; paint(); });
+    box.querySelectorAll('[data-area]').forEach(b => b.onclick = () => { total = +$('#inj-n', box).value || null; area = area === b.dataset.area ? null : b.dataset.area; paint(); });
     $('#inj-ok', box).onclick = async () => {
       const n = $('#inj-n', box).value ? Math.round(+$('#inj-n', box).value) : null;
       if (n !== null && !(n >= 1 && n <= 100)){ toast('Poné entre 1 y 100 sesiones'); return; }
-      if (await save('api_injury_set', { ...P(), p_habit: h.id, p_days: days, p_sessions: n })) toast(j ? 'Listo, actualizado' : `🩹 Modo lesión activado. Tu racha de ${h.streak} está a salvo. ¡A recuperarse!`, 4000);
+      if (await save('api_injury_set', { ...P(), p_habit: h.id, p_days: days, p_sessions: n, p_area: area })) toast(j ? 'Listo, actualizado' : `🩹 Pausa activada. Tu racha de ${h.streak} está a salvo. ¡Que te recuperes!`, 4000);
     };
     const en = $('#inj-end', box); if (en) en.onclick = async () => { if (await save('api_injury_end', { ...P(), p_habit: h.id })){ vibrate([30, 60, 30]); toast(`🔥 ¡Volviste! Tu racha de ${h.name} sigue en ${h.streak}`, 4000); } };
     const mi = $('#inj-minus', box); if (mi) mi.onclick = async () => { try { S.me.habits = await rpc('api_injury_session', { ...P(), p_habit: h.id, p_delta: -1 }); closeSheet(); renderMain(); injurySheet(S.me.habits.find(x => x.id === h.id) || h); } catch(e){ toast(e.message); } };
@@ -2645,11 +2659,11 @@ function injurySheet(h){
 // Fui a kinesio: anota el día (si todavía no estaba) y suma una sesión.
 async function kineTap(h){
   try {
-    if (!h.done_today){ const r = await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: 'Kinesio' }); S.me.habits = r.habits || S.me.habits; }
+    if (!h.done_today){ const r = await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: 'Sesión de tratamiento' }); S.me.habits = r.habits || S.me.habits; }
     S.me.habits = await rpc('api_injury_session', { ...P(), p_habit: h.id, p_delta: 1 });
     const x = S.me.habits.find(y => y.id === h.id) || h, j = x.injury || {};
     renderMain(); vibrate([20, 40, 20]); beep(660, .1);
-    toast(`Kinesio anotada${j.total ? `: ${j.done} de ${j.total}` : ''}. Racha de ${x.name}: ${x.streak} 🔥`, 3500);
+    toast(`Sesión anotada${j.total ? `: ${j.done} de ${j.total}` : ''}. Racha de ${x.name}: ${x.streak} 🔥`, 3500);
     rpc('api_history', P()).then(r => { S.history = r || []; }).catch(() => {});
   } catch(e){ toast(e.message, 3500); renderMain(); }
 }
@@ -2658,7 +2672,7 @@ const hstat = (cls, txt) => `<div class="hstat ${cls}">${txt}</div>`;
 const hfoot = (...links) => { const l = links.filter(Boolean); return l.length ? `<div class="hfoot">${l.join('')}</div>` : ''; };
 function habitStatus(h, lateNow){
   if (h.injury){
-    const k = h.injury.total ? `. Kinesio ${h.injury.done} de ${h.injury.total}` : '';
+    const k = h.injury.total ? `. Sesiones: ${h.injury.done} de ${h.injury.total}` : '';
     return h.done_today ? hstat('ok', `✓ Anotado hoy${k}`) : hstat('ice', `Lesionado: tu racha está a salvo${k}`);
   }
   const wk = weeklyInfo(h);
@@ -4332,7 +4346,7 @@ function memberSheet(G, uid){
     <div class="card section">${m.habits.length ? m.habits.map(h => `<div class="rec"><span>${esc(h.emoji)} <b>${esc(h.name)}</b>${h.done_today ? ' <span class="pill ok">Hoy ✓</span>' : ''}</span>
         <span class="small" style="font-weight:700">🔥 ${h.streak} · 🧊 ${h.ice}</span></div>`).join('') : '<p class="muted" style="margin:0">Todavía no activó hábitos.</p>'}</div>
     <div class="stack section">
-      ${!m.is_me && !m.habits.some(h => h.done_today) ? `<button class="btn ${m.nudged ? 'ghost' : ''}" id="ms-nudge" ${m.nudged ? 'disabled' : ''}>${m.nudged ? '👋 Ya le mandaste un empujón hoy' : '👋 Mandale un empujón'}</button>` : ''}
+      ${!m.is_me && !m.habits.some(h => h.done_today) ? `<button class="btn ${m.nudged ? 'ghost' : ''}" id="ms-nudge" ${m.nudged ? 'disabled' : ''}>${m.injured ? (m.nudged ? '💪 Ya le mandaste fuerza hoy' : '💪 Mandale fuerza') : m.nudged ? '👋 Ya le mandaste un empujón hoy' : '👋 Mandale un empujón'}</button>` : ''}
       ${canGift ? '<button class="btn ice" id="ms-gift">🎁 Regalarle un hielito</button>' : ''}
       ${m.is_me ? '<button class="btn ghost" id="ms-me">Ver mi perfil</button>' : '<button class="btn ghost" id="ms-prof">👤 Ver su perfil</button>'}
     </div>
@@ -4357,9 +4371,9 @@ async function nudgeFriend(G, m){
   try {
     const r = await rpc('api_nudge_friend', { ...P(), p_friend: m.id });
     m.nudged = true; vibrate(20);
-    if (r.has_push){ toast(`👋 Empujón enviado. A ${m.nick} le llega un aviso.`, 3500); renderGrupo(); return; }
-    const txt = r.never ? `¡${m.nick}! Todavía no prendiste tu primer fueguito 🔥 Es un toque: ${PUBLIC_URL}` : `${m.nick}, ¡hoy te falta el fueguito! Dale que se puede 🔥 ${PUBLIC_URL}`;
-    const el = openSheet(`<h2>👋 ${esc(m.nick)} no tiene los avisos activados</h2><p class="muted">No le va a llegar el empujón al celu. ¿Se lo mandás por WhatsApp?</p>
+    if (r.has_push){ toast(m.injured ? `💪 Le mandaste fuerza a ${m.nick}. Le llega un aviso.` : `👋 Empujón enviado. A ${m.nick} le llega un aviso.`, 3500); renderGrupo(); return; }
+    const txt = m.injured ? `¡Fuerza, ${m.nick}! Que te recuperes rápido 💪 Tu racha te espera en Fueguitos 🩹` : r.never ? `¡${m.nick}! Todavía no prendiste tu primer fueguito 🔥 Es un toque: ${PUBLIC_URL}` : `${m.nick}, ¡hoy te falta el fueguito! Dale que se puede 🔥 ${PUBLIC_URL}`;
+    const el = openSheet(`<h2>${esc(m.nick)} no tiene los avisos activados</h2><p class="muted">No le va a llegar ${m.injured ? 'el aviso' : 'el empujón'} al celu. ¿Se lo mandás por WhatsApp?</p>
       <div class="stack section"><button class="btn green" id="nw-wa">Mandar por WhatsApp</button><button class="btn ghost" id="nw-no">Listo</button></div>`);
     $('#nw-wa', el).onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(txt); };
     $('#nw-no', el).onclick = () => { closeSheet(); renderGrupo(); };
@@ -4780,6 +4794,7 @@ function rulesSheet(h, after, pre){
       <div id="ru-fixed" class="stack">${rulesFields(h.days, wk0 ? 0 : h.rest_per_week)}</div>
       ${h.kind === 'evitar' ? '<style>#layer .rest-field{display:none}</style><p class="hint" style="margin:0">En los hábitos para dejar algo no hay descansos.</p>' : ''}
       ${h.kind === 'evitar' || !h.max_ice ? '' : '<p class="hint" id="ru-ice" style="margin:0"></p>'}
+      ${h.kind === 'hacer' && !h.free ? `<button type="button" class="link" id="ru-inj">${h.injury ? 'Ver la pausa por lesión' : 'Pausar por lesión o enfermedad'}</button>` : ''}
       ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
       <button class="btn" id="ru-save">Guardar</button></div>`);
   bindRules(el); bindRemindDays(el, rsel);
@@ -4810,6 +4825,7 @@ function rulesSheet(h, after, pre){
   };
   $('#ru-save', el).onclick = () => { if (mode === 'week') save([0, 1, 2, 3, 4, 5, 6], 7 - times); else { const r = readRules(el); save(r.days, r.rest); } };
   const rs = $('#ru-reset', el); if (rs) rs.onclick = () => save([], h.rest_per_week || 0);
+  const ri = $('#ru-inj', el); if (ri) ri.onclick = () => injurySheet(S.me.habits.find(x => x.id === h.id) || h);
 }
 // Al unirse a un grupo con regla, se ofrece usarla para el hábito de deporte.
 function offerGroupRule(g){
