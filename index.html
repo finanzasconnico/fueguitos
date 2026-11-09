@@ -315,7 +315,7 @@ button.undo{background:none;border:0;padding:0;display:block;margin-top:8px;font
 .habit .name{font-weight:800;font-size:18px;display:flex;align-items:center;gap:6px}
 .meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .hstat{font-size:14px;font-weight:700;margin-top:3px;color:var(--muted)}
-.hstat.ok{color:var(--ok-ink)}.hstat.fire{color:var(--fire-ink)}.hstat.bad{color:var(--danger)}
+.hstat.ok{color:var(--ok-ink)}.hstat.ice{color:var(--ice-ink)}.hstat.fire{color:var(--fire-ink)}.hstat.bad{color:var(--danger)}
 .hfoot{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
 .hfoot .undo,.hfoot .undo.yest{display:inline;margin:0}
 .shareday{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 0;padding:12px 14px;border-radius:16px;border:2px solid var(--line);font-weight:700;font-size:15px}
@@ -1920,7 +1920,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v77'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v78'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -1963,13 +1963,13 @@ function renderMain(){
 // Anillo del día: cuánto de lo de hoy ya cerraste (los de cantidad suman de a poco).
 // Intensidad de la luz de fogata: tenue sin anotar, a pleno con el día completo.
 function dayGlow(hs){
-  const req = (hs || []).filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return .3;
+  const req = (hs || []).filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today) && !(h.injury && !h.done_today)); if (!req.length) return .3;
   const n = req.filter(h => h.done_today).length;
   return n === req.length ? 1 : +(.3 + .55 * n / req.length).toFixed(2);
 }
 // Marcador del día: cuántos hábitos prendiste hoy, y una brasa por cada uno que se prende al anotarlo.
 function scoreboard(hs){
-  const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return '';
+  const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today) && !(h.injury && !h.done_today)); if (!req.length) return '';
   const lit = req.filter(h => h.done_today), full = lit.length === req.length, prev = S.litPrev, now = Date.now();
   document.body.style.setProperty('--glow', dayGlow(hs));
   S.litPrev = new Set(lit.map(h => h.id)); S.ignAt = S.ignAt || {};
@@ -1982,7 +1982,7 @@ function scoreboard(hs){
   </div>`;
 }
 function dayRing(hs){
-  const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today)); if (!req.length) return '';
+  const req = hs.filter(h => h.required_today && !(weeklyInfo(h) && !weeklyInfo(h).urgent && !h.done_today) && !(h.injury && !h.done_today)); if (!req.length) return '';
   const done = req.filter(h => h.done_today).length;
   const part = req.reduce((a, h) => a + (h.done_today ? 1 : h.goal ? Math.min(h.count_today || 0, h.goal) / h.goal : 0), 0) / req.length;
   const C = 2 * Math.PI * 20, full = done === req.length;
@@ -2320,7 +2320,7 @@ function casacaSheet(){
 
 function renderHoy(){
   const me = S.me, hs = me.habits;
-  const req = hs.filter(h => h.required_today && h.kind !== 'evitar');
+  const req = hs.filter(h => h.required_today && h.kind !== 'evitar' && !(h.injury && !h.done_today));
   const relaxed = (h) => { if (h.next_day && !h.done_today && nightPhase() !== 'noche') return true; const w = weeklyInfo(h); return w && !w.urgent && !h.done_today; };
   const allDone = req.some(h => h.done_today) && req.every(h => h.done_today || relaxed(h));
   const pend = req.filter(h => !h.done_today && !(h.deadline && isLate(h)) && !(h.next_day && saidNo(h)) && !relaxed(h)), corte = hastaCorte();
@@ -2333,7 +2333,7 @@ function renderHoy(){
   const iceMsg = ices.map(x => { const h = hs.find(y => y.id === x.habit_id); return h ? `${h.name} el ${DAY_NAMES[parseDay(x.day).getDay()]}` : null; }).filter(Boolean);
   // Primero lo que falta prender; lo ya hecho va abajo, en una línea.
   const lit = (h) => h.kind === 'evitar' ? !h.failed_today : !!h.done_today;
-  const pendH = hs.filter(h => !lit(h)), doneH = hs.filter(lit);
+  const pauseH = hs.filter(h => !lit(h) && h.injury), pendH = hs.filter(h => !lit(h) && !h.injury), doneH = hs.filter(lit);
   const hwrap = (h) => `<div class="hwrap ${lit(h) ? 'done' : ''}" style="--hc:${habitColor(h)}">${habitCard(h)}</div>`;
   $('#main').innerHTML = `
     <header class="hoyhead"><div class="date">${fmtDay(me.today)}</div><h1 class="vh">Hoy</h1>${scoreboard(hs)}</header>
@@ -2344,6 +2344,7 @@ function renderHoy(){
       (hs.every(h => !h.streak) && !(S.history || []).length ? `<p class="muted" style="margin:0 0 14px">Tocá un hábito y queda anotado. Si querés, después le sumás una foto. Hasta las 5 AM cuenta para hoy. Tocá un fueguito para ver tu mes 📅</p>` : '')}
     ${planTodayCard()}
     ${pendH.length ? `<h2 class="hsec">Te falta</h2><div class="habits">${pendH.map(hwrap).join('')}</div>` : ''}
+    ${pauseH.length ? `<h2 class="hsec">En pausa</h2><div class="habits">${pauseH.map(hwrap).join('')}</div>` : ''}
     ${doneH.length ? `<h2 class="hsec">${pendH.length ? 'Ya prendiste' : 'Todo prendido'}</h2><div class="habits">${doneH.map(hwrap).join('')}</div>` : ''}
     ${newsCard()}
     ${easeCard()}
@@ -2372,6 +2373,8 @@ function renderHoy(){
   document.querySelectorAll('[data-yday]').forEach(b => b.onclick = () => anotarDia(byId(b.dataset.yday), addDays(S.me.today, -1)));
   document.querySelectorAll('[data-appblock]').forEach(b => b.onclick = () => appBlockSheet(byId(b.dataset.appblock)));
   document.querySelectorAll('[data-saving]').forEach(b => b.onclick = () => savingSheet(byId(b.dataset.saving)));
+  document.querySelectorAll('[data-injury]').forEach(b => b.onclick = () => injurySheet(byId(b.dataset.injury)));
+  document.querySelectorAll('[data-kine]').forEach(b => b.onclick = () => { b.disabled = true; kineTap(byId(b.dataset.kine)); });
   document.querySelectorAll('.habits .flamebox').forEach(f => f.onclick = (e) => {
     e.stopPropagation(); const c = f.closest('[data-habit],[data-hid]'); if (c) calendarSheet(byId(c.dataset.habit || c.dataset.hid));
   });
@@ -2602,14 +2605,62 @@ function habitCard(h){
     </div>
   </button>
   ${hcheck(h, h.done_today || sel, h.done_today ? 'undo' : 'do')}
-  ${hfoot(photoLink(h), yesterdayLink(h))}`;
+  ${hfoot(photoLink(h), yesterdayLink(h), injuryLinks(h))}`;
 }
 // Ya anotado hoy: botón a la vista para sumarle la foto (antes solo se podía tocando la tarjeta, y nadie lo sabía).
 const photoLink = (h) => h.done_today ? `<button type="button" class="undo" data-addphoto="${h.id}">📸 Sumar foto</button>` : '';
+// Modo lesión: la racha de deporte queda a salvo; la kinesio y lo que se pueda hacer suman.
+function injuryLinks(h){
+  if (h.injury) return `<button type="button" class="undo kine" data-kine="${h.id}">Fui a kinesio</button><button type="button" class="undo" data-injury="${h.id}">Modo lesión</button>`;
+  return isSport(h) && h.streak > 0 && !h.done_today ? `<button type="button" class="undo" data-injury="${h.id}">Me lesioné</button>` : '';
+}
+const shortDay = (d) => { const x = parseDay(d); return `${x.getDate()}/${x.getMonth() + 1}`; };
+function injurySheet(h){
+  const j = h.injury;
+  let days = j ? (j.open ? null : Math.round((parseDay(j.until) - parseDay(j.from)) / 864e5) + 1) : 7, total = j ? j.total : null;
+  const el = openSheet('<div id="inj-in"></div>'), box = $('#inj-in', el);
+  const save = async (fn, args) => { try { S.me.habits = await rpc(fn, args); closeSheet(); renderMain(); return true; } catch(e){ toast(e.message, 3500); return false; } };
+  const paint = () => {
+    box.innerHTML = `<h2>Modo lesión: ${esc(h.name)}</h2>
+      <p class="muted" style="margin-top:6px">${j ? `Desde el ${shortDay(j.from)}${j.open ? ', hasta que vuelvas (máximo 4 semanas)' : ` hasta el ${shortDay(j.until)}`}.` : 'Mientras te recuperás, tu racha queda a salvo: los días sin anotar no gastan hielitos ni la cortan.'} Si hacés algo que puedas (kinesio, movilidad, tren superior), anotalo y la racha sigue sumando.</p>
+      <div class="field section"><span>¿Por cuánto tiempo?</span><div class="chips" style="flex-wrap:wrap;margin:0">${[[7, '1 semana'], [14, '2 semanas'], [21, '3 semanas'], [28, '4 semanas'], [null, 'Hasta que vuelva']].map(([d, l]) => `<button type="button" class="chip ${days === d ? 'on' : ''}" data-id="${d === null ? 'x' : d}">${l}</button>`).join('')}</div>
+        <div class="hint">"Hasta que vuelva" dura como máximo 4 semanas. Lo terminás cuando quieras.</div></div>
+      <label class="field"><span>Sesiones de kinesio (opcional)</span><input class="input" id="inj-n" type="number" inputmode="numeric" min="1" max="100" placeholder="Ej: 20" value="${total || ''}" style="max-width:140px">
+        <div class="hint">Cada vez que vayas tocás "Fui a kinesio": cuenta como un día de ${esc(h.name)} y ves cuántas te faltan.</div></label>
+      ${j && j.total ? `<div class="row between" style="align-items:center;margin-top:4px"><span class="small"><b>Kinesio: ${j.done} de ${j.total}</b></span><button class="link small" id="inj-minus">Restar una sesión</button></div>` : ''}
+      <div class="stack section"><button class="btn ice" id="inj-ok">${j ? 'Guardar cambios' : 'Activar modo lesión'}</button>
+        ${j ? '<button class="btn ghost" id="inj-end">Ya me recuperé</button>' : '<button class="btn ghost" data-close-sheet>Cancelar</button>'}</div>`;
+    box.querySelectorAll('[data-id]').forEach(b => b.onclick = () => { total = +$('#inj-n', box).value || null; days = b.dataset.id === 'x' ? null : +b.dataset.id; paint(); });
+    $('#inj-ok', box).onclick = async () => {
+      const n = $('#inj-n', box).value ? Math.round(+$('#inj-n', box).value) : null;
+      if (n !== null && !(n >= 1 && n <= 100)){ toast('Poné entre 1 y 100 sesiones'); return; }
+      if (await save('api_injury_set', { ...P(), p_habit: h.id, p_days: days, p_sessions: n })) toast(j ? 'Listo, actualizado' : `🩹 Modo lesión activado. Tu racha de ${h.streak} está a salvo. ¡A recuperarse!`, 4000);
+    };
+    const en = $('#inj-end', box); if (en) en.onclick = async () => { if (await save('api_injury_end', { ...P(), p_habit: h.id })){ vibrate([30, 60, 30]); toast(`🔥 ¡Volviste! Tu racha de ${h.name} sigue en ${h.streak}`, 4000); } };
+    const mi = $('#inj-minus', box); if (mi) mi.onclick = async () => { try { S.me.habits = await rpc('api_injury_session', { ...P(), p_habit: h.id, p_delta: -1 }); closeSheet(); renderMain(); injurySheet(S.me.habits.find(x => x.id === h.id) || h); } catch(e){ toast(e.message); } };
+    const cc = box.querySelector('[data-close-sheet]'); if (cc) cc.onclick = closeSheet;
+  };
+  paint();
+}
+// Fui a kinesio: anota el día (si todavía no estaba) y suma una sesión.
+async function kineTap(h){
+  try {
+    if (!h.done_today){ const r = await rpc('api_checkin', { ...P(), p_habits: [h.id], p_photo: null, p_note: 'Kinesio' }); S.me.habits = r.habits || S.me.habits; }
+    S.me.habits = await rpc('api_injury_session', { ...P(), p_habit: h.id, p_delta: 1 });
+    const x = S.me.habits.find(y => y.id === h.id) || h, j = x.injury || {};
+    renderMain(); vibrate([20, 40, 20]); beep(660, .1);
+    toast(`Kinesio anotada${j.total ? `: ${j.done} de ${j.total}` : ''}. Racha de ${x.name}: ${x.streak} 🔥`, 3500);
+    rpc('api_history', P()).then(r => { S.history = r || []; }).catch(() => {});
+  } catch(e){ toast(e.message, 3500); renderMain(); }
+}
 // Una sola línea de estado por hábito (en vez de varias etiquetas).
 const hstat = (cls, txt) => `<div class="hstat ${cls}">${txt}</div>`;
 const hfoot = (...links) => { const l = links.filter(Boolean); return l.length ? `<div class="hfoot">${l.join('')}</div>` : ''; };
 function habitStatus(h, lateNow){
+  if (h.injury){
+    const k = h.injury.total ? `. Kinesio ${h.injury.done} de ${h.injury.total}` : '';
+    return h.done_today ? hstat('ok', `✓ Anotado hoy${k}`) : hstat('ice', `Lesionado: tu racha está a salvo${k}`);
+  }
   const wk = weeklyInfo(h);
   if (wk){
     if (wk.met) return hstat('ok', `✓ Semana cumplida · ${wk.done} de ${wk.target}`);
@@ -4337,7 +4388,7 @@ function memberFire(m){
 }
 function memberRow(m){
   return `<div class="member" role="button" tabindex="0" data-member="${m.id}" aria-label="Ver a ${esc(m.nick)}">
-    <div class="who">${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 36)}<div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}</div></div>
+    <div class="who">${userAv(m.nick, m.is_me ? S.me.user.avatar : m.avatar, 36)}<div>${esc(m.nick)}${m.is_me ? ' <span class="small muted">(vos)</span>' : ''}${giftable(m).length ? ' <span class="gifthint" title="Le podés regalar un hielito">🎁</span>' : ''}${m.never && !m.is_me ? ' <span class="gifthint" title="Todavía no prendió su primer fueguito">👋</span>' : ''}${m.injured ? ' <span class="gifthint" title="Está lesionado: su racha está a salvo">🩹</span>' : ''}</div></div>
     <div class="mh">${memberFire(m)}</div>
   </div>`;
 }
