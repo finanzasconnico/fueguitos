@@ -741,6 +741,10 @@ body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);bor
 .addme{display:grid;gap:10px;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
 .addme .btn{width:100%}
 .addme .pill{justify-self:start}
+/* Fotos: mientras llega, un lugar del tamaño de la foto; aparece con un fundido corto. */
+.post img[data-pid]:not([src]){display:block;width:100%;aspect-ratio:4/5;background:var(--line)}
+.post img[data-pid].in{animation:phin .25s ease-out}
+@keyframes phin{from{opacity:0}to{opacity:1}}
 /* Respiración guiada: un círculo que crece al inhalar y se achica al exhalar. */
 .breath{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
 .breath h2{margin:0}
@@ -1051,6 +1055,7 @@ async function boot(){
   maybeInstallGuide();
   syncPush().then(() => { if (IS_NATIVE && S.me && !S.onboarding) renderMain(); });
   autoHealth();
+  setTimeout(photoPrune, 4000);
 }
 
 async function afterLogin(){
@@ -1941,7 +1946,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v81'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v82'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2681,7 +2686,7 @@ async function breathDone(h){
   } catch(e){ toast(e.message, 3500); }
 }
 // Horarios de aviso: vienen sugeridos por quien creó el hábito y cada uno los ajusta.
-const HOUR_OPTS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+const HOUR_OPTS = Array.from({ length: 24 }, (_, i) => i);
 const hourChips = (sel, attr = 'data-hr') => `<div class="chips hours" style="margin:0">${HOUR_OPTS.map(n => `<button type="button" class="chip ${sel.includes(n) ? 'on' : ''}" ${attr}="${n}" aria-pressed="${sel.includes(n)}">${n} h</button>`).join('')}</div>`;
 function bindHourChips(el, sel, attr = 'data-hr', onch){
   el.querySelectorAll(`[${attr}]`).forEach(b => b.onclick = () => {
@@ -4569,11 +4574,52 @@ function memberRow(m){
 const REACT_FREE = ['🔥', '💪', '👏', '😂'];
 const REACT_SHOP = [['❤️', 5], ['🙌', 5], ['😮', 5], ['🤣', 5], ['😍', 10], ['🫡', 10], ['🥶', 10], ['🍻', 10], ['🤯', 10], ['💀', 20], ['👑', 20], ['🐐', 20]];
 const reactOwned = (e) => REACT_FREE.includes(e) || !!(S.av && (S.av.owned || []).includes('e:' + e));
+/* ============ Fotos: cada una se baja una sola vez ============ */
+// La lista trae solo el id de cada foto. La foto se pide una vez y queda guardada en el celu
+// (IndexedDB) hasta que vence a las 24 h. Así abrir Amigos diez veces no la baja diez veces.
+const PHOTO_OK = (d) => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(d));
+const photoMem = new Map();
+let photoDbP = null, photoTimer = null;
+function photoDb(){
+  if (!photoDbP) photoDbP = new Promise((res) => {
+    try { const r = indexedDB.open('fueguitos-fotos', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('p', { keyPath: 'id' });
+      r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch(e){ res(null); }
+  });
+  return photoDbP;
+}
+async function photoGet(id){
+  if (photoMem.has(id)) return photoMem.get(id);
+  const db = await photoDb(); if (!db) return null;
+  return new Promise((res) => { try { const q = db.transaction('p').objectStore('p').get(id); q.onsuccess = () => res(q.result ? q.result.data : null); q.onerror = () => res(null); } catch(e){ res(null); } });
+}
+async function photoPut(list){
+  list.forEach(x => photoMem.set(x.id, x.data));
+  const db = await photoDb(); if (!db) return;
+  try { const st = db.transaction('p', 'readwrite').objectStore('p'); list.forEach(x => st.put({ id: x.id, data: x.data, t: Date.parse(x.created_at) || Date.now() })); } catch(e){}
+}
+// Las vencidas (más de 26 h) se borran del celu.
+async function photoPrune(){
+  const db = await photoDb(); if (!db) return;
+  try { const st = db.transaction('p', 'readwrite').objectStore('p'), lim = Date.now() - 26 * 3600e3;
+    st.openCursor().onsuccess = (e) => { const c = e.target.result; if (!c) return; if (c.value.t < lim) c.delete(); c.continue(); }; } catch(e){}
+}
+const photoHydrateSoon = () => { clearTimeout(photoTimer); photoTimer = setTimeout(photoHydrate, 0); };
+async function photoHydrate(){
+  const imgs = [...document.querySelectorAll('img[data-pid]:not([src])')]; if (!imgs.length) return;
+  const ids = [...new Set(imgs.map(i => i.dataset.pid))], miss = [];
+  const show = (id, d) => { if (!PHOTO_OK(d)) return; document.querySelectorAll(`img[data-pid="${id}"]:not([src])`).forEach(i => { i.src = d; i.classList.add('in'); }); };
+  for (const id of ids){ const d = await photoGet(id); if (d) show(id, d); else miss.push(id); }
+  for (let k = 0; k < miss.length; k += 30){
+    try { const got = (await rpc('api_photos', { ...P(), p_ids: miss.slice(k, k + 30) })).filter(x => PHOTO_OK(x.data));
+      got.forEach(x => show(x.id, x.data)); photoPut(got); } catch(e){}
+  }
+}
 function postCard(p){
   const mine = p.user.id === S.me.user.id;
   const R = [...REACT_FREE, ...p.reactions.map(x => x.emoji).filter(e => !REACT_FREE.includes(e))];
   // Solo imágenes base64 limpias: la foto la sube otro miembro, no se confía en su contenido.
-  const img = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(String(p.data)) ? `<img src="${p.data}" alt="Foto de ${esc(p.user.nick)}" loading="lazy">` : '';
+  const img = `<img data-pid="${p.id}" alt="Foto de ${esc(p.user.nick)}">`; photoHydrateSoon();
   return `<article class="post">${img}<div class="pbody">
     <div class="row between"><div class="who row" style="font-weight:800">${userAv(p.user.nick, mine ? S.me.user.avatar : (((S.gopen ? S.group : S.home) || { members: [] }).members.find(m => m.id === p.user.id) || {}).avatar, 30)}${esc(p.user.nick)}</div><span class="small muted">${ago(p.created_at)}</span></div>
     <div class="meta">${p.habits.map(h => `<span class="pill fire">${esc(h.emoji)} ${esc(h.name)} · día ${h.streak ?? ''}</span>`).join('')}</div>
