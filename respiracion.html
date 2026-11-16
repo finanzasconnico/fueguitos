@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grupo de respiración en Fueguitos</title>
+<meta name="description" content="Paso a paso: instalar Fueguitos, armar el grupo de respiración e invitar a los alumnos.">
+<meta property="og:title" content="🌬️ Grupo de respiración en Fueguitos">
+<meta property="og:description" content="Paso a paso para instalar la app, armar el grupo e invitar a los alumnos.">
+<meta property="og:image" content="https://fueguitos.vercel.app/icons/icon-512.png">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="icons/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap">
+<style>
+/* Layout: una columna de lectura, pasos numerados en orden real, botones de la app dibujados como en el celu. */
+:root{
+  --bg:#EEF0F4; --surface:#FFFFFF; --ink:#1D1B26; --muted:#5E5B6B; --line:#DCDEE6;
+  --brasa:#E8501A; --brasa-ink:#A8360A; --hielo:#1A72A6; --hielo-soft:#E1EEF7; --ok:#1F7A4D;
+  --f-display:"Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-body:"Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#15131B; --surface:#201D29; --ink:#F2F0F7; --muted:#A9A5B8; --line:#322E3F;
+  --brasa:#FF6A33; --brasa-ink:#FF9A70; --hielo:#4DB5EE; --hielo-soft:#16283A; --ok:#4CC38A; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#15131B; --surface:#201D29; --ink:#F2F0F7; --muted:#A9A5B8; --line:#322E3F;
+  --brasa:#FF6A33; --brasa-ink:#FF9A70; --hielo:#4DB5EE; --hielo-soft:#16283A; --ok:#4CC38A; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.55;font-variation-settings:"wdth" 100;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.015em}
+h1{font-size:clamp(30px,7vw,42px);font-weight:850;line-height:1.05}
+h2{font-size:24px;font-weight:800;line-height:1.15}
+h3{font-size:19px;font-weight:750}
+p{margin:0}
+.lead{font-size:19px;color:var(--muted);max-width:60ch}
+.kicker{font-size:15px;font-weight:700;color:var(--brasa-ink);letter-spacing:.02em}
+header{display:flex;flex-direction:column;gap:12px}
+
+.who{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.who div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.who b{display:block;font-size:16px}
+.who span{font-size:15px;color:var(--muted)}
+@media (max-width:520px){ .who{grid-template-columns:1fr} }
+
+.part{display:flex;flex-direction:column;gap:14px}
+.part > .tag{font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;counter-reset:s}
+ol.steps > li{counter-increment:s;display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 16px 16px 12px}
+ol.steps > li::before{content:counter(s);font-family:var(--f-display);font-variation-settings:"wdth" 62;font-weight:900;font-size:40px;line-height:.9;color:var(--brasa);text-align:center}
+.body{display:flex;flex-direction:column;gap:8px;min-width:0}
+.body ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.muted{color:var(--muted)}
+.small{font-size:16px}
+
+/* Botones de la app, dibujados para reconocerlos en el celu */
+.tap{display:inline-block;font-weight:700;font-size:.92em;line-height:1.3;padding:2px 10px;border-radius:999px;background:var(--brasa);color:#fff;white-space:normal;max-width:100%}
+.tap.g{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.tap.i{background:var(--hielo);color:#fff}
+:root[data-theme="dark"] .tap.i{color:#15131B}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tap.i{color:#15131B} }
+
+.os{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.os > div{border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.os b{display:block;margin-bottom:4px}
+@media (max-width:520px){ .os{grid-template-columns:1fr} }
+
+.note{background:var(--hielo-soft);border-radius:14px;padding:12px 14px;font-size:16px}
+.note b{color:var(--hielo)}
+
+.tech{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tech div{border:1px solid var(--line);border-radius:12px;padding:10px;font-size:15px;min-width:0}
+.tech b{display:block;font-size:16px}
+@media (max-width:520px){ .tech{grid-template-columns:1fr} }
+
+.msg{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg pre{margin:0;white-space:pre-wrap;font-family:var(--f-body);font-size:16px;line-height:1.5;background:var(--bg);border-radius:12px;padding:12px 14px;user-select:all}
+.copy{align-self:flex-start;font:inherit;font-weight:700;font-size:16px;border:0;border-radius:12px;padding:10px 16px;background:var(--ink);color:var(--bg);cursor:pointer}
+.copy:focus-visible,summary:focus-visible{outline:3px solid var(--hielo);outline-offset:2px}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+details + details{margin-top:-4px}
+summary{font-weight:700;cursor:pointer;list-style-position:outside}
+details p{margin-top:8px;color:var(--muted);font-size:16px}
+footer{font-size:15px;color:var(--muted)}
+a{color:var(--hielo)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Guía para armar el grupo</div>
+    <h1>Grupo de respiración en Fueguitos</h1>
+    <p class="lead">Cada alumno recibe un aviso a las horas elegidas. Lo toca, se abre un círculo que le marca cuándo inhalar y exhalar, con música si quiere, y queda anotado. El grupo ve cuántas respiraciones hicieron entre todos en el día.</p>
+  </header>
+
+  <div class="who">
+    <div><b>Lo arma una sola persona</b><span>Conviene que sea la psicóloga: queda como administradora y puede cambiar la técnica, los horarios y la música cuando quiera.</span></div>
+    <div><b>Los alumnos solo tocan un link</b><span>Ponen su nombre y un PIN, y ya tienen la respiración con sus avisos.</span></div>
+  </div>
+
+  <section class="part" aria-labelledby="p1">
+    <div class="tag">Parte 1</div>
+    <h2 id="p1">Instalar la app y crear la cuenta</h2>
+    <ol class="steps">
+      <li><div class="body">
+        <h3>Abrir la página</h3>
+        <p>Entrá a <a href="https://fueguitos.vercel.app/"><b>fueguitos.vercel.app</b></a>. En iPhone, con <b>Safari</b>. En Android, con <b>Chrome</b>.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Agregarla a la pantalla de inicio</h3>
+        <div class="os">
+          <div><b>iPhone</b><span class="small">Tocá Compartir (el cuadrado con la flecha para arriba), bajá y elegí <b>Agregar a pantalla de inicio</b>.</span></div>
+          <div><b>Android</b><span class="small">Tocá el menú <b>⋮</b> de arriba a la derecha y elegí <b>Instalar app</b>.</span></div>
+        </div>
+        <p class="muted small">Queda con el ícono del fueguito, como cualquier app. Desde ahora abrila siempre desde ese ícono.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Crear la cuenta</h3>
+        <p>Poné tu nombre y elegí un <b>PIN de 4 números</b>. Tocá <span class="tap">Empezar</span>.</p>
+        <p class="muted small">Con el nombre y el PIN se entra desde cualquier celular. Si pregunta qué hábitos querés, podés elegir cualquiera o saltearlo: la respiración la armamos en la parte 2.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Activar los avisos</h3>
+        <p>Cuando la app lo pida, tocá <span class="tap">Activar avisos</span> y después <b>Permitir</b>.</p>
+        <div class="note"><b>Importante en iPhone:</b> los avisos solo llegan si la app está agregada a la pantalla de inicio (paso 2) y el iPhone tiene iOS 16.4 o más nuevo.</div>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="part" aria-labelledby="p2">
+    <div class="tag">Parte 2</div>
+    <h2 id="p2">Armar el grupo con la respiración</h2>
+    <ol class="steps">
+      <li><div class="body">
+        <h3>Crear el grupo</h3>
+        <p>Abajo tocá la pestaña <b>Amigos</b>. Bajá hasta <b>Rachas en grupo</b> y tocá <span class="tap g">＋ Nueva racha en grupo</span>, después <span class="tap">Crear un grupo</span>.</p>
+        <p>Ponele un nombre (por ejemplo, <i>Respiramos juntos</i>) y tocá <span class="tap">Crear grupo</span>.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Crear el hábito de respiración</h3>
+        <p>Adentro del grupo, tocá el engranaje <b>⚙️</b> de arriba a la derecha. En <b>Hábitos del grupo</b> tocá <span class="tap g">+ Sumar hábito</span> y después <span class="tap">+ Crear uno nuevo</span>.</p>
+        <p>Arriba de todo tocá el modelo <span class="tap g">🌬️ Respirar</span>. Ya viene armado: 4 veces por día, con avisos a las 8, 12, 16 y 20 h.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Elegir la técnica, los horarios y la música</h3>
+        <p>Más abajo, en <b>＋ Más opciones</b>, aparecen tres cosas:</p>
+        <ul>
+          <li><b>Horarios de aviso:</b> tocá las horas para marcarlas o desmarcarlas. Se puede elegir cualquier hora del día. Es la sugerencia para todos; cada alumno después puede cambiar los suyos.</li>
+          <li><b>Cuántas por día:</b> en <i>¿Tiene cantidad por día?</i> va la cantidad de respiraciones del día. Lo normal es que coincida con la cantidad de avisos.</li>
+          <li><b>Respiración guiada:</b> elegí la técnica.</li>
+        </ul>
+        <div class="tech">
+          <div><b>Cuadrada</b>Inhala 4, retiene 4, exhala 4, retiene 4. Unos 1 min.</div>
+          <div><b>4-7-8</b>Inhala 4, retiene 7, exhala 8. Para ansiedad y para dormir. Unos 1 min.</div>
+          <div><b>Coherente</b>Inhala 5, exhala 5, parejo. Unos 1 min.</div>
+        </div>
+        <ul>
+          <li><b>Música (opcional):</b> pegá el link de una canción o lista de <b>Spotify</b> o de un video de <b>YouTube</b>. Para copiarlo: en Spotify, tocá <b>···</b> → Compartir → Copiar enlace; en YouTube, Compartir → Copiar.</li>
+        </ul>
+        <p>Tocá <span class="tap">Crear hábito</span>.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Marcarlo como hábito principal</h3>
+        <p>Volvé a tocar <b>⚙️</b> y elegí <span class="tap g">⭐ Elegir el hábito principal del grupo</span> → <b>Respiración</b>.</p>
+        <p class="muted small">Así a cada alumno que entra se le activa solo, y arriba del grupo se ve cuántas respiraciones hicieron entre todos hoy.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Invitar a los alumnos</h3>
+        <p>Arriba a la derecha del grupo, tocá el botón celeste <span class="tap i">👤＋</span> y después <span class="tap" style="background:var(--ok)">Mandar por WhatsApp</span>. Se arma solo un mensaje con el link del grupo.</p>
+        <p class="muted small">Si después querés, mandales también el mensaje de abajo para que sepan qué hacer.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="part" aria-labelledby="p3">
+    <div class="tag">Parte 3</div>
+    <h2 id="p3">Qué hace cada alumno</h2>
+    <div class="msg">
+      <pre id="msg">Para sumarte al grupo de respiración:
+1. Tocá el link del grupo. Si se abre adentro de WhatsApp, tocá ··· y elegí "Abrir en Safari" (iPhone) o "Abrir en Chrome" (Android).
+2. Poné tu nombre y elegí un PIN de 4 números.
+3. Seguí los pasos que te muestra la app para agregarla a la pantalla de inicio, y activá los avisos.
+4. Listo. Cuando te llegue el aviso, tocalo: se abre la respiración guiada. Tocá Empezar y seguí el círculo.
+Si querés otros horarios, tocá "🔔 Avisos a las…" abajo de Respiración.</pre>
+      <button class="copy" type="button" id="copy-msg">Copiar el mensaje</button>
+    </div>
+    <ol class="steps">
+      <li><div class="body">
+        <h3>Cada aviso, un minuto</h3>
+        <p>Toca el aviso, elige si quiere música, toca <span class="tap">Empezar</span> y sigue el círculo: crece al inhalar y se achica al exhalar. Al terminar queda anotado (por ejemplo, <i>Vas 2 de 4 hoy</i>).</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Si respiró sin la app</h3>
+        <p>En la pestaña <b>Hoy</b> toca <span class="tap g">Ya la hice</span> y se suma igual.</p>
+      </div></li>
+      <li><div class="body">
+        <h3>Sus propios horarios y su técnica</h3>
+        <p>Abajo de Respiración toca <b>🔔 Avisos a las…</b> para elegir sus horas, o <b>Usar los sugeridos</b> para volver a los de la psicóloga. En la pantalla de respirar puede elegir otra técnica; la sugerida lleva una ★.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="part" aria-labelledby="p4">
+    <h2 id="p4">Si algo no anda</h2>
+    <details><summary>No me llegan los avisos</summary>
+      <p>Abrí la app desde el ícono de la pantalla de inicio (no desde Safari o Chrome). En Perfil, buscá los avisos y tocá Activar avisos. En el iPhone, revisá en Ajustes → Notificaciones → Fueguitos que estén permitidas, y que el modo Concentración no las esté frenando.</p></details>
+    <details><summary>La música no arranca</summary>
+      <p>Tocá ▶ en el reproductor y después Empezar. Con Spotify, si no tenés la sesión iniciada, puede sonar solo una parte de la canción. Quien no quiera música desmarca "Con música" y la app se lo recuerda.</p></details>
+    <details><summary>Me olvidé el PIN</summary>
+      <p>En la pantalla de entrada tocá "Ya tengo cuenta" y después "Recuperar mi PIN". Funciona si vinculaste un mail en tu perfil; si no, pedile ayuda a quien armó el grupo.</p></details>
+    <details><summary>Quiero cambiar la técnica, la música o los horarios para todos</summary>
+      <p>Solo quien armó el grupo: entrá al grupo → ⚙️ → en Hábitos del grupo tocá Editar en Respiración. Los alumnos que ya cambiaron sus horarios mantienen los suyos.</p></details>
+  </section>
+
+  <footer>Fueguitos · fueguitos.vercel.app</footer>
+</div>
+
+<script>
+document.getElementById('copy-msg').addEventListener('click', function(){
+  var b = this, t = document.getElementById('msg').textContent;
+  var done = function(){ b.textContent = 'Copiado ✓'; setTimeout(function(){ b.textContent = 'Copiar el mensaje'; }, 2500); };
+  var fallback = function(){ var r = document.createRange(); r.selectNodeContents(document.getElementById('msg')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Seleccionado: copialo'; };
+  try { navigator.clipboard.writeText(t).then(done, fallback); } catch(e){ fallback(); }
+});
+</script>
+
+</body>
+</html>
