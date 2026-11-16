@@ -741,6 +741,25 @@ body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);bor
 .addme{display:grid;gap:10px;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
 .addme .btn{width:100%}
 .addme .pill{justify-self:start}
+/* Respiración guiada: un círculo que crece al inhalar y se achica al exhalar. */
+.breath{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.breath h2{margin:0}
+.bstage{position:relative;width:min(240px,64vw);aspect-ratio:1;margin:14px 0 4px;display:grid;place-items:center}
+.bring{position:absolute;inset:0;border-radius:50%;border:2px dashed color-mix(in srgb,var(--ice) 45%,transparent)}
+.borb{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--ice) 55%,#fff),var(--ice) 70%);box-shadow:0 0 60px color-mix(in srgb,var(--ice) 45%,transparent);transform:scale(.42);transition:transform 4s cubic-bezier(.45,0,.55,1)}
+.borb[data-p="in"],.borb[data-p="hold"]{transform:scale(1)}
+.borb[data-p="out"],.borb[data-p="rest"]{transform:scale(.42)}
+.breath.still .borb{transform:scale(.7)!important}
+.breath.still .borb[data-p="in"],.breath.still .borb[data-p="hold"]{opacity:1}
+.breath.still .borb[data-p="out"],.breath.still .borb[data-p="rest"]{opacity:.55}
+.bphase{font-size:26px;font-weight:800;letter-spacing:-.01em;min-height:32px}
+.bcount{font-size:44px;color:var(--muted);min-height:44px}
+.breath #b-act{width:100%;margin-top:6px}
+.habit .hrs{display:block;margin-top:6px;text-align:left}
+.chips.hours{flex-wrap:wrap}
+.card.focus{border-left:4px solid var(--hc);margin-bottom:22px}
+.card.focus .big{font-size:22px;font-weight:800;margin:2px 0}
+.card.focus .big .num{font-size:34px;color:var(--hcx,var(--hc))}
 </style>
 </head>
 <body>
@@ -1008,6 +1027,7 @@ async function boot(){
   S.pendingFriend = LS.get('fueguitos_amigo');
   if (q.get('anotar')) S.quick = q.get('anotar');
   if (/^[0-9a-f-]{36}$/i.test(q.get('noche') || '')) S.noche = q.get('noche');
+  if (/^[0-9a-f-]{36}$/i.test(q.get('respirar') || '')) S.respirar = q.get('respirar');
   S.rapido = q.get('rapido') === '1';
   S.rutina = q.get('rutina');
   S.habito = q.get('habito');
@@ -1038,7 +1058,7 @@ async function afterLogin(){
     try {
       const g = await rpc('api_join_group', { ...P(), p_code: S.pendingJoin });
       S.groupId = g.id; LS.set('racha_group', g.id);
-      toast(`Te sumaste a ${g.name} 🔥`);
+      toast(g.focus ? `Te sumaste a ${g.name} 🔥 Ya tenés ${g.focus.emoji} ${g.focus.name} en Hoy.` : `Te sumaste a ${g.name} 🔥`, g.focus ? 4500 : 2500);
       S.me = await rpc('api_me', P());
     } catch(e){ toast(e.message, 3500); }
     S.pendingJoin = null;
@@ -1056,6 +1076,7 @@ async function afterLogin(){
   loadAvatar();
   if (S.rutina === 'tiempo'){ S.rutina = null; runTime(); }
   if (S.noche){ const h = S.me.habits.find(x => x.id === S.noche); S.noche = null; if (h && h.next_day) quickToggle(h); }
+  if (S.respirar){ const h = S.me.habits.find(x => x.id === S.respirar); S.respirar = null; if (h) breathSheet(h); }
   if (S.quick){
     const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
     S.quick = null;
@@ -1920,7 +1941,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v79'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v80'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2248,7 +2269,10 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-11-01', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-11-16', title: '✨ Novedades en Fueguitos', items: [
+  '🌬️ <b>Respiración guiada</b>: creá el hábito "Respirar" y elegí la técnica (cuadrada, 4-7-8 o coherente). Te avisamos a las horas que elijas y un círculo te guía cada respiración.',
+  '⭐ <b>Hábito principal del grupo</b>: quien arma el grupo elige uno, y todos ven cuánto lo hicieron entre todos en el día. Ideal para un grupo de respiración o de lectura.',
+  '🔗 <b>Amigos al toque</b>: en Agregar un amigo mandá tu link. Quien entra con él queda tu amigo, aunque todavía no tenga la app.',
   '👥 <b>Grupo ahora es Amigos</b>: en una sola pantalla ves a todos tus amigos, quién anotó hoy, <b>las fotos de todos</b> y quién está en la banca. Tus rachas en grupo siguen ahí abajo, sin perder nada.',
   '⚽🏑 <b>La Casaca DT</b>: una app hermana para tu equipo de fútbol o hockey. El DT arma la lista y la formación, pone entrenamientos y lleva las estadísticas. Pasásela a tu equipo.',
   '✏️ <b>Editá cualquier día</b>: tocá un día en cualquier calendario y anotás o deshacés cada hábito. Si fue sin querer, se arregla con un toque.',
@@ -2379,6 +2403,8 @@ function renderHoy(){
     e.stopPropagation(); const c = f.closest('[data-habit],[data-hid]'); if (c) calendarSheet(byId(c.dataset.habit || c.dataset.hid));
   });
   document.querySelectorAll('[data-count]').forEach(b => b.onclick = () => countTap(byId(b.dataset.count), +b.dataset.d));
+  document.querySelectorAll('[data-breath]').forEach(b => b.onclick = () => breathSheet(byId(b.dataset.breath)));
+  document.querySelectorAll('[data-hours]').forEach(b => b.onclick = () => hoursSheet(byId(b.dataset.hours)));
   document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => anotarDia(byId(b.dataset.nightYes), addDays(S.me.today, -1)));
   document.querySelectorAll('[data-night-go]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightGo)));
   document.querySelectorAll('[data-night-no]').forEach(b => b.onclick = () => {
@@ -2560,7 +2586,9 @@ function countCard(h){
       ${hstat(done ? 'ok' : 'fire', `${done ? '✓ ' : ''}${n} de ${h.goal}${u}`)}
       <div class="progress" style="margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="${h.goal}" aria-valuenow="${n}"><i style="width:${Math.round(n / h.goal * 100)}%"></i></div>
       ${done ? less
+        : h.breath ? `<div class="nightq"><button type="button" class="btn sm" data-breath="${h.id}">Respirar</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="1" aria-label="Ya hice una de ${esc(h.name)}">Ya la hice</button></div>${n > 0 ? less : ''}`
         : `<div class="nightq"><button type="button" class="btn sm" data-count="${h.id}" data-d="1" aria-label="Sumar uno a ${esc(h.name)}">+1</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="${h.goal}">Todo ✓</button></div>${n > 0 ? less : ''}`}
+      ${!done && h.remind_day && (h.remind_hours || []).length ? `<button type="button" class="link small hrs" data-hours="${h.id}">🔔 Avisos ${hoursText(h.remind_hours)}</button>` : ''}
     </div>
     <div class="check" aria-hidden="true">${done ? CHECK_SVG : ''}</div>
   </div>`;
@@ -2583,6 +2611,131 @@ async function countTap(h, d){
       toast(`¡Meta cumplida! ${h.name}: día ${hh.streak} 🔥${x.earned_ice ? ' · ganaste un hielito 🧊' : ''}`, 3800);
     }
   } catch(e){ S.me.habits = prev; renderHoy(); toast(e.message, 3500); }
+}
+
+/* ============ Respiración guiada ============ */
+// La técnica la elige quien crea el hábito (la psicóloga, por ejemplo). Cada paso: [fase, segundos].
+const BREATH = {
+  cuadrada: { t: 'Cuadrada', d: 'Inhalás 4, retenés 4, exhalás 4 y retenés 4. Para bajar un cambio en cualquier momento.', steps: [['in', 4], ['hold', 4], ['out', 4], ['rest', 4]], cycles: 4 },
+  '478': { t: '4-7-8', d: 'Inhalás 4, retenés 7 y exhalás 8. Buena para la ansiedad y antes de dormir.', steps: [['in', 4], ['hold', 7], ['out', 8]], cycles: 4 },
+  coherente: { t: 'Coherente', d: 'Inhalás 5 y exhalás 5, parejo. Calma y foco.', steps: [['in', 5], ['out', 5]], cycles: 6 },
+};
+const BREATH_TXT = { in: 'Inhalá', hold: 'Retené', out: 'Exhalá', rest: 'Retené' };
+const hoursText = (hs) => !hs || !hs.length ? '' : hs.length === 1 ? `a las ${hs[0]} h` : `a las ${hs.slice(0, -1).join(', ')} y ${hs[hs.length - 1]} h`;
+const sameHours = (a, b) => (a || []).join(',') === (b || []).join(',');
+function breathSheet(h0){
+  const h = S.me.habits.find(x => x.id === h0.id) || h0;
+  const B = BREATH[h.breath] || BREATH.cuadrada;
+  const total = B.steps.reduce((a, [, s]) => a + s, 0) * B.cycles;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const el = openSheet(`<div class="breath ${reduce ? 'still' : ''}">
+    <h2>${esc(h.emoji)} ${esc(h.name)}</h2>
+    <p class="muted" style="margin:0">${esc(B.t)}: ${esc(B.d)}</p>
+    <div class="bstage" aria-hidden="true"><div class="borb" id="b-orb"></div><div class="bring"></div></div>
+    <div class="bphase" id="b-ph" aria-live="polite">Ponete cómodo</div>
+    <div class="bcount num" id="b-n">${Math.ceil(total / 60)} min</div>
+    <div class="stack" id="b-act"><button class="btn" id="b-go">Empezar</button>${h.goal && !h.done_today ? '<button class="link" id="b-skip">Ya la hice sola, anotarla</button>' : ''}</div>
+  </div>`);
+  const orb = $('#b-orb', el), ph = $('#b-ph', el), num = $('#b-n', el);
+  let timers = [];
+  const alive = () => el.isConnected;
+  const finish = async () => {
+    if (!alive()) return;
+    ph.textContent = 'Listo 🌬️'; num.textContent = ''; orb.style.transitionDuration = '1.2s'; orb.dataset.p = 'rest';
+    const goal = h.goal || 0, before = h.done_today ? goal : Math.min(h.count_today || 0, goal);
+    $('#b-act', el).innerHTML = `<p class="muted" style="margin:0;text-align:center">${goal ? `Vas ${Math.min(goal, before + 1)} de ${goal} hoy.` : 'Bien ahí.'} Notá cómo quedó el cuerpo.</p><button class="btn" id="b-ok">Listo</button>`;
+    $('#b-ok', el).onclick = closeSheet;
+    vibrate([20, 40, 20]);
+    await breathDone(h);
+  };
+  const run = () => {
+    $('#b-act', el).innerHTML = '<button class="link" id="b-stop">Cortar acá</button>';
+    $('#b-stop', el).onclick = () => { timers.forEach(clearTimeout); closeSheet(); };
+    let t = 0, left = total;
+    for (let c = 0; c < B.cycles; c++) for (const [p, s] of B.steps){
+      timers.push(setTimeout(() => {
+        if (!alive()) return;
+        orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p];
+        for (let i = 0; i < s; i++) timers.push(setTimeout(() => { if (alive()) num.textContent = s - i; }, i * 1000));
+        vibrate(10);
+      }, t * 1000));
+      t += s;
+    }
+    timers.push(setTimeout(finish, t * 1000));
+  };
+  $('#b-go', el).onclick = run;
+  const sk = $('#b-skip', el); if (sk) sk.onclick = () => { closeSheet(); breathDone(h); };
+}
+// Suma una respiración sin sacarte de la pestaña en la que estás.
+async function breathDone(h){
+  const cur = S.me.habits.find(x => x.id === h.id); if (!cur) return;
+  if (S.tab === 'hoy') return cur.goal ? countTap(cur, 1) : cur.done_today ? null : quickAnotar(cur);
+  try {
+    if (cur.goal){
+      const r = await rpcQ('api_count', { ...P(), p_habit: cur.id, p_delta: 1 }, `${cur.name} +1`, true);
+      if (!r.queued) S.me.habits = r.habits;
+    } else if (!cur.done_today){ go('hoy'); return quickAnotar(cur); }
+    if (S.group) await loadGroup().catch(() => {});
+    if (!$('#layer').innerHTML) renderMain();
+  } catch(e){ toast(e.message, 3500); }
+}
+// Horarios de aviso: vienen sugeridos por quien creó el hábito y cada uno los ajusta.
+const HOUR_OPTS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+const hourChips = (sel, attr = 'data-hr') => `<div class="chips hours" style="margin:0">${HOUR_OPTS.map(n => `<button type="button" class="chip ${sel.includes(n) ? 'on' : ''}" ${attr}="${n}" aria-pressed="${sel.includes(n)}">${n} h</button>`).join('')}</div>`;
+function bindHourChips(el, sel, attr = 'data-hr', onch){
+  el.querySelectorAll(`[${attr}]`).forEach(b => b.onclick = () => {
+    const n = +b.getAttribute(attr), i = sel.indexOf(n);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 8){ toast('Hasta 8 avisos por día'); return; } sel.push(n); }
+    sel.sort((a, b) => a - b); b.classList.toggle('on', i < 0); b.setAttribute('aria-pressed', i < 0); onch && onch();
+  });
+}
+function hoursSheet(h){
+  const base = h.base_hours || [], sel = [...(h.remind_hours || base)];
+  const el = openSheet(`<h2>🔔 Avisos de ${esc(h.name)}</h2>
+    <p class="muted">Elegí a qué hora te avisamos. ${base.length ? `La sugerencia de quien armó el hábito es ${hoursText(base)}.` : ''} Si ya llegaste a la meta del día, no te avisamos.</p>
+    <div class="section">${hourChips(sel)}</div>
+    <div class="stack section"><button class="btn" id="hr-ok">Guardar</button>
+      ${base.length ? '<button class="link" id="hr-base">Usar los sugeridos</button>' : ''}</div>`);
+  bindHourChips(el, sel);
+  const save = async (hours) => {
+    try { S.me.habits = await rpc('api_set_my_hours', { ...P(), p_habit: h.id, p_hours: hours }); closeSheet(); renderMain(); toast(hours && hours.length ? `Te avisamos ${hoursText(hours)} 🔔` : 'Listo, con los horarios sugeridos'); }
+    catch(e){ toast(e.message); }
+  };
+  $('#hr-ok', el).onclick = () => save(sel.length && !sameHours(sel, base) ? sel : null);
+  const hb = $('#hr-base', el); if (hb) hb.onclick = () => save(null);
+}
+// Tarjeta del hábito principal del grupo: cuánto respiró el grupo hoy y un botón para sumarse.
+function focusCard(G){
+  const f = G.group.focus; if (!f) return '';
+  const mine = S.me.habits.find(x => x.id === f.id);
+  const n = mine ? (mine.done_today ? mine.goal : Math.min(mine.count_today || 0, mine.goal || 1)) : 0;
+  return `<div class="card focus section" style="--hc:${habitColor(mine || f)}">
+    <div class="row between" style="align-items:flex-end;gap:12px">
+      <div style="min-width:0"><div class="small muted" style="font-weight:700">${esc(f.emoji)} ${esc(f.name)}: hoy, entre todos</div>
+        <div class="big"><b class="num">${f.total}</b> ${f.breath ? (f.total === 1 ? 'respiración' : 'respiraciones') : 'en total'}</div>
+        <div class="small muted">${f.people === 1 ? '1 persona' : `${f.people} personas`}${mine && mine.goal ? `, vos ${n} de ${mine.goal}` : ''}</div></div>
+      ${mine ? (f.breath ? `<button class="btn sm" data-fbreath="${f.id}">Respirar</button>` : mine.goal && !mine.done_today ? `<button class="btn sm" data-fcount="${f.id}">+1</button>` : '')
+        : `<button class="btn sm" data-fact="${f.id}">Sumarme</button>`}
+    </div></div>`;
+}
+function bindFocusCard(G){
+  const f = G.group.focus; if (!f) return;
+  const b = $('[data-fbreath]'); if (b) b.onclick = () => breathSheet(S.me.habits.find(x => x.id === f.id));
+  const c = $('[data-fcount]'); if (c) c.onclick = () => breathDone(S.me.habits.find(x => x.id === f.id));
+  const a = $('[data-fact]'); if (a) a.onclick = () => { const h = G.habits.find(x => x.id === f.id); if (h) openActivateSheet(h, false, async () => { S.me = await rpc('api_me', P()); await loadGroup(); renderGrupo(); }); };
+}
+function focusPicker(G){
+  const cur = G.group.focus ? G.group.focus.id : null;
+  const hs = G.habits.filter(h => h.kind !== 'evitar');
+  const el = openSheet(`<h2>⭐ Hábito principal del grupo</h2>
+    <p class="muted">Aparece arriba de todo en el grupo, con el total del día entre todos. Quien se suma al grupo lo tiene activado de entrada; los demás hábitos siguen siendo libres.</p>
+    <div class="stack section">${hs.map(h => `<button type="button" class="fmt ${h.id === cur ? 'on' : ''}" data-fp="${h.id}"><b>${esc(h.emoji)} ${esc(h.name)}</b><span class="small">${h.breath ? `Respiración ${esc((BREATH[h.breath] || {}).t || '')}` : h.goal ? `${h.goal} ${esc(h.unit || 'veces')} por día` : 'Una vez por día'}</span></button>`).join('')}
+      ${cur ? '<button type="button" class="link" data-fp="">Sin hábito principal</button>' : ''}
+      ${hs.length ? '' : '<p class="muted">Primero sumá un hábito al grupo.</p>'}</div>`);
+  el.querySelectorAll('[data-fp]').forEach(b => b.onclick = async () => {
+    try { await rpc('api_set_group_focus', { ...P(), p_group: G.group.id, p_habit: b.dataset.fp || null }); await loadGroup(); closeSheet(); renderGrupo(); toast(b.dataset.fp ? 'Listo, es el hábito principal ⭐' : 'Sin hábito principal'); }
+    catch(e){ toast(e.message); }
+  });
 }
 
 // El número de la racha, como marcador: condensado, grande y en el color del hábito.
@@ -3389,7 +3542,7 @@ function renderHome(){
     return `<button class="week pair" data-team="${t.id}" style="width:100%;text-align:left"><div class="row between" style="align-items:center"><b>${t.pair ? `Vos y ${esc(t.other || '…')}` : `${t.emoji ? esc(t.emoji) + ' ' : ''}${esc(t.name)}`}</b><span class="big num ${st.streak ? 'lit' : ''}">${st.streak || 0}</span></div><div class="small muted" style="margin-top:2px">${msg}${t.pair ? '' : `. ${t.count} ${t.count === 1 ? 'persona' : 'personas'}`}</div></button>`; };
   $('#main').innerHTML = `${top}${reqs}
     ${alone ? `<div class="empty">Todavía no tenés amigos en Fueguitos. Agregalos con su apodo o mandales el link: cuando se suman, ves sus fueguitos y sus fotos acá.</div>
-      <div class="section"><button class="btn" id="fh-share">📲 Invitar amigos por WhatsApp</button></div>` : `
+      <div class="section"><button class="btn" id="fh-share">🔗 Invitar amigos con tu link</button></div>` : `
     <div class="section-title" style="margin-top:4px"><h2>Hoy</h2><span class="small muted">${done} de ${active.length} anotaron</span></div>
     <div class="board">${active.map(memberRow).join('')}</div>
     `}
@@ -3408,7 +3561,7 @@ function renderHome(){
       <p class="hint">Vuelven solos apenas anotan algo.</p></div>` : ''}`;
   bindChips();
   $('#fh-add').onclick = addFriendSheet;
-  const sh = $('#fh-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(friendInviteText()); };
+  const sh = $('#fh-share'); if (sh) sh.onclick = shareFriendLink;
   document.querySelectorAll('[data-member]').forEach(row => bindPress(row, () => memberSheet(G, row.dataset.member)));
   document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => { const m = H.members.find(x => x.id === b.dataset.nudge); if (m) nudgeFriend(G, m); });
   document.querySelectorAll('[data-bnudge]').forEach(b => b.onclick = () => { const m = H.members.find(x => x.id === b.dataset.bnudge); if (m) nudgeFriend(G, m); });
@@ -3453,9 +3606,10 @@ function renderGrupo(){
     ${chips}
 
     <div class="subtabs" role="tablist">${[['racha','🔥 Racha'],['duelos','⚔️ Juegos'],['compartido','🎧 Compartido']].map(([k,l]) => `<button role="tab" aria-selected="${S.gsub===k}" class="${S.gsub===k?'on':''}" data-gsub="${k}">${l}</button>`).join('')}</div>
+    ${focusCard(G)}
     ${S.gsub === 'racha' ? grupoRacha(G, members) : '<div id="gsub"></div>'}
   `;
-  bindChips();
+  bindChips(); bindFocusCard(G);
   $('#invite').onclick = () => shareInvite(G.group);
   $('#g-set').onclick = () => groupSettingsSheet(G);
   const ac = $('#achs'); if (ac) ac.onclick = () => achSheet(G);
@@ -3505,8 +3659,10 @@ function groupSettingsSheet(G){
   const el = openSheet(`<div class="row" style="gap:12px;align-items:center">${groupAvatar(G.group, 48)}<h2 style="margin:0">${esc(gName(G.group))}</h2></div>
     <div class="grid2 section">${G.group.is_admin ? '<button class="btn ghost sm" style="width:100%" id="gs-edit">✏️ Editar grupo</button>' : ''}<button class="btn sm ice" style="width:100%${G.group.is_admin ? '' : ';grid-column:1/-1'}" id="gs-inv">Invitar amigos</button></div>
     ${groupHabitsBlock(G)}
+    ${G.group.is_admin && G.habits.length ? `<div class="section"><button class="btn ghost sm" style="width:100%" id="gs-focus">⭐ ${G.group.focus ? `Hábito principal: ${esc(G.group.focus.name)}` : 'Elegir el hábito principal del grupo'}</button></div>` : ''}
     <div class="section" style="text-align:center"><button class="link danger" id="leave">Salir de ${esc(G.group.name)}</button></div>`);
   const ge = $('#gs-edit', el); if (ge) ge.onclick = () => groupEditor(G);
+  const gf = $('#gs-focus', el); if (gf) gf.onclick = () => focusPicker(G);
   $('#gs-inv', el).onclick = () => shareInvite(G.group);
   const afterG = async () => { await loadGroup(); renderGrupo(); };
   const ha = $('#hab-add', el); if (ha) ha.onclick = () => groupHabitAdd(G);
@@ -4477,7 +4633,7 @@ async function renderFriends(){
     bindChips();
     const pb = $('[data-pback]'); if (pb) pb.onclick = () => { S.pview = null; renderMain(); window.scrollTo(0, 0); };
     $('#fr-add').onclick = addFriendSheet;
-    const sh = $('#fr-share'); if (sh) sh.onclick = () => { location.href = 'https://wa.me/?text=' + encodeURIComponent(friendInviteText()); };
+    const sh = $('#fr-share'); if (sh) sh.onclick = shareFriendLink;
     document.querySelectorAll('[data-fp]').forEach(r => r.onclick = () => friendSheet(r.dataset.fp));
     bindFriendAdd($('#main'), paint);
     const respond = async (id, ok) => { try { S.friends = await rpc('api_friend_respond', { ...P(), p_user: id, p_accept: ok }); paint(); toast(ok ? '🤝 ¡Ahora son amigos!' : 'Listo'); } catch(e){ toast(e.message); } };
@@ -4505,10 +4661,18 @@ function bindFriendAdd(root, after){
   });
 }
 // Invitación a la app con tu link: quien entra con él queda tu amigo solo.
+async function shareFriendLink(){
+  const text = friendInviteText();
+  if (navigator.share){ try { await navigator.share({ text }); return; } catch(e){ if (e.name === 'AbortError') return; } }
+  if (await copy(text)) toast('Link copiado. Pegalo donde quieras 🔗', 3000);
+  else location.href = 'https://wa.me/?text=' + encodeURIComponent(text);
+}
 const friendInviteText = () => `Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos. Entrá con este link y quedamos amigos: ${PUBLIC_URL}?amigo=${S.me.user.id}`;
 function addFriendSheet(){
   const el = openSheet(`<h2>👥 Agregar un amigo</h2><p class="muted">Poné su apodo de Fueguitos. Le llega tu solicitud y, cuando acepta, son amigos.</p>
-    <div class="stack section"><input class="input" id="af-n" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Su apodo"><button class="btn" id="af-ok">Mandar solicitud</button></div>`);
+    <div class="stack section"><input class="input" id="af-n" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Su apodo"><button class="btn" id="af-ok">Mandar solicitud</button></div>
+    <div class="section"><p class="small muted" style="margin:0 0 8px">¿No sabés su apodo o todavía no tiene la app? Mandale tu link: cuando entra, quedan amigos al toque.</p><button class="btn ghost" id="af-link">🔗 Mandar mi link</button></div>`);
+  $('#af-link', el).onclick = shareFriendLink;
   setTimeout(() => $('#af-n', el).focus(), 250);
   $('#af-ok', el).onclick = async (e) => {
     const n = $('#af-n', el).value.trim(); if (!n){ toast('Poné su apodo'); return; }
@@ -4794,10 +4958,12 @@ function rulesSheet(h, after, pre){
       <div id="ru-fixed" class="stack">${rulesFields(h.days, wk0 ? 0 : h.rest_per_week)}</div>
       ${h.kind === 'evitar' ? '<style>#layer .rest-field{display:none}</style><p class="hint" style="margin:0">En los hábitos para dejar algo no hay descansos.</p>' : ''}
       ${h.kind === 'evitar' || !h.max_ice ? '' : '<p class="hint" id="ru-ice" style="margin:0"></p>'}
+      ${h.goal && h.remind_day ? `<button type="button" class="link" id="ru-hrs">🔔 Mis horarios de aviso${(h.remind_hours || []).length ? `: ${hoursText(h.remind_hours)}` : ''}</button>` : ''}
       ${h.kind === 'hacer' && !h.free ? `<button type="button" class="link" id="ru-inj">${h.injury ? 'Ver la pausa por lesión' : 'Pausar por lesión o enfermedad'}</button>` : ''}
       ${h.custom_days ? '<button type="button" class="link" id="ru-reset">Volver a los días originales del hábito</button>' : ''}
       <button class="btn" id="ru-save">Guardar</button></div>`);
   bindRules(el); bindRemindDays(el, rsel);
+  const rh = $('#ru-hrs', el); if (rh) rh.onclick = () => hoursSheet(h);
   const base = h.base_ice || h.ice_every, defN = (h.default_days || []).length || 7;
   const paintIce = () => {
     const ic = $('#ru-ice', el); if (!ic) return;
@@ -4966,6 +5132,7 @@ function habitEditor(h, groupId = null, after){
     { e: '🌙', t: 'Dormir temprano', name: 'Dormirme antes de las 12', wpp: 'Dormir', next: true },
     { e: '🌅', t: 'Madrugar', name: 'Levantarme antes de las 7', wpp: 'Madrugar', dl: '07:00' },
     { e: '🧘', t: 'Meditar', name: 'Meditar', wpp: 'Meditación' },
+    { e: '🌬️', t: 'Respirar', name: 'Respiración', wpp: 'Respiración', goal: 4, unit: 'veces', remind: true, breath: 'cuadrada', hours: [8, 12, 16, 20] },
     { e: '💪', t: 'Flexiones', name: 'Flexiones', wpp: 'Flexiones', goal: 20, unit: 'flexiones' },
     { e: '🦉', t: 'Duolingo', name: 'Duolingo', wpp: 'Duolingo' },
     { e: '📵', t: 'Sin Instagram', name: 'Sin Instagram', wpp: 'Sin Instagram', kind: 'evitar' },
@@ -4978,6 +5145,9 @@ function habitEditor(h, groupId = null, after){
   const wk0 = !!h && (h.days || []).length === 7 && (h.rest_per_week || 0) >= 3;
   let dmode = wk0 ? 'week' : 'fixed', times = wk0 ? 7 - h.rest_per_week : 3;
   const rsel = [...((h && h.remind_days) || [])];
+  // Respiración guiada y horarios sugeridos: los define quien crea el hábito; cada uno después ajusta sus horarios.
+  let breath = h ? (h.breath || null) : null;
+  const hsel = [...((h && (h.base_hours || h.remind_hours)) || [])], hours0 = hsel.join(','), breath0 = breath;
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
       ${h ? '' : `<div class="field"><span>Empezá con uno armado (o armá el tuyo abajo)</span><div class="chips" style="margin-bottom:0">${TPL.map((t, i) => `<button type="button" class="chip" data-tpl="${i}">${t.e} ${t.t}</button>`).join('')}</div></div>`}
@@ -5008,7 +5178,10 @@ function habitEditor(h, groupId = null, after){
         <div class="hint">Ej: 8 vasos de agua, 10 páginas. Sumás de a uno con un toque, o todo de una.</div>
         <div class="row" style="gap:10px;margin-top:8px"><span class="small">💧 ¿Agua? Tu peso:</span><input class="input" id="h-kg" type="number" inputmode="numeric" placeholder="kg" style="max-width:90px"></div>
         <div class="hint" id="h-kg-out">Te calcula los vasos por día.</div>
-        <label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" id="h-remind" ${h && h.remind_day ? 'checked' : ''}> 🔔 Avisarme durante el día si vengo atrasado (máximo 3 avisos)</label></div>
+        <label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" id="h-remind" ${h && h.remind_day ? 'checked' : ''}> 🔔 Avisarme durante el día si vengo atrasado</label>
+        <div id="h-hrs" style="margin-top:8px"><div class="hint" style="margin:0 0 6px">¿A qué hora? Si no elegís, a las 11, 15 y 19 h. ${groupId || (h && h.group_id) ? 'Es la sugerencia para el grupo: cada uno puede cambiar los suyos.' : ''}</div>${hourChips(hsel)}</div>
+        <div class="field" style="margin-top:12px"><span>🌬️ Respiración guiada (opcional)</span><div class="chips" style="margin:0">${[['', 'No'], ...Object.entries(BREATH).map(([k, v]) => [k, v.t])].map(([k, t]) => `<button type="button" class="chip" data-br="${k}">${t}</button>`).join('')}</div>
+          <div class="hint" id="h-br-hint">Suma un botón "Respirar ahora" que guía cada respiración con un círculo que crece y se achica.</div></div></div>
       <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo anoto al acostarme (o a la mañana siguiente)</label>
         <div class="hint">Para no agarrar el celu antes de dormir. Al otro día la app te pregunta "¿Anoche cumpliste?" y contestás con un toque.</div></div>
       <div class="field" id="h-dl-box"><span>¿Tiene hora límite? (opcional)</span>
@@ -5038,6 +5211,9 @@ function habitEditor(h, groupId = null, after){
     $('#h-goal-box', el).style.display = $('#h-next', el).checked ? 'none' : '';
     $('#h-dl-box', el).style.display = $('#h-next', el).checked || $('#h-goal', el).value ? 'none' : '';
     $('#h-noice', el).style.display = kind === 'evitar' ? '' : 'none';
+    $('#h-hrs', el).style.display = $('#h-remind', el).checked ? '' : 'none';
+    el.querySelectorAll('[data-br]').forEach(b => b.classList.toggle('on', b.dataset.br === (breath || '')));
+    $('#h-br-hint', el).textContent = breath ? BREATH[breath].d : 'Suma un botón "Respirar ahora" que guía cada respiración con un círculo que crece y se achica.';
     if (kind === 'hacer' && free){ $('#h-ices', el).style.display = $('#h-rule', el).style.display = 'none'; $('#h-next-box', el).style.display = $('#h-dl-box', el).style.display = 'none'; }
     $('#h-name', el).placeholder = kind === 'evitar' ? 'Ej: Sin Instagram, dejar de fumar' : 'Ej: Tomar agua';
     if (kind === 'evitar' && !h && !$('#h-emoji', el).dataset.touched) $('#h-emoji', el).value = '🚫';
@@ -5066,6 +5242,13 @@ function habitEditor(h, groupId = null, after){
   $('#h-dl-x', el).onclick = () => { $('#h-dl', el).value = ''; };
   $('#h-next', el).onchange = (e) => { e.target.dataset.touched = '1'; paintKind(); };
   $('#h-goal', el).oninput = paintKind;
+  $('#h-remind', el).onchange = paintKind;
+  bindHourChips(el, hsel);
+  el.querySelectorAll('[data-br]').forEach(b => b.onclick = () => {
+    breath = b.dataset.br || null;
+    if (breath && !(+$('#h-goal', el).value >= 2)){ $('#h-goal', el).value = Math.max(2, hsel.length || 4); if (!$('#h-unit', el).value) $('#h-unit', el).value = 'veces'; }
+    paintKind();
+  });
   // Agua según el peso: regla general de 35 ml por kilo, en vasos de 250 ml.
   $('#h-kg', el).oninput = (e) => {
     const kg = +e.target.value; if (!(kg >= 30 && kg <= 200)){ $('#h-kg-out', el).textContent = 'Te calcula los vasos por día.'; return; }
@@ -5080,6 +5263,8 @@ function habitEditor(h, groupId = null, after){
     $('#h-name', el).value = t.name; $('#h-wpp', el).value = t.wpp; $('#h-emoji', el).value = t.e; $('#h-emoji', el).dataset.touched = '1';
     $('#h-goal', el).value = t.goal || ''; $('#h-unit', el).value = t.unit || ''; $('#h-remind', el).checked = !!t.remind;
     $('#h-next', el).checked = !!t.next; $('#h-dl', el).value = t.dl || '';
+    breath = t.breath || null; hsel.splice(0, hsel.length, ...(t.hours || []));
+    el.querySelectorAll('[data-hr]').forEach(x => { const on = hsel.includes(+x.dataset.hr); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     free = !!t.free; color = t.color || null;
     $('#h-more', el).open = !!(t.goal || t.next || t.dl);
     paintKind(); paint();
@@ -5108,6 +5293,12 @@ function habitEditor(h, groupId = null, after){
       // Veces por semana se guarda como tus días: todos, con 7 − X descansos. Si lo pasás a días fijos, sin descansos.
       if (kind === 'hacer' && !free && (dmode === 'week' || wk0))
         await rpc('api_set_habit_rules', { ...P(), p_habit: saved.id, p_days: dmode === 'week' ? [0, 1, 2, 3, 4, 5, 6] : days.sort(), p_rest: dmode === 'week' ? 7 - times : 0 });
+      const goalOk = kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2;
+      const hrsNow = goalOk && $('#h-remind', el).checked ? hsel : [], brNow = goalOk ? breath : null;
+      if (hrsNow.join(',') !== hours0 || brNow !== breath0){
+        try { await rpc('api_set_habit_breath', { ...P(), p_habit: saved.id, p_breath: brNow, p_hours: hrsNow.length ? hrsNow : null }); }
+        catch(err){ if (hrsNow.join(',') !== hours0) await rpc('api_set_my_hours', { ...P(), p_habit: saved.id, p_hours: hrsNow.length ? hrsNow : null }).catch(() => {}); }
+      }
       if (kind === 'hacer' && !free && (dmode === 'week' ? rsel.length || (h && (h.remind_days || []).length) : h && (h.remind_days || []).length))
         await saveRemindDays(saved.id, dmode === 'week' ? rsel : []);
       if (!h && kind === 'evitar'){
