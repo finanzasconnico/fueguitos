@@ -1955,7 +1955,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v83'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v84'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -5167,6 +5167,7 @@ function shareInvite(g){
   const link = inviteLink(g.code);
   const pair = g.pair || ((S.me.groups || []).find(x => x.id === g.id) || {}).pair;
   const text = pair ? '¿Hacemos una racha de a dos en Fueguitos? 🔥 Cada día que anotamos los dos, suma. Si uno falla, se corta para los dos.'
+    : g.focus ? `Sumate a "${g.name}" en Fueguitos ${g.focus.emoji} Hacemos ${g.focus.name} juntos: la app te avisa cuándo te toca${g.focus.breath ? ' y te guía la respiración' : ''}. Entrá con este link, poné tu nombre y quedás adentro.`
     : `Sumate a "${g.name}" en Fueguitos 🔥 Anotamos deporte y lectura todos los días y nos cuidamos la racha.`;
   const el = openSheet(`
     <h2>${pair ? 'Invitá a tu racha de a dos' : `Invitar a ${esc(g.name)}`}</h2>
