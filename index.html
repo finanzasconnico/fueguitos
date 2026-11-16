@@ -745,6 +745,14 @@ body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);bor
 .post img[data-pid]:not([src]){display:block;width:100%;aspect-ratio:4/5;background:var(--line)}
 .post img[data-pid].in{animation:phin .25s ease-out}
 @keyframes phin{from{opacity:0}to{opacity:1}}
+/* Música para respirar */
+.bplayer{display:block;width:100%;border:0;border-radius:14px;background:var(--line)}
+.bplayer.yt{aspect-ratio:16/9}
+.bplayer.sp{height:152px}
+.breath.running .bplayer.yt{width:42%;margin:0 auto}
+.breath.running .bplayer.sp{height:80px}
+.breath.running .hint{display:none}
+.breath.withm .bstage{width:min(200px,52vw);margin-top:6px}
 /* Respiración guiada: un círculo que crece al inhalar y se achica al exhalar. */
 .breath{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
 .breath h2{margin:0}
@@ -887,6 +895,7 @@ const ERRORS = {
   SIN_MONEDAS: 'Te faltan diamantes. Cada fueguito que anotás suma uno 💎',
   HUEVO: 'Primero tiene que nacer tu fueguito 🥚',
   YA_EMPUJASTE: 'Ya le mandaste un empujón hoy. Mañana podés de nuevo.',
+  LINK_INVALIDO: 'Ese link no anda. Pegá el link completo de Spotify o YouTube (empieza con https://).',
   FOTO_MUY_GRANDE: 'La foto es muy pesada. Probá con otra.',
   SOLO_ADMIN: 'Solo quien administra el grupo puede hacer esto.',
   NO_PERMITIDO: 'No tenés acceso a eso.',
@@ -1946,7 +1955,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v82'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v83'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2274,7 +2283,8 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-11-16b', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-11-16c', title: '✨ Novedades en Fueguitos', items: [
+  '🎵 <b>Respirar con música</b>: quien arma el hábito de respiración puede sumar una canción de Spotify o un video de YouTube. Suena en la pantalla de respirar, y cada uno elige si la escucha y qué técnica usa.',
   '🔍 <b>Buscar amigos</b>: en Amigos tocá Buscar y encontrás a cualquiera por su apodo. Ahora en Amigos ves solo a quienes agregaste; los de un grupo nuevo te aparecen en "Quizás conozcas". Tus amigos de siempre siguen ahí.',
   '🌬️ <b>Respiración guiada</b>: creá el hábito "Respirar" y elegí la técnica (cuadrada, 4-7-8 o coherente). Te avisamos a las horas que elijas y un círculo te guía cada respiración.',
   '⭐ <b>Hábito principal del grupo</b>: quien arma el grupo elige uno, y todos ven cuánto lo hicieron entre todos en el día. Ideal para un grupo de respiración o de lectura.',
@@ -2629,20 +2639,56 @@ const BREATH = {
 const BREATH_TXT = { in: 'Inhalá', hold: 'Retené', out: 'Exhalá', rest: 'Retené' };
 const hoursText = (hs) => !hs || !hs.length ? '' : hs.length === 1 ? `a las ${hs[0]} h` : `a las ${hs.slice(0, -1).join(', ')} y ${hs[hs.length - 1]} h`;
 const sameHours = (a, b) => (a || []).join(',') === (b || []).join(',');
+// Música para respirar: Spotify y YouTube suenan adentro de la app; cualquier otro link se abre aparte.
+function mediaEmbed(url){
+  try {
+    const u = new URL(url); let m;
+    if (/(^|\.)youtube\.com$/.test(u.hostname) || u.hostname === 'youtu.be'){
+      const id = u.hostname === 'youtu.be' ? u.pathname.slice(1, 12) : (u.searchParams.get('v') || (u.pathname.match(/^\/(?:shorts|embed|live)\/([\w-]{11})/) || [])[1]);
+      if (/^[\w-]{11}$/.test(id || '')) return { kind: 'yt', src: `https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&playsinline=1&rel=0` };
+    }
+    if (u.hostname === 'open.spotify.com' && (m = u.pathname.match(/^\/(?:intl-[a-z-]+\/)?(track|album|playlist|episode|show)\/([A-Za-z0-9]{10,40})/)))
+      return { kind: 'sp', src: `https://open.spotify.com/embed/${m[1]}/${m[2]}` };
+  } catch(e){}
+  return null;
+}
+const mediaName = (url) => /spotify/i.test(url || '') ? 'Spotify' : /youtu/i.test(url || '') ? 'YouTube' : 'el link';
 function breathSheet(h0){
   const h = S.me.habits.find(x => x.id === h0.id) || h0;
-  const B = BREATH[h.breath] || BREATH.cuadrada;
-  const total = B.steps.reduce((a, [, s]) => a + s, 0) * B.cycles;
+  // La técnica viene sugerida por quien armó el hábito; cada uno puede elegir otra (queda guardada en su celu).
+  let tec = LS.get('fueguitos_tec_' + h.id) || h.breath || 'cuadrada'; if (!BREATH[tec]) tec = 'cuadrada';
+  const media = h.media && /^https:\/\//.test(h.media) ? h.media : null, emb = media && mediaEmbed(media);
+  let music = !!media && LS.get('fueguitos_mus_' + h.id) !== '0';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const el = openSheet(`<div class="breath ${reduce ? 'still' : ''}">
+  const el = openSheet(`<div class="breath ${reduce ? 'still' : ''} ${media ? 'withm' : ''}">
     <h2>${esc(h.emoji)} ${esc(h.name)}</h2>
-    <p class="muted" style="margin:0">${esc(B.t)}: ${esc(B.d)}</p>
+    <div id="b-pre" class="stack" style="width:100%;gap:10px">
+      <div class="chips" style="margin:0;justify-content:center">${Object.entries(BREATH).map(([k, v]) => `<button type="button" class="chip" data-tec="${k}" aria-pressed="false">${v.t}${k === h.breath ? ' ★' : ''}</button>`).join('')}</div>
+      <p class="muted small" id="b-desc" style="margin:0"></p>
+      ${media ? `<label class="row small" style="gap:8px;justify-content:center"><input type="checkbox" id="b-mus" ${music ? 'checked' : ''}> 🎵 Con música de ${mediaName(media)}</label>` : ''}
+    </div>
+    <div id="b-player" style="width:100%"></div>
     <div class="bstage" aria-hidden="true"><div class="borb" id="b-orb"></div><div class="bring"></div></div>
     <div class="bphase" id="b-ph" aria-live="polite">Ponete cómodo</div>
-    <div class="bcount num" id="b-n">${Math.ceil(total / 60)} min</div>
+    <div class="bcount num" id="b-n"></div>
     <div class="stack" id="b-act"><button class="btn" id="b-go">Empezar</button>${h.goal && !h.done_today ? '<button class="link" id="b-skip">Ya la hice sola, anotarla</button>' : ''}</div>
   </div>`);
-  const orb = $('#b-orb', el), ph = $('#b-ph', el), num = $('#b-n', el);
+  const orb = $('#b-orb', el), ph = $('#b-ph', el), num = $('#b-n', el), pl = $('#b-player', el);
+  const B = () => BREATH[tec], total = () => B().steps.reduce((a, [, s]) => a + s, 0) * B().cycles;
+  const paintTec = () => {
+    el.querySelectorAll('[data-tec]').forEach(b => { b.classList.toggle('on', b.dataset.tec === tec); b.setAttribute('aria-pressed', b.dataset.tec === tec); });
+    $('#b-desc', el).textContent = B().d + (tec === h.breath ? ' ★ Es la que sugiere quien armó el hábito.' : '');
+    num.textContent = `${Math.ceil(total() / 60)} min`;
+  };
+  const paintPlayer = () => {
+    if (!music){ pl.innerHTML = ''; return; }
+    pl.innerHTML = emb ? `<iframe class="bplayer ${emb.kind}" src="${emb.src}" title="Música para respirar" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy"></iframe>
+        ${emb.kind === 'sp' ? '<p class="hint" style="margin:4px 0 0">Tocá ▶ en la música y después Empezar.</p>' : ''}`
+      : `<a class="btn ghost" href="${esc(media)}" target="_blank" rel="noopener">🎵 Abrir la música</a><p class="hint" style="margin:4px 0 0">Se abre aparte. Dale play y volvé para respirar.</p>`;
+  };
+  el.querySelectorAll('[data-tec]').forEach(b => b.onclick = () => { tec = b.dataset.tec; LS.set('fueguitos_tec_' + h.id, tec); paintTec(); });
+  const mus = $('#b-mus', el); if (mus) mus.onchange = () => { music = mus.checked; LS.set('fueguitos_mus_' + h.id, music ? '1' : '0'); paintPlayer(); };
+  paintTec(); paintPlayer();
   let timers = [];
   const alive = () => el.isConnected;
   const finish = async () => {
@@ -2655,10 +2701,14 @@ function breathSheet(h0){
     await breathDone(h);
   };
   const run = () => {
+    $('#b-pre', el).style.display = 'none'; el.querySelector('.breath').classList.add('running');
+    // YouTube arranca con el mismo toque; Spotify se maneja desde su reproductor.
+    const fr = pl.querySelector('iframe.yt'); if (fr) try { fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*'); } catch(e){}
     $('#b-act', el).innerHTML = '<button class="link" id="b-stop">Cortar acá</button>';
     $('#b-stop', el).onclick = () => { timers.forEach(clearTimeout); closeSheet(); };
-    let t = 0, left = total;
-    for (let c = 0; c < B.cycles; c++) for (const [p, s] of B.steps){
+    $('.bstage', el).scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    let t = 0;
+    for (let c = 0; c < B().cycles; c++) for (const [p, s] of B().steps){
       timers.push(setTimeout(() => {
         if (!alive()) return;
         orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p];
@@ -5239,7 +5289,9 @@ function habitEditor(h, groupId = null, after){
         <label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" id="h-remind" ${h && h.remind_day ? 'checked' : ''}> 🔔 Avisarme durante el día si vengo atrasado</label>
         <div id="h-hrs" style="margin-top:8px"><div class="hint" style="margin:0 0 6px">¿A qué hora? Si no elegís, a las 11, 15 y 19 h. ${groupId || (h && h.group_id) ? 'Es la sugerencia para el grupo: cada uno puede cambiar los suyos.' : ''}</div>${hourChips(hsel)}</div>
         <div class="field" style="margin-top:12px"><span>🌬️ Respiración guiada (opcional)</span><div class="chips" style="margin:0">${[['', 'No'], ...Object.entries(BREATH).map(([k, v]) => [k, v.t])].map(([k, t]) => `<button type="button" class="chip" data-br="${k}">${t}</button>`).join('')}</div>
-          <div class="hint" id="h-br-hint">Suma un botón "Respirar ahora" que guía cada respiración con un círculo que crece y se achica.</div></div></div>
+          <div class="hint" id="h-br-hint">Suma un botón "Respirar ahora" que guía cada respiración con un círculo que crece y se achica.</div>
+          <div id="h-med-box" style="margin-top:10px"><input class="input" id="h-med" type="url" inputmode="url" maxlength="400" autocomplete="off" autocapitalize="none" placeholder="🎵 Link de Spotify o YouTube (opcional)" value="${esc(h && h.media ? h.media : '')}">
+            <div class="hint">Una música o un audio para acompañar. Suena en la pantalla de respirar; cada uno elige si la quiere escuchar.</div></div></div></div>
       <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo anoto al acostarme (o a la mañana siguiente)</label>
         <div class="hint">Para no agarrar el celu antes de dormir. Al otro día la app te pregunta "¿Anoche cumpliste?" y contestás con un toque.</div></div>
       <div class="field" id="h-dl-box"><span>¿Tiene hora límite? (opcional)</span>
@@ -5271,6 +5323,7 @@ function habitEditor(h, groupId = null, after){
     $('#h-noice', el).style.display = kind === 'evitar' ? '' : 'none';
     $('#h-hrs', el).style.display = $('#h-remind', el).checked ? '' : 'none';
     el.querySelectorAll('[data-br]').forEach(b => b.classList.toggle('on', b.dataset.br === (breath || '')));
+    $('#h-med-box', el).style.display = breath ? '' : 'none';
     $('#h-br-hint', el).textContent = breath ? BREATH[breath].d : 'Suma un botón "Respirar ahora" que guía cada respiración con un círculo que crece y se achica.';
     if (kind === 'hacer' && free){ $('#h-ices', el).style.display = $('#h-rule', el).style.display = 'none'; $('#h-next-box', el).style.display = $('#h-dl-box', el).style.display = 'none'; }
     $('#h-name', el).placeholder = kind === 'evitar' ? 'Ej: Sin Instagram, dejar de fumar' : 'Ej: Tomar agua';
@@ -5353,6 +5406,11 @@ function habitEditor(h, groupId = null, after){
         await rpc('api_set_habit_rules', { ...P(), p_habit: saved.id, p_days: dmode === 'week' ? [0, 1, 2, 3, 4, 5, 6] : days.sort(), p_rest: dmode === 'week' ? 7 - times : 0 });
       const goalOk = kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2;
       const hrsNow = goalOk && $('#h-remind', el).checked ? hsel : [], brNow = goalOk ? breath : null;
+      const medNow = brNow ? ($('#h-med', el).value.trim() || null) : null;
+      if (medNow !== ((h && h.media) || null)){
+        if (medNow && !/^https:\/\//.test(medNow)){ toast(ERRORS.LINK_INVALIDO || 'Ese link no anda', 4000); }
+        else await rpc('api_set_habit_media', { ...P(), p_habit: saved.id, p_url: medNow }).catch(err => toast(err.message, 4000));
+      }
       if (hrsNow.join(',') !== hours0 || brNow !== breath0){
         try { await rpc('api_set_habit_breath', { ...P(), p_habit: saved.id, p_breath: brNow, p_hours: hrsNow.length ? hrsNow : null }); }
         catch(err){ if (hrsNow.join(',') !== hours0) await rpc('api_set_my_hours', { ...P(), p_habit: saved.id, p_hours: hrsNow.length ? hrsNow : null }).catch(() => {}); }
