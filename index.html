@@ -1941,7 +1941,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v80'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v81'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2269,7 +2269,8 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-11-16', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-11-16b', title: '✨ Novedades en Fueguitos', items: [
+  '🔍 <b>Buscar amigos</b>: en Amigos tocá Buscar y encontrás a cualquiera por su apodo. Ahora en Amigos ves solo a quienes agregaste; los de un grupo nuevo te aparecen en "Quizás conozcas". Tus amigos de siempre siguen ahí.',
   '🌬️ <b>Respiración guiada</b>: creá el hábito "Respirar" y elegí la técnica (cuadrada, 4-7-8 o coherente). Te avisamos a las horas que elijas y un círculo te guía cada respiración.',
   '⭐ <b>Hábito principal del grupo</b>: quien arma el grupo elige uno, y todos ven cuánto lo hicieron entre todos en el día. Ideal para un grupo de respiración o de lectura.',
   '🔗 <b>Amigos al toque</b>: en Agregar un amigo mandá tu link. Quien entra con él queda tu amigo, aunque todavía no tenga la app.',
@@ -2283,7 +2284,7 @@ const NEWS = { id: '2026-11-16', title: '✨ Novedades en Fueguitos', items: [
   '📌 <b>En mi perfil</b>: el libro que estás leyendo o un récord tuyo, en Perfil → En mi perfil. Lo ven tus amigos y todos tus grupos.',
   '🔢 En el grupo, a los que van <b>X veces por semana</b> se les ve cuántas les faltan, y ya no aparecen en "faltan" si todavía tienen días.',
   '💰 <b>Cuánto te ahorrás</b>: en un hábito de dejar algo (como Sin fumar), poné cuánto fumabas y lo que sale el atado, y te mostramos la plata que vas ahorrando. Lo ves solo vos.',
-  '👥 <b>Amigos</b>: en Grupo → 👥 Amigos ves a todos tus amigos, un ranking de rachas y su perfil. Los de tus grupos ya están; al resto lo agregás con su apodo.',
+  '👥 <b>Amigos</b>: en Grupo → 👥 Amigos ves a todos tus amigos, un ranking de rachas y su perfil. Los buscás por su apodo y los agregás.',
   '📩 Desde el perfil de un amigo lo <b>invitás a tus grupos</b> o arman una <b>racha de a dos</b>. Y si un grupo es 🔓 abierto, podés pedir sumarte.',
   '🔢 <b>Veces por semana</b>: en Perfil → Mis hábitos → 📅 Mis días elegís, por ejemplo, <b>3 veces por semana</b>, cualquier día. Mientras llegues, la racha sigue.',
   '↩️ <b>¿Te olvidaste de anotar ayer?</b> Ahora lo anotás desde la tarjeta, y si se te había cortado la racha, <b>la recuperás</b>.',
@@ -3526,7 +3527,7 @@ const gName = (g) => { const m = ((S.me && S.me.groups) || []).find(x => x.id ==
 function renderHome(){
   const H = S.home, F = S.friends;
   const reqs = F && F.incoming.length ? `<button class="week gst" data-friends style="width:100%;text-align:left"><b class="small">${F.incoming.length === 1 ? '1 persona te quiere agregar' : `${F.incoming.length} personas te quieren agregar`}</b> <span class="small muted">· Ver ›</span></button>` : '';
-  const top = `<div class="top"><h1>Amigos</h1><button class="btn sm ice" id="fh-add" style="flex:none">+ Agregar</button></div>`;
+  const top = `<div class="top"><h1>Amigos</h1><button class="btn sm ice" id="fh-add" style="flex:none">Buscar</button></div>`;
   if (!H){
     $('#main').innerHTML = `${top}${reqs}<div class="spinner"></div>`;
     bindChips(); $('#fh-add').onclick = addFriendSheet; if (S.home === undefined){ S.home = null; refreshGroup(); } return;
@@ -3727,10 +3728,12 @@ function benchBackSheet(G){
   };
 }
 // Amigos de tus amigos, en el grupo: los 3 con más amigos en común, y "Ver más" lleva a Amigos.
+// Por qué te sugerimos a alguien: primero si comparten grupo, después los amigos en común.
+const suggWhy = (u) => u.grp ? `De tu grupo ${esc(u.grp)}` : u.mutual > 1 ? `${u.mutual} amigos en común` : u.via ? `Amigo de ${esc(u.via)}` : '';
 function suggestCard(){
   const l = (S.friends && S.friends.suggest) || []; if (!l.length) return '';
   return `<div class="week gst" id="sugg"><div class="row between" style="align-items:baseline;margin-bottom:4px"><b class="small">Quizás conozcas</b><button class="link small" data-friends>Ver más ›</button></div>
-    ${l.slice(0, 3).map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 32)}<div><b>${esc(u.nick)}</b><div class="small muted">${u.mutual > 1 ? `${u.mutual} amigos en común` : `amigo de ${esc(u.via)}`}</div></div></div>
+    ${l.slice(0, 3).map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 32)}<div><b>${esc(u.nick)}</b><div class="small muted">${suggWhy(u)}</div></div></div>
       <button class="btn sm ghost" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>`;
 }
 function grupoRacha(G, members){
@@ -4608,14 +4611,14 @@ async function reactSheet(photoId){
 }
 
 /* ============ Amigos ============ */
-// Amigos = los que comparten un grupo con vos (automático) + los que agregaste con su apodo.
+// Amigos = los que agregaste (o te agregaron). Compartir un grupo no te hace amigo: aparecen en "Quizás conozcas".
 // La lista de todos tus amigos se abre desde Perfil (el numerito, como en Instagram) o desde Amigos.
 const friendsOpen = () => (S.tab === 'grupo' && S.gview === 'amigos') || (S.tab === 'perfil' && S.pview === 'amigos');
 async function renderFriends(){
   const paint = () => {
     const F = S.friends, gs = S.me.groups;
     const chips = '';
-    $('#main').innerHTML = `${S.tab === 'perfil' ? '<button class="link" data-pback style="margin:0 0 6px;font-weight:800">‹ Perfil</button>' : backToFriends()}<div class="top"><h1>${F ? `${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}` : 'Amigos'}</h1><button class="btn sm ice" id="fr-add">+ Agregar</button></div>${chips}
+    $('#main').innerHTML = `${S.tab === 'perfil' ? '<button class="link" data-pback style="margin:0 0 6px;font-weight:800">‹ Perfil</button>' : backToFriends()}<div class="top"><h1>${F ? `${F.friends.length} ${F.friends.length === 1 ? 'amigo' : 'amigos'}` : 'Amigos'}</h1><button class="btn sm ice" id="fr-add">Buscar amigos</button></div>${chips}
       ${!F ? '<div class="spinner"></div>' : `
       ${F.incoming.length ? `<div class="week gst"><div class="small" style="font-weight:700;margin-bottom:6px">Te quieren agregar</div>${F.incoming.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<b>${esc(u.nick)}</b></div>
         <div class="row" style="gap:6px"><button class="btn sm" data-fra="${u.id}">Aceptar</button><button class="btn sm ghost" data-frr="${u.id}">No</button></div></div>`).join('')}</div>` : ''}
@@ -4625,7 +4628,7 @@ async function renderFriends(){
         <div class="mh"><span class="m ${u.done_today ? 'done' : ''}">🔥 ${u.top}</span></div></div>`).join('')}</div>`
         : '<div class="empty">Todavía no tenés amigos en la app. Agregalos con su apodo, o invitalos a tu grupo y quedan como amigos solos.</div>'}
       ${(F.suggest || []).length ? `<div class="section-title" style="margin-top:18px"><h2>Quizás conozcas</h2><span class="small muted">Amigos de tus amigos</span></div>
-        <div class="card">${F.suggest.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<div><b>${esc(u.nick)}</b><div class="small muted">${u.mutual > 1 ? `${u.mutual} amigos en común` : `amigo de ${esc(u.via)}`}</div></div></div>
+        <div class="card">${F.suggest.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(u.nick, u.avatar, 36)}<div><b>${esc(u.nick)}</b><div class="small muted">${suggWhy(u)}</div></div></div>
           <button class="btn sm ghost" data-fadd="${esc(u.nick)}">+ Agregar</button></div>`).join('')}</div>` : ''}
       ${F.outgoing.length ? `<p class="small muted">⏳ Esperando respuesta: ${F.outgoing.map(u => esc(u.nick)).join(', ')}</p>` : ''}
       <p class="small muted">Los que están en un grupo con vos ya son tus amigos. Tocá a cualquiera para ver sus rachas, invitarlo a tus grupos o armar una racha de a dos.</p>
@@ -4668,21 +4671,30 @@ async function shareFriendLink(){
   else location.href = 'https://wa.me/?text=' + encodeURIComponent(text);
 }
 const friendInviteText = () => `Sumate a Fueguitos 🔥 Anotamos nuestros hábitos todos los días y nos cuidamos la racha entre amigos. Entrá con este link y quedamos amigos: ${PUBLIC_URL}?amigo=${S.me.user.id}`;
+// Buscar perfiles por apodo, como en Instagram. Amigo es solo a quien agregás (compartir un grupo no alcanza).
 function addFriendSheet(){
-  const el = openSheet(`<h2>👥 Agregar un amigo</h2><p class="muted">Poné su apodo de Fueguitos. Le llega tu solicitud y, cuando acepta, son amigos.</p>
-    <div class="stack section"><input class="input" id="af-n" maxlength="30" autocomplete="off" autocapitalize="none" placeholder="Su apodo"><button class="btn" id="af-ok">Mandar solicitud</button></div>
-    <div class="section"><p class="small muted" style="margin:0 0 8px">¿No sabés su apodo o todavía no tiene la app? Mandale tu link: cuando entra, quedan amigos al toque.</p><button class="btn ghost" id="af-link">🔗 Mandar mi link</button></div>`);
+  const el = openSheet(`<h2>Buscar amigos</h2><p class="muted">Buscá por apodo y mandale solicitud. Cuando acepta, lo ves en Amigos.</p>
+    <div class="section"><input class="input" id="af-n" type="search" maxlength="30" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Buscar por apodo" aria-label="Buscar por apodo"></div>
+    <div id="af-res" class="card" style="display:none" aria-live="polite"></div>
+    <div class="section"><p class="small muted" style="margin:0 0 8px">¿Todavía no tiene la app? Mandale tu link: cuando entra, quedan amigos al toque.</p><button class="btn ghost" id="af-link">🔗 Mandar mi link</button></div>`);
   $('#af-link', el).onclick = shareFriendLink;
   setTimeout(() => $('#af-n', el).focus(), 250);
-  $('#af-ok', el).onclick = async (e) => {
-    const n = $('#af-n', el).value.trim(); if (!n){ toast('Poné su apodo'); return; }
-    e.target.disabled = true;
-    try {
-      const r = await rpc('api_friend_request', { ...P(), p_nick: n });
-      closeSheet(); toast(r.accepted ? `🤝 ¡Ya son amigos con ${r.nick}!` : `👋 Le mandamos la solicitud a ${r.nick}`, 3500);
-      S.friends = await rpc('api_friends', P()); renderMain();
-    } catch(err){ toast(err.message, 3500); e.target.disabled = false; }
+  const box = $('#af-res', el); let seq = 0, tm;
+  const relBtn = (u) => u.rel === 'amigo' ? `<button class="btn sm ghost" data-fo="${u.id}">Ver</button>`
+    : u.rel === 'enviada' ? '<span class="pill">Pedido ✓</span>'
+    : u.rel === 'recibida' ? `<button class="btn sm" data-fadd="${esc(u.nick)}">Aceptar</button>` : `<button class="btn sm" data-fadd="${esc(u.nick)}">Agregar</button>`;
+  const search = async () => {
+    const q = $('#af-n', el).value.trim(), my = ++seq;
+    if (q.length < 2){ box.style.display = 'none'; return; }
+    let l; try { l = await rpc('api_search_users', { ...P(), p_q: q }); } catch(e){ if (my === seq){ box.style.display = ''; box.innerHTML = `<p class="muted" style="margin:0">${esc(e.message)}</p>`; } return; }
+    if (my !== seq || !el.isConnected) return;
+    box.style.display = '';
+    box.innerHTML = l.length ? l.map(u => `<div class="hrow"><div class="row" style="gap:10px;align-items:center;min-width:0">${userAv(u.nick, u.avatar, 40)}<div style="min-width:0"><b>${esc(u.nick)}</b><div class="small muted">${u.rel === 'amigo' ? 'Ya son amigos' : u.rel === 'recibida' ? 'Te quiere agregar' : suggWhy(u)}</div></div></div>${relBtn(u)}</div>`).join('')
+      : `<p class="muted" style="margin:0">No encontramos a nadie con "${esc(q)}". Si todavía no tiene la app, mandale tu link.</p>`;
+    bindFriendAdd(box, () => { if (friendsOpen()) renderMain(); });
+    box.querySelectorAll('[data-fo]').forEach(b => b.onclick = () => friendSheet(b.dataset.fo));
   };
+  $('#af-n', el).oninput = () => { clearTimeout(tm); tm = setTimeout(search, 250); };
 }
 // "Amigos de X": los que ya son tus amigos se tocan para ver su perfil; al resto lo agregás con un toque.
 // Agregar como amigo a alguien que hoy solo ves por compartir un grupo: así siguen siendo amigos aunque alguno salga.
@@ -4690,7 +4702,7 @@ function addMeHTML(p){
   if (p.manual) return '';
   const btn = p.pending === 'enviada' ? '<span class="pill">Pedido ✓</span>'
     : `<button class="btn sm ice" data-fadd="${esc(p.nick)}">${p.pending === 'recibida' ? 'Aceptar amistad' : '+ Agregar a mis amigos'}</button>`;
-  return `<div class="addme"><div class="small muted">${p.pending === 'recibida' ? `${esc(p.nick)} te quiere agregar.` : 'Lo ves porque comparten un grupo. Si lo agregás, siguen siendo amigos aunque alguno salga.'}</div>${btn}</div>`;
+  return `<div class="addme"><div class="small muted">${p.pending === 'recibida' ? `${esc(p.nick)} te quiere agregar.` : 'Comparten un grupo, pero todavía no son amigos. Si lo agregás, lo ves en Amigos.'}</div>${btn}</div>`;
 }
 function friendsOfHTML(p){
   const l = p.friends || [];
