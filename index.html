@@ -777,6 +777,7 @@ body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);bor
 .breath.still .borb[data-p="out"],.breath.still .borb[data-p="rest"]{opacity:.55}
 .bphase{font-size:26px;font-weight:800;letter-spacing:-.01em;min-height:32px}
 .bcount{font-size:44px;color:var(--muted);min-height:44px}
+.bcount small{font-size:20px;font-weight:700;margin-left:4px}
 .breath #b-act{width:100%;margin-top:6px}
 .habit .hrs{display:block;margin-top:6px;text-align:left}
 .chips.hours{flex-wrap:wrap}
@@ -1101,7 +1102,7 @@ async function afterLogin(){
   loadAvatar();
   if (S.rutina === 'tiempo'){ S.rutina = null; runTime(); }
   if (S.noche){ const h = S.me.habits.find(x => x.id === S.noche); S.noche = null; if (h && h.next_day) quickToggle(h); }
-  if (S.respirar){ const h = S.me.habits.find(x => x.id === S.respirar); S.respirar = null; if (h) breathSheet(h); }
+  if (S.respirar){ const h = S.me.habits.find(x => x.id === S.respirar); S.respirar = null; if (h) breathSheet(h, { auto: true }); }
   if (S.quick){
     const h = S.me.habits.find(x => x.name.toLowerCase() === S.quick.toLowerCase());
     S.quick = null;
@@ -1966,7 +1967,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v85'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v86'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2729,7 +2730,8 @@ function timerSheet(h0){
   };
 }
 const mediaName = (url) => /spotify/i.test(url || '') ? 'Spotify' : /youtu/i.test(url || '') ? 'YouTube' : 'el link';
-function breathSheet(h0){
+// Desde el aviso (auto) arranca sola después de 3 segundos; se puede empezar ya o dejarlo para después.
+function breathSheet(h0, opts = {}){
   const h = S.me.habits.find(x => x.id === h0.id) || h0;
   // La técnica viene sugerida por quien armó el hábito; cada uno puede elegir otra (queda guardada en su celu).
   let tec = LS.get('fueguitos_tec_' + h.id) || h.breath || 'cuadrada'; if (!BREATH[tec]) tec = 'cuadrada';
@@ -2781,7 +2783,9 @@ function breathSheet(h0){
     vibrate([20, 40, 20]);
     await breathDone(h);
   };
+  let started = false;
   const run = () => {
+    if (started) return; started = true;
     $('#b-pre', el).style.display = 'none'; el.querySelector('.breath').classList.add('running');
     // YouTube arranca con el mismo toque; Spotify se maneja desde su reproductor.
     const fr = pl.querySelector('iframe.yt'); if (fr) try { fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*'); } catch(e){}
@@ -2797,12 +2801,22 @@ function breathSheet(h0){
       let x = e % cyc, i = 0; while (x >= steps[i][1] * 1000){ x -= steps[i][1] * 1000; i++; }
       const idx = Math.floor(e / cyc) * steps.length + i, [p, s] = steps[i];
       if (idx !== last){ last = idx; orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p]; vibrate(10); }
-      num.textContent = Math.ceil((s * 1000 - x) / 1000);
+      num.innerHTML = `${Math.min(s, Math.floor(x / 1000) + 1)}<small> de ${s}</small>`;
       $('#b-clk', el).textContent = `Quedan ${fmtClock(Math.ceil((dur - e) / 1000))}`;
     };
     keepAwake(true); iv = setInterval(tick, 200); tick();
   };
   $('#b-go', el).onclick = run;
+  if (opts.auto){
+    $('#b-go', el).textContent = 'Empezar ya';
+    $('#b-act', el).insertAdjacentHTML('beforeend', '<button class="link" id="b-later">Ahora no</button>');
+    $('#b-later', el).onclick = closeSheet;
+    let n = 3; ph.textContent = `Arrancamos en ${n}…`;
+    const it = setInterval(() => {
+      if (!alive() || started){ clearInterval(it); return; }
+      if (--n <= 0){ clearInterval(it); run(); } else ph.textContent = `Arrancamos en ${n}…`;
+    }, 1000);
+  }
   const sk = $('#b-skip', el); if (sk) sk.onclick = () => { closeSheet(); breathDone(h); };
 }
 // Suma una respiración sin sacarte de la pestaña en la que estás.
