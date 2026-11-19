@@ -897,6 +897,32 @@ function beep(freq=880, dur=0.18, times=1){
   } catch(e){}
 }
 
+// Campana tipo cuenco para marcar los tiempos de la respiración: grave al exhalar, más aguda al inhalar,
+// un toque suave al retener y tres al terminar. Se arma con parciales de cuenco que se apagan despacio.
+function bong(kind = 'in'){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (kind === 'none') return;
+    const ring = (f, vol, len, at = 0) => {
+      const t0 = audioCtx.currentTime + at, out = audioCtx.createGain();
+      out.connect(audioCtx.destination);
+      out.gain.setValueAtTime(0.0001, t0); out.gain.exponentialRampToValueAtTime(vol, t0 + 0.012); out.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+      [[1, 1], [2.76, .35], [5.4, .12]].forEach(([r, a]) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f * r; g.gain.value = a; o.connect(g); g.connect(out);
+        o.start(t0); o.stop(t0 + len + .05);
+      });
+    };
+    if (kind === 'in') ring(392, .35, 3);
+    else if (kind === 'out') ring(262, .35, 3.6);
+    else if (kind === 'end') { ring(392, .3, 3); ring(330, .3, 3, .9); ring(262, .32, 4, 1.8); }
+    else ring(523, .12, 1.4);
+  } catch(e){}
+}
+const bongOn = () => LS.get('fueguitos_bong') !== '0';
+const audioReady = () => !!audioCtx && audioCtx.state === 'running';
+
 /* ============ API ============ */
 const ERRORS = {
   SESION_INVALIDA: 'Tu sesión no existe más. Volvé a entrar con tu apodo.',
@@ -1967,7 +1993,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v86'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v87'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2744,6 +2770,7 @@ function breathSheet(h0, opts = {}){
       <div class="chips" style="margin:0;justify-content:center">${Object.entries(BREATH).map(([k, v]) => `<button type="button" class="chip" data-tec="${k}" aria-pressed="false">${v.t}${k === h.breath ? ' ★' : ''}</button>`).join('')}</div>
       <p class="muted small" id="b-desc" style="margin:0"></p>
       ${media ? `<label class="row small" style="gap:8px;justify-content:center"><input type="checkbox" id="b-mus" ${music ? 'checked' : ''}> 🎵 Con música de ${mediaName(media)}</label>` : ''}
+      <label class="row small" style="gap:8px;justify-content:center"><input type="checkbox" id="b-snd" ${bongOn() ? 'checked' : ''}> 🔔 Sonido de campana para marcar los tiempos</label>
       ${durPicker(myDur(h), h.timer || 60, 'b-adj')}
     </div>
     <div id="b-player" style="width:100%"></div>
@@ -2768,6 +2795,9 @@ function breathSheet(h0, opts = {}){
       : `<a class="btn ghost" href="${esc(media)}" target="_blank" rel="noopener">🎵 Abrir la música</a><p class="hint" style="margin:4px 0 0">Se abre aparte. Dale play y volvé para respirar.</p>`;
   };
   el.querySelectorAll('[data-tec]').forEach(b => b.onclick = () => { tec = b.dataset.tec; LS.set('fueguitos_tec_' + h.id, tec); paintTec(); });
+  $('#b-snd', el).onchange = (e) => { LS.set('fueguitos_bong', e.target.checked ? '1' : '0'); if (e.target.checked) bong('hold'); };
+  // El celu solo deja sonar después de un toque: cualquier toque en la pantalla destraba el sonido.
+  el.addEventListener('pointerdown', () => { if (bongOn() && !audioReady()) bong('none'); const hh = $('#b-tap', el); if (hh) hh.remove(); });
   const mus = $('#b-mus', el); if (mus) mus.onchange = () => { music = mus.checked; LS.set('fueguitos_mus_' + h.id, music ? '1' : '0'); paintPlayer(); };
   bindDurPicker(el, h, h.timer || 60, () => secs, (v) => { secs = v; paintTec(); });
   paintTec(); paintPlayer();
@@ -2775,7 +2805,7 @@ function breathSheet(h0, opts = {}){
   const alive = () => el.isConnected;
   const finish = async () => {
     if (!alive()) return;
-    clearInterval(iv); keepAwake(false); beep(660, .15);
+    clearInterval(iv); keepAwake(false); if (bongOn()) bong('end'); else beep(660, .15);
     ph.textContent = 'Listo 🌬️'; num.textContent = ''; $('#b-clk', el).textContent = ''; orb.style.transitionDuration = '1.2s'; orb.dataset.p = 'rest';
     const goal = h.goal || 0, before = h.done_today ? goal : Math.min(h.count_today || 0, goal);
     $('#b-act', el).innerHTML = `<p class="muted" style="margin:0;text-align:center">${goal ? `Vas ${Math.min(goal, before + 1)} de ${goal} hoy.` : 'Bien ahí.'} Notá cómo quedó el cuerpo.</p><button class="btn" id="b-ok">Listo</button>`;
@@ -2789,7 +2819,7 @@ function breathSheet(h0, opts = {}){
     $('#b-pre', el).style.display = 'none'; el.querySelector('.breath').classList.add('running');
     // YouTube arranca con el mismo toque; Spotify se maneja desde su reproductor.
     const fr = pl.querySelector('iframe.yt'); if (fr) try { fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*'); } catch(e){}
-    $('#b-act', el).innerHTML = '<button class="link" id="b-stop">Cortar acá</button>';
+    $('#b-act', el).innerHTML = `${bongOn() && !audioReady() ? '<p class="hint" id="b-tap" style="margin:0;text-align:center">🔔 Tocá la pantalla para escuchar la campana.</p>' : ''}<button class="link" id="b-stop">Cortar acá</button>`;
     $('#b-stop', el).onclick = () => { clearInterval(iv); keepAwake(false); closeSheet(); };
     $('.bstage', el).scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
     // Va por reloj, no por pasos encadenados: si el celu se frena un momento, igual termina a tiempo.
@@ -2800,7 +2830,7 @@ function breathSheet(h0, opts = {}){
       const e = Date.now() - t0; if (e >= dur){ finish(); return; }
       let x = e % cyc, i = 0; while (x >= steps[i][1] * 1000){ x -= steps[i][1] * 1000; i++; }
       const idx = Math.floor(e / cyc) * steps.length + i, [p, s] = steps[i];
-      if (idx !== last){ last = idx; orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p]; vibrate(10); }
+      if (idx !== last){ last = idx; orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p]; vibrate(10); if (bongOn()) bong(p); }
       num.innerHTML = `${Math.min(s, Math.floor(x / 1000) + 1)}<small> de ${s}</small>`;
       $('#b-clk', el).textContent = `Quedan ${fmtClock(Math.ceil((dur - e) / 1000))}`;
     };
