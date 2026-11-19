@@ -1993,7 +1993,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v87'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v88'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2906,6 +2906,20 @@ function bindFocusCard(G){
   const b = $('[data-fbreath]'); if (b) b.onclick = () => breathSheet(S.me.habits.find(x => x.id === f.id));
   const c = $('[data-fcount]'); if (c) c.onclick = () => breathDone(S.me.habits.find(x => x.id === f.id));
   const a = $('[data-fact]'); if (a) a.onclick = () => { const h = G.habits.find(x => x.id === f.id); if (h) openActivateSheet(h, false, async () => { S.me = await rpc('api_me', P()); await loadGroup(); renderGrupo(); }); };
+}
+// Pasar el grupo a otra persona: queda como administradora y puede cambiar hábitos, horarios y música.
+function adminPicker(G){
+  const others = G.members.filter(m => !m.is_me);
+  const el = openSheet(`<h2>👑 Pasar la administración</h2>
+    <p class="muted">Quien administra puede editar los hábitos del grupo (técnica, horarios, música y temporizador), elegir el hábito principal y aceptar a quienes piden entrar. Vos seguís en el grupo como uno más.</p>
+    <div class="card section">${others.map(m => `<div class="hrow"><div class="row" style="gap:10px;align-items:center">${userAv(m.nick, m.avatar, 36)}<b>${esc(m.nick)}</b></div><button class="btn sm ghost" data-adm="${m.id}">Elegir</button></div>`).join('')}</div>
+    <p class="hint">Si la persona todavía no está, invitala primero con el link del grupo.</p>`);
+  el.querySelectorAll('[data-adm]').forEach(b => b.onclick = () => {
+    const m = others.find(x => x.id === b.dataset.adm);
+    confirmSheet(`¿Pasarle el grupo a ${m.nick}?`, `${m.nick} va a administrar ${G.group.name}. Para volver a administrarlo, te lo tiene que pasar de nuevo.`, 'Pasar la administración', async () => {
+      await rpc('api_transfer_admin', { ...P(), p_group: G.group.id, p_user: m.id }); await loadGroup(); renderGrupo(); toast(`Listo: ahora ${m.nick} administra el grupo 👑`, 3500);
+    });
+  });
 }
 function focusPicker(G){
   const cur = G.group.focus ? G.group.focus.id : null;
@@ -3843,10 +3857,12 @@ function groupSettingsSheet(G){
   const el = openSheet(`<div class="row" style="gap:12px;align-items:center">${groupAvatar(G.group, 48)}<h2 style="margin:0">${esc(gName(G.group))}</h2></div>
     <div class="grid2 section">${G.group.is_admin ? '<button class="btn ghost sm" style="width:100%" id="gs-edit">✏️ Editar grupo</button>' : ''}<button class="btn sm ice" style="width:100%${G.group.is_admin ? '' : ';grid-column:1/-1'}" id="gs-inv">Invitar amigos</button></div>
     ${groupHabitsBlock(G)}
+    ${G.group.is_admin && G.members.some(m => !m.is_me) ? `<div class="section" style="text-align:center"><button class="link" id="gs-admin">👑 Pasar la administración a otra persona</button></div>` : ''}
     ${G.group.is_admin && G.habits.length ? `<div class="section"><button class="btn ghost sm" style="width:100%" id="gs-focus">⭐ ${G.group.focus ? `Hábito principal: ${esc(G.group.focus.name)}` : 'Elegir el hábito principal del grupo'}</button></div>` : ''}
     <div class="section" style="text-align:center"><button class="link danger" id="leave">Salir de ${esc(G.group.name)}</button></div>`);
   const ge = $('#gs-edit', el); if (ge) ge.onclick = () => groupEditor(G);
   const gf = $('#gs-focus', el); if (gf) gf.onclick = () => focusPicker(G);
+  const ga = $('#gs-admin', el); if (ga) ga.onclick = () => adminPicker(G);
   $('#gs-inv', el).onclick = () => shareInvite(G.group);
   const afterG = async () => { await loadGroup(); renderGrupo(); };
   const ha = $('#hab-add', el); if (ha) ha.onclick = () => groupHabitAdd(G);
