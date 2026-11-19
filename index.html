@@ -745,6 +745,17 @@ body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);bor
 .post img[data-pid]:not([src]){display:block;width:100%;aspect-ratio:4/5;background:var(--line)}
 .post img[data-pid].in{animation:phin .25s ease-out}
 @keyframes phin{from{opacity:0}to{opacity:1}}
+/* Temporizador: un anillo que se va llenando y el reloj grande en el medio */
+.tmr{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.tmr h2{margin:0}
+.tring{--p:0;position:relative;width:min(250px,66vw);aspect-ratio:1;display:grid;place-items:center;margin:8px 0}
+.tring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--fire) calc(var(--p) * 1turn), var(--line) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 14px),#000 calc(100% - 13px));mask:radial-gradient(farthest-side,transparent calc(100% - 14px),#000 calc(100% - 13px))}
+.tclock{position:relative;font-size:clamp(56px,17vw,76px);color:var(--ink);font-variant-numeric:tabular-nums}
+.tadj{display:flex;align-items:center;justify-content:center;gap:18px}
+.tadj .num{font-size:30px;min-width:110px}
+.tadj .icon-btn{width:48px;height:48px;font-size:24px;font-weight:800}
+.bclock{font-size:15px;font-weight:700;color:var(--muted);min-height:20px;font-variant-numeric:tabular-nums}
 /* Música para respirar */
 .bplayer{display:block;width:100%;border:0;border-radius:14px;background:var(--line)}
 .bplayer.yt{aspect-ratio:16/9}
@@ -1955,7 +1966,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v84'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v85'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2283,7 +2294,8 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-11-16c', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-11-19', title: '✨ Novedades en Fueguitos', items: [
+  '⏱️ <b>Temporizador</b>: al crear o editar un hábito, en Más opciones elegí un tiempo (ej: respirar 1 min, plancha 1 min, meditar 10). En Hoy tocás ⏱️, cuenta para atrás y al terminar lo anota solo.',
   '🎵 <b>Respirar con música</b>: quien arma el hábito de respiración puede sumar una canción de Spotify o un video de YouTube. Suena en la pantalla de respirar, y cada uno elige si la escucha y qué técnica usa.',
   '🔍 <b>Buscar amigos</b>: en Amigos tocá Buscar y encontrás a cualquiera por su apodo. Ahora en Amigos ves solo a quienes agregaste; los de un grupo nuevo te aparecen en "Quizás conozcas". Tus amigos de siempre siguen ahí.',
   '🌬️ <b>Respiración guiada</b>: creá el hábito "Respirar" y elegí la técnica (cuadrada, 4-7-8 o coherente). Te avisamos a las horas que elijas y un círculo te guía cada respiración.',
@@ -2420,6 +2432,7 @@ function renderHoy(){
   });
   document.querySelectorAll('[data-count]').forEach(b => b.onclick = () => countTap(byId(b.dataset.count), +b.dataset.d));
   document.querySelectorAll('[data-breath]').forEach(b => b.onclick = () => breathSheet(byId(b.dataset.breath)));
+  document.querySelectorAll('[data-timer]').forEach(b => b.onclick = (e) => { e.stopPropagation(); timerSheet(byId(b.dataset.timer)); });
   document.querySelectorAll('[data-hours]').forEach(b => b.onclick = () => hoursSheet(byId(b.dataset.hours)));
   document.querySelectorAll('[data-night-yes]').forEach(b => b.onclick = () => anotarDia(byId(b.dataset.nightYes), addDays(S.me.today, -1)));
   document.querySelectorAll('[data-night-go]').forEach(b => b.onclick = () => quickToggle(byId(b.dataset.nightGo)));
@@ -2603,7 +2616,7 @@ function countCard(h){
       <div class="progress" style="margin-top:8px" role="progressbar" aria-valuemin="0" aria-valuemax="${h.goal}" aria-valuenow="${n}"><i style="width:${Math.round(n / h.goal * 100)}%"></i></div>
       ${done ? less
         : h.breath ? `<div class="nightq"><button type="button" class="btn sm" data-breath="${h.id}">Respirar</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="1" aria-label="Ya hice una de ${esc(h.name)}">Ya la hice</button></div>${n > 0 ? less : ''}`
-        : `<div class="nightq"><button type="button" class="btn sm" data-count="${h.id}" data-d="1" aria-label="Sumar uno a ${esc(h.name)}">+1</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="${h.goal}">Todo ✓</button></div>${n > 0 ? less : ''}`}
+        : `<div class="nightq">${h.timer ? `<button type="button" class="btn sm" data-timer="${h.id}">⏱️ ${fmtDur(myDur(h))}</button>` : ''}<button type="button" class="btn sm ${h.timer ? 'ghost' : ''}" data-count="${h.id}" data-d="1" aria-label="Sumar uno a ${esc(h.name)}">+1</button><button type="button" class="btn sm ghost" data-count="${h.id}" data-d="${h.goal}">Todo ✓</button></div>${n > 0 ? less : ''}`}
       ${!done && h.remind_day && (h.remind_hours || []).length ? `<button type="button" class="link small hrs" data-hours="${h.id}">🔔 Avisos ${hoursText(h.remind_hours)}</button>` : ''}
     </div>
     <div class="check" aria-hidden="true">${done ? CHECK_SVG : ''}</div>
@@ -2652,6 +2665,69 @@ function mediaEmbed(url){
   } catch(e){}
   return null;
 }
+/* ============ Temporizador ============ */
+// Cuenta regresiva para cualquier hábito (respirar 1 min, plancha, meditar). La duración la sugiere
+// quien armó el hábito; cada uno la ajusta y queda guardada en su celu. Al llegar a cero se anota solo.
+const fmtClock = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
+const fmtDur = (s) => s < 60 ? `${s} s` : s % 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s / 60} min`;
+const durStep = (s, d) => { const st = (d < 0 ? s - 1 : s) < 120 ? 15 : (d < 0 ? s - 1 : s) < 600 ? 60 : 300; return Math.max(15, Math.min(7200, s + d * st)); };
+const myDur = (h) => +LS.get('fueguitos_dur_' + h.id) || h.timer || 60;
+let wakeL = null;
+async function keepAwake(on){
+  try {
+    if (on && 'wakeLock' in navigator && !wakeL){ wakeL = await navigator.wakeLock.request('screen'); wakeL.addEventListener('release', () => { wakeL = null; }); }
+    else if (!on && wakeL){ const w = wakeL; wakeL = null; await w.release(); }
+  } catch(e){}
+}
+// Selector de duración: − 1 min + (la sugerida lleva ★).
+const durPicker = (secs, def, id) => `<div class="tadj" id="${id}"><button type="button" class="icon-btn" data-adj="-1" aria-label="Menos tiempo">−</button><b class="num" data-dv>${fmtDur(secs)}</b><button type="button" class="icon-btn" data-adj="1" aria-label="Más tiempo">+</button></div>
+  <p class="hint" data-durh style="margin:0;text-align:center">${secs === def ? '★ El tiempo sugerido' : `Sugerido: ${fmtDur(def)}`}</p>`;
+function bindDurPicker(root, h, def, get, set){
+  root.querySelectorAll('[data-adj]').forEach(b => b.onclick = () => {
+    const v = durStep(get(), +b.dataset.adj); set(v); LS.set('fueguitos_dur_' + h.id, String(v));
+    root.querySelector('[data-dv]').textContent = fmtDur(v);
+    root.querySelector("[data-durh]").textContent = v === def ? '★ El tiempo sugerido' : `Sugerido: ${fmtDur(def)}`;
+  });
+}
+function timerSheet(h0){
+  const h = S.me.habits.find(x => x.id === h0.id) || h0, def = h.timer || 60;
+  let secs = myDur(h), left = secs, endAt = 0, iv = null, state = 'idle';
+  const el = openSheet(`<div class="tmr">
+    <h2>${esc(h.emoji)} ${esc(h.name)}</h2>
+    <div class="tring" id="t-ring" style="--p:0" role="timer" aria-live="off"><div class="tclock num" id="t-c">${fmtClock(secs)}</div></div>
+    <div id="t-pre" class="stack" style="gap:6px;width:100%">${durPicker(secs, def, 't-adj')}</div>
+    <div class="stack" id="t-act" style="width:100%"><button class="btn" id="t-go">Empezar</button></div>
+  </div>`);
+  const clk = $('#t-c', el), ring = $('#t-ring', el);
+  const paint = () => { clk.textContent = fmtClock(Math.ceil(left)); ring.style.setProperty('--p', (1 - left / secs).toFixed(4)); };
+  bindDurPicker($('#t-pre', el), h, def, () => secs, (v) => { secs = left = v; paint(); });
+  const stop = () => { clearInterval(iv); iv = null; keepAwake(false); };
+  const tick = () => {
+    if (!el.isConnected){ stop(); return; }
+    left = Math.max(0, (endAt - Date.now()) / 1000); paint();
+    if (left <= 0) done();
+  };
+  const done = async () => {
+    stop(); state = 'done'; left = 0; paint();
+    vibrate([200, 100, 200]); beep(880, .18, 2);
+    $('#t-act', el).innerHTML = `<p style="margin:0;text-align:center;font-weight:700">¡Listo! ${h.done_today && !h.goal ? 'Ya lo tenías anotado hoy.' : 'Queda anotado 🔥'}</p><button class="btn" id="t-ok">Cerrar</button>`;
+    $('#t-ok', el).onclick = closeSheet;
+    if (!(h.done_today && !h.goal)) await breathDone(h);
+  };
+  const controls = () => {
+    $('#t-act', el).innerHTML = `<div class="grid2"><button class="btn ghost" id="t-pause">${state === 'paused' ? 'Seguir' : 'Pausa'}</button><button class="btn ghost" id="t-stop">Cortar</button></div>`;
+    $('#t-pause', el).onclick = () => {
+      if (state === 'running'){ stop(); left = Math.max(0, (endAt - Date.now()) / 1000); state = 'paused'; }
+      else { state = 'running'; endAt = Date.now() + left * 1000; iv = setInterval(tick, 250); keepAwake(true); }
+      controls();
+    };
+    $('#t-stop', el).onclick = () => { stop(); closeSheet(); };
+  };
+  $('#t-go', el).onclick = () => {
+    $('#t-pre', el).style.display = 'none'; state = 'running'; left = secs; endAt = Date.now() + secs * 1000;
+    iv = setInterval(tick, 250); keepAwake(true); vibrate(15); controls(); paint();
+  };
+}
 const mediaName = (url) => /spotify/i.test(url || '') ? 'Spotify' : /youtu/i.test(url || '') ? 'YouTube' : 'el link';
 function breathSheet(h0){
   const h = S.me.habits.find(x => x.id === h0.id) || h0;
@@ -2666,19 +2742,22 @@ function breathSheet(h0){
       <div class="chips" style="margin:0;justify-content:center">${Object.entries(BREATH).map(([k, v]) => `<button type="button" class="chip" data-tec="${k}" aria-pressed="false">${v.t}${k === h.breath ? ' ★' : ''}</button>`).join('')}</div>
       <p class="muted small" id="b-desc" style="margin:0"></p>
       ${media ? `<label class="row small" style="gap:8px;justify-content:center"><input type="checkbox" id="b-mus" ${music ? 'checked' : ''}> 🎵 Con música de ${mediaName(media)}</label>` : ''}
+      ${durPicker(myDur(h), h.timer || 60, 'b-adj')}
     </div>
     <div id="b-player" style="width:100%"></div>
     <div class="bstage" aria-hidden="true"><div class="borb" id="b-orb"></div><div class="bring"></div></div>
     <div class="bphase" id="b-ph" aria-live="polite">Ponete cómodo</div>
     <div class="bcount num" id="b-n"></div>
+    <div class="bclock" id="b-clk"></div>
     <div class="stack" id="b-act"><button class="btn" id="b-go">Empezar</button>${h.goal && !h.done_today ? '<button class="link" id="b-skip">Ya la hice sola, anotarla</button>' : ''}</div>
   </div>`);
   const orb = $('#b-orb', el), ph = $('#b-ph', el), num = $('#b-n', el), pl = $('#b-player', el);
-  const B = () => BREATH[tec], total = () => B().steps.reduce((a, [, s]) => a + s, 0) * B().cycles;
+  const B = () => BREATH[tec];
+  let secs = myDur(h);
   const paintTec = () => {
     el.querySelectorAll('[data-tec]').forEach(b => { b.classList.toggle('on', b.dataset.tec === tec); b.setAttribute('aria-pressed', b.dataset.tec === tec); });
     $('#b-desc', el).textContent = B().d + (tec === h.breath ? ' ★ Es la que sugiere quien armó el hábito.' : '');
-    num.textContent = `${Math.ceil(total() / 60)} min`;
+    num.textContent = fmtClock(secs);
   };
   const paintPlayer = () => {
     if (!music){ pl.innerHTML = ''; return; }
@@ -2688,12 +2767,14 @@ function breathSheet(h0){
   };
   el.querySelectorAll('[data-tec]').forEach(b => b.onclick = () => { tec = b.dataset.tec; LS.set('fueguitos_tec_' + h.id, tec); paintTec(); });
   const mus = $('#b-mus', el); if (mus) mus.onchange = () => { music = mus.checked; LS.set('fueguitos_mus_' + h.id, music ? '1' : '0'); paintPlayer(); };
+  bindDurPicker(el, h, h.timer || 60, () => secs, (v) => { secs = v; paintTec(); });
   paintTec(); paintPlayer();
-  let timers = [];
+  let iv = null;
   const alive = () => el.isConnected;
   const finish = async () => {
     if (!alive()) return;
-    ph.textContent = 'Listo 🌬️'; num.textContent = ''; orb.style.transitionDuration = '1.2s'; orb.dataset.p = 'rest';
+    clearInterval(iv); keepAwake(false); beep(660, .15);
+    ph.textContent = 'Listo 🌬️'; num.textContent = ''; $('#b-clk', el).textContent = ''; orb.style.transitionDuration = '1.2s'; orb.dataset.p = 'rest';
     const goal = h.goal || 0, before = h.done_today ? goal : Math.min(h.count_today || 0, goal);
     $('#b-act', el).innerHTML = `<p class="muted" style="margin:0;text-align:center">${goal ? `Vas ${Math.min(goal, before + 1)} de ${goal} hoy.` : 'Bien ahí.'} Notá cómo quedó el cuerpo.</p><button class="btn" id="b-ok">Listo</button>`;
     $('#b-ok', el).onclick = closeSheet;
@@ -2705,19 +2786,21 @@ function breathSheet(h0){
     // YouTube arranca con el mismo toque; Spotify se maneja desde su reproductor.
     const fr = pl.querySelector('iframe.yt'); if (fr) try { fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*'); } catch(e){}
     $('#b-act', el).innerHTML = '<button class="link" id="b-stop">Cortar acá</button>';
-    $('#b-stop', el).onclick = () => { timers.forEach(clearTimeout); closeSheet(); };
+    $('#b-stop', el).onclick = () => { clearInterval(iv); keepAwake(false); closeSheet(); };
     $('.bstage', el).scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
-    let t = 0;
-    for (let c = 0; c < B().cycles; c++) for (const [p, s] of B().steps){
-      timers.push(setTimeout(() => {
-        if (!alive()) return;
-        orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p];
-        for (let i = 0; i < s; i++) timers.push(setTimeout(() => { if (alive()) num.textContent = s - i; }, i * 1000));
-        vibrate(10);
-      }, t * 1000));
-      t += s;
-    }
-    timers.push(setTimeout(finish, t * 1000));
+    // Va por reloj, no por pasos encadenados: si el celu se frena un momento, igual termina a tiempo.
+    const steps = B().steps, cyc = steps.reduce((a, [, s]) => a + s, 0) * 1000, t0 = Date.now(), dur = secs * 1000;
+    let last = -1;
+    const tick = () => {
+      if (!alive()){ clearInterval(iv); keepAwake(false); return; }
+      const e = Date.now() - t0; if (e >= dur){ finish(); return; }
+      let x = e % cyc, i = 0; while (x >= steps[i][1] * 1000){ x -= steps[i][1] * 1000; i++; }
+      const idx = Math.floor(e / cyc) * steps.length + i, [p, s] = steps[i];
+      if (idx !== last){ last = idx; orb.style.transitionDuration = s + 's'; orb.dataset.p = p; ph.textContent = BREATH_TXT[p]; vibrate(10); }
+      num.textContent = Math.ceil((s * 1000 - x) / 1000);
+      $('#b-clk', el).textContent = `Quedan ${fmtClock(Math.ceil((dur - e) / 1000))}`;
+    };
+    keepAwake(true); iv = setInterval(tick, 200); tick();
   };
   $('#b-go', el).onclick = run;
   const sk = $('#b-skip', el); if (sk) sk.onclick = () => { closeSheet(); breathDone(h); };
@@ -2814,7 +2897,7 @@ function habitCard(h){
     </div>
   </button>
   ${hcheck(h, h.done_today || sel, h.done_today ? 'undo' : 'do')}
-  ${hfoot(photoLink(h), yesterdayLink(h), injuryLinks(h))}`;
+  ${hfoot(timerLink(h), photoLink(h), yesterdayLink(h), injuryLinks(h))}`;
 }
 // Ya anotado hoy: botón a la vista para sumarle la foto (antes solo se podía tocando la tarjeta, y nadie lo sabía).
 const photoLink = (h) => h.done_today ? `<button type="button" class="undo" data-addphoto="${h.id}">📸 Sumar foto</button>` : '';
@@ -2878,6 +2961,7 @@ async function kineTap(h){
 }
 // Una sola línea de estado por hábito (en vez de varias etiquetas).
 const hstat = (cls, txt) => `<div class="hstat ${cls}">${txt}</div>`;
+const timerLink = (h) => h.timer && !h.done_today && !h.breath ? `<button type="button" class="undo tmr-l" data-timer="${h.id}">⏱️ ${fmtDur(myDur(h))}</button>` : '';
 const hfoot = (...links) => { const l = links.filter(Boolean); return l.length ? `<div class="hfoot">${l.join('')}</div>` : ''; };
 function habitStatus(h, lateNow){
   if (h.injury){
@@ -5241,7 +5325,7 @@ function habitEditor(h, groupId = null, after){
     { e: '🌙', t: 'Dormir temprano', name: 'Dormirme antes de las 12', wpp: 'Dormir', next: true },
     { e: '🌅', t: 'Madrugar', name: 'Levantarme antes de las 7', wpp: 'Madrugar', dl: '07:00' },
     { e: '🧘', t: 'Meditar', name: 'Meditar', wpp: 'Meditación' },
-    { e: '🌬️', t: 'Respirar', name: 'Respiración', wpp: 'Respiración', goal: 4, unit: 'veces', remind: true, breath: 'cuadrada', hours: [8, 12, 16, 20] },
+    { e: '🌬️', t: 'Respirar', name: 'Respiración', wpp: 'Respiración', goal: 4, unit: 'veces', remind: true, breath: 'cuadrada', hours: [8, 12, 16, 20], timer: 60 },
     { e: '💪', t: 'Flexiones', name: 'Flexiones', wpp: 'Flexiones', goal: 20, unit: 'flexiones' },
     { e: '🦉', t: 'Duolingo', name: 'Duolingo', wpp: 'Duolingo' },
     { e: '📵', t: 'Sin Instagram', name: 'Sin Instagram', wpp: 'Sin Instagram', kind: 'evitar' },
@@ -5257,6 +5341,7 @@ function habitEditor(h, groupId = null, after){
   // Respiración guiada y horarios sugeridos: los define quien crea el hábito; cada uno después ajusta sus horarios.
   let breath = h ? (h.breath || null) : null;
   const hsel = [...((h && (h.base_hours || h.remind_hours)) || [])], hours0 = hsel.join(','), breath0 = breath;
+  let tsec = (h && h.timer) || 0; const tsec0 = tsec, TOPTS = [...new Set([0, 30, 60, 120, 300, 600, 900, 1200, tsec])].sort((a, b) => a - b);
   const el = openSheet(`<h2>${h ? 'Editar hábito' : 'Crear hábito'}</h2>
     <div class="stack section">
       ${h ? '' : `<div class="field"><span>Empezá con uno armado (o armá el tuyo abajo)</span><div class="chips" style="margin-bottom:0">${TPL.map((t, i) => `<button type="button" class="chip" data-tpl="${i}">${t.e} ${t.t}</button>`).join('')}</div></div>`}
@@ -5295,6 +5380,8 @@ function habitEditor(h, groupId = null, after){
             <div class="hint">Una música o un audio para acompañar. Suena en la pantalla de respirar; cada uno elige si la quiere escuchar.</div></div></div></div>
       <div class="field" id="h-next-box"><label class="row small" style="gap:8px"><input type="checkbox" id="h-next" ${h && h.next_day ? 'checked' : ''}> 🌙 Es de la noche: lo anoto al acostarme (o a la mañana siguiente)</label>
         <div class="hint">Para no agarrar el celu antes de dormir. Al otro día la app te pregunta "¿Anoche cumpliste?" y contestás con un toque.</div></div>
+      <div class="field" id="h-tm-box"><span>⏱️ ¿Con temporizador? (opcional)</span><div class="chips" style="margin:0">${TOPTS.map(x => `<button type="button" class="chip" data-tm="${x}">${x ? fmtDur(x) : 'No'}</button>`).join('')}</div>
+        <div class="hint">Ej: respirar 1 min, plancha 1 min, meditar 10 min. En Hoy aparece un botón ⏱️ que cuenta para atrás y, al terminar, lo anota solo. Cada uno puede ajustar su tiempo.</div></div>
       <div class="field" id="h-dl-box"><span>¿Tiene hora límite? (opcional)</span>
         <div class="row" style="gap:10px"><input class="input" id="h-dl" type="time" style="max-width:150px" value="${esc(h && h.deadline ? h.deadline : '')}"><button type="button" class="link small" id="h-dl-x">Sin hora</button></div>
         <div class="hint">Ej: "Levantarme antes de las 7" → 07:00. Se anota con un toque, en las 4 horas previas a esa hora, y te avisamos 30 min antes.</div></div>
@@ -5323,6 +5410,8 @@ function habitEditor(h, groupId = null, after){
     $('#h-dl-box', el).style.display = $('#h-next', el).checked || $('#h-goal', el).value ? 'none' : '';
     $('#h-noice', el).style.display = kind === 'evitar' ? '' : 'none';
     $('#h-hrs', el).style.display = $('#h-remind', el).checked ? '' : 'none';
+    $('#h-tm-box', el).style.display = kind === 'hacer' && !$('#h-next', el).checked ? '' : 'none';
+    el.querySelectorAll('[data-tm]').forEach(b => b.classList.toggle('on', +b.dataset.tm === tsec));
     el.querySelectorAll('[data-br]').forEach(b => b.classList.toggle('on', b.dataset.br === (breath || '')));
     $('#h-med-box', el).style.display = breath ? '' : 'none';
     $('#h-br-hint', el).textContent = breath ? BREATH[breath].d : 'Suma un botón "Respirar ahora" que guía cada respiración con un círculo que crece y se achica.';
@@ -5355,6 +5444,7 @@ function habitEditor(h, groupId = null, after){
   $('#h-next', el).onchange = (e) => { e.target.dataset.touched = '1'; paintKind(); };
   $('#h-goal', el).oninput = paintKind;
   $('#h-remind', el).onchange = paintKind;
+  el.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { tsec = +b.dataset.tm; paintKind(); });
   bindHourChips(el, hsel);
   el.querySelectorAll('[data-br]').forEach(b => b.onclick = () => {
     breath = b.dataset.br || null;
@@ -5375,7 +5465,7 @@ function habitEditor(h, groupId = null, after){
     $('#h-name', el).value = t.name; $('#h-wpp', el).value = t.wpp; $('#h-emoji', el).value = t.e; $('#h-emoji', el).dataset.touched = '1';
     $('#h-goal', el).value = t.goal || ''; $('#h-unit', el).value = t.unit || ''; $('#h-remind', el).checked = !!t.remind;
     $('#h-next', el).checked = !!t.next; $('#h-dl', el).value = t.dl || '';
-    breath = t.breath || null; hsel.splice(0, hsel.length, ...(t.hours || []));
+    breath = t.breath || null; hsel.splice(0, hsel.length, ...(t.hours || [])); tsec = t.timer || 0;
     el.querySelectorAll('[data-hr]').forEach(x => { const on = hsel.includes(+x.dataset.hr); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
     free = !!t.free; color = t.color || null;
     $('#h-more', el).open = !!(t.goal || t.next || t.dl);
@@ -5407,6 +5497,8 @@ function habitEditor(h, groupId = null, after){
         await rpc('api_set_habit_rules', { ...P(), p_habit: saved.id, p_days: dmode === 'week' ? [0, 1, 2, 3, 4, 5, 6] : days.sort(), p_rest: dmode === 'week' ? 7 - times : 0 });
       const goalOk = kind === 'hacer' && !$('#h-next', el).checked && +$('#h-goal', el).value >= 2;
       const hrsNow = goalOk && $('#h-remind', el).checked ? hsel : [], brNow = goalOk ? breath : null;
+      const tmNow = kind === 'hacer' && !$('#h-next', el).checked ? tsec : 0;
+      if (tmNow !== tsec0) await rpc('api_set_habit_timer', { ...P(), p_habit: saved.id, p_secs: tmNow || null }).catch(err => toast(err.message, 4000));
       const medNow = brNow ? ($('#h-med', el).value.trim() || null) : null;
       if (medNow !== ((h && h.media) || null)){
         if (medNow && !/^https:\/\//.test(medNow)){ toast(ERRORS.LINK_INVALIDO || 'Ese link no anda', 4000); }
