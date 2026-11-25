@@ -745,6 +745,9 @@ body.hoyglow .status{background:color-mix(in srgb,var(--bg) 55%,transparent);bor
 .post img[data-pid]:not([src]){display:block;width:100%;aspect-ratio:4/5;background:var(--line)}
 .post img[data-pid].in{animation:phin .25s ease-out}
 @keyframes phin{from{opacity:0}to{opacity:1}}
+/* Duelos por equipos */
+.dteam{border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px}
+.dteam .chip.other{opacity:.45}
 /* Temporizador: un anillo que se va llenando y el reloj grande en el medio */
 .tmr{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
 .tmr h2{margin:0}
@@ -1993,7 +1996,7 @@ function streaksSheet(){
 /* ============ Estructura principal ============ */
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
 const ICON_INVITE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
-const APP_VERSION = 'v88'; // va junto con CACHE en sw.js: se suben juntos en cada versión
+const APP_VERSION = 'v89'; // va junto con CACHE en sw.js: se suben juntos en cada versión
 // Torneos ya no tiene pestaña propia: se entra desde el grupo, así que en la barra queda marcado Grupo.
 const navTab = () => S.tab === 'torneos' ? 'grupo' : S.tab;
 const TAB_NAMES = { hoy: 'Hoy', grupo: 'Amigos', torneos: 'Torneos', rutinas: 'Rutinas', perfil: 'Perfil' };
@@ -2321,7 +2324,8 @@ async function nudgeMates(b){
 }
 
 // Novedades: se muestran una sola vez (cambiar NEWS.id para anunciar algo nuevo).
-const NEWS = { id: '2026-11-19', title: '✨ Novedades en Fueguitos', items: [
+const NEWS = { id: '2026-11-25', title: '✨ Novedades en Fueguitos', items: [
+  '👥 <b>Duelos por equipos</b>: al armar un duelo elegí "Por equipos" y armá los equipos (ej: truco de a 4). Cada equipo suma como uno solo, con palitos y todo.',
   '⏱️ <b>Temporizador</b>: al crear o editar un hábito, en Más opciones elegí un tiempo (ej: respirar 1 min, plancha 1 min, meditar 10). En Hoy tocás ⏱️, cuenta para atrás y al terminar lo anota solo.',
   '🎵 <b>Respirar con música</b>: quien arma el hábito de respiración puede sumar una canción de Spotify o un video de YouTube. Suena en la pantalla de respirar, y cada uno elige si la escucha y qué técnica usa.',
   '🔍 <b>Buscar amigos</b>: en Amigos tocá Buscar y encontrás a cualquiera por su apodo. Ahora en Amigos ves solo a quienes agregaste; los de un grupo nuevo te aparecen en "Quizás conozcas". Tus amigos de siempre siguen ahí.',
@@ -4121,7 +4125,9 @@ async function renderDuels(G){
   await loadDuels(gid);
   if (S.tab === 'grupo' && S.gsub === 'duelos' && S.groupId === gid) paint();
 }
-async function loadDuels(gid){ try { S.duels[gid] = await rpc('api_duels', { ...P(), p_group: gid }); cacheSet('duels_' + gid, S.duels[gid]); } catch(e){ S.duels[gid] = S.duels[gid] || cacheGet('duels_' + gid) || []; } }
+// Duelo por equipos: en el marcador cada equipo es un jugador (su representante), con el nombre del equipo.
+const teamify = (list) => (list || []).map(d => !d.teams ? d : { ...d, players: d.players.map(p => { const t = d.teams.find(x => x.lead === p.id); return t ? { ...p, nick: t.name, team: t.members } : p; }) });
+async function loadDuels(gid){ try { S.duels[gid] = teamify(await rpc('api_duels', { ...P(), p_group: gid })); cacheSet('duels_' + gid, S.duels[gid]); } catch(e){ S.duels[gid] = S.duels[gid] || cacheGet('duels_' + gid) || []; } }
 const saveDuelsCache = (gid) => cacheSet('duels_' + gid, S.duels[gid]);
 // Palitos del truco: grupos de 5 (cuatro rayas y una cruzada). Más de 40 se muestran como número.
 function tallySVG(n){
@@ -4146,6 +4152,9 @@ function duelCard(d){
   const meta = [d.mode === 'puntos' && d.target ? `a ${d.target}` : '', d.ends_on ? (d.ended ? `terminó el ${shortD(d.ends_on)}` : `hasta el ${shortD(d.ends_on)}`) : ''].filter(Boolean).join(' · ');
   const head = `<div class="row between" style="margin-bottom:8px;gap:8px"><b>${esc(d.emoji)} ${esc(d.activity)}</b><span class="small muted" style="text-align:right">${meta ? esc(meta) + ' · ' : ''}${d.games} ${d.games === 1 ? 'partido' : 'partidos'}</span></div>`;
   const ended = d.ended ? `<div class="dend">🏁 ${lead ? `Ganó <b>${esc(lead.nick)}</b>` : 'Terminó empatado'}</div>` : '';
+  const nickOf = (uid) => ((S.group && S.group.members) || []).find(m => m.id === uid)?.nick || '';
+  const named = d.teams && d.teams.some(t => t.name !== t.members.map(nickOf).join(' y '));
+  const teamsLine = named ? `<div class="small muted" style="margin:-4px 0 8px">${d.teams.map(t => `<b>${esc(t.name)}</b>: ${t.members.map(u => esc(nickOf(u))).filter(Boolean).join(', ')}`).join(' · ')}</div>` : '';
   if (d.mode === 'puntos' || d.mode === 'rondas'){
     const byWins = [...d.players].sort((x, y) => y.wins - x.wins);
     const inPlay = d.players.some(u => u.points);
@@ -4160,17 +4169,17 @@ function duelCard(d){
       </div>`).join('')}
       <div class="row" style="gap:10px;margin-top:10px">${d.mode === 'rondas' ? `<button class="btn sm" style="flex:1" data-round="${d.id}">✍️ Anotar ronda</button>` : ''}
         ${inPlay && (d.mode === 'rondas' || !d.target) ? `<button class="btn sm ghost" style="${d.mode === 'rondas' ? '' : 'flex:1'}" data-close-round="${d.id}">Terminar partida</button>` : ''}</div></div>`;
-    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}
+    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${teamsLine}${ended}
       <div class="small muted" style="font-weight:700;margin-bottom:4px">Partidas ganadas</div>${serie}${cur}</div>`;
   }
   if (d.players.length === 2){
     const [x, y] = d.players;
     const side = (u) => `<div class="dside ${lead && lead.id === u.id ? 'lead' : ''}">${av(u, 40)}<span class="dnick">${esc(u.nick)}</span><span class="dscore">${u.wins}</span>
       ${d.ended ? '' : `<button class="btn sm ghost dplus" data-dw="${d.id}" data-u="${u.id}" aria-label="Ganó ${esc(u.nick)}">+1</button>`}</div>`;
-    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}<div class="dgrid">${side(x)}<span class="dvs">–</span>${side(y)}</div></div>`;
+    return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${teamsLine}${ended}<div class="dgrid">${side(x)}<span class="dvs">–</span>${side(y)}</div></div>`;
   }
   const ps = [...d.players].sort((x, y) => y.wins - x.wins);
-  return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${ended}
+  return `<div class="card duel" role="button" tabindex="0" data-duel="${d.id}">${head}${teamsLine}${ended}
     ${ps.map((u, i) => `<div class="drow ${lead && lead.id === u.id ? 'lead' : ''}"><span class="dpos">${i + 1}</span>${av(u, 30)}<span class="dnick">${esc(u.nick)}</span><span class="dscore sm">${u.wins}</span>
       ${d.ended ? '<span></span>' : `<button class="btn sm ghost dplus" data-dw="${d.id}" data-u="${u.id}" aria-label="Ganó ${esc(u.nick)}">+1</button>`}</div>`).join('')}</div>`;
 }
@@ -4307,10 +4316,14 @@ function bindDuelCards(G){
 }
 function duelCreator(G){
   const picked = new Set(); let emoji = '🏓', mode = 'partidos', target = null, tally = false, until = null, lowest = false;
-  const others = (G.members || []).filter(m => !m.is_me);
+  const others = (G.members || []).filter(m => !m.is_me), everyone = (G.members || []).filter(m => !m.bench || m.is_me);
+  // Por equipos (truco de a 4 o de a 6): cada equipo suma como uno solo.
+  let teamsOn = false; const teams = [{ name: '', members: [] }, { name: '', members: [] }];
   if (!others.length){ toast('Primero sumá a alguien al grupo'); return; }
   const el = openSheet(`<h2>Nuevo duelo</h2><div class="stack section">
-    <div class="field"><span>Contra quién (uno o varios)</span><div class="chips" style="flex-wrap:wrap;margin:0">${others.map(m => `<button type="button" class="chip" data-rv="${m.id}">${esc(m.nick)}</button>`).join('')}</div></div>
+    <div class="field"><span>¿Cómo juegan?</span><div class="chips" style="margin:0"><button type="button" class="chip" data-tm2="0">Cada uno por su cuenta</button><button type="button" class="chip" data-tm2="1">👥 Por equipos</button></div></div>
+    <div class="field" id="dv-solo"><span>Contra quién (uno o varios)</span><div class="chips" style="flex-wrap:wrap;margin:0">${others.map(m => `<button type="button" class="chip" data-rv="${m.id}">${esc(m.nick)}</button>`).join('')}</div></div>
+    <div class="field" id="dv-teams" style="display:none"></div>
     <label class="field"><span>De qué</span><input class="input" id="dv-a" maxlength="40" placeholder="Ej: Truco, ping pong, FIFA, cartas del viaje"></label>
     <div class="field"><span>Emoji</span><div class="emojis">${D_EMOJI.map(e => `<button type="button" data-de="${e}">${e}</button>`).join('')}</div></div>
     <div class="field"><span>¿Cómo se anota cada partida?</span><div class="stack" style="margin-top:0">
@@ -4321,7 +4334,27 @@ function duelCreator(G){
     <div class="field"><span>¿Hasta cuándo?</span><div class="chips" style="margin:0"><button type="button" class="chip" data-du="no">Sin fin</button><button type="button" class="chip" data-du="si">Hasta una fecha</button></div>
       <input class="input" type="date" id="dv-end" style="margin-top:8px;display:none" min="${S.me.today}"><div class="hint">Ideal para un viaje: al terminar se cierra y muestra quién ganó.</div></div>
     <button class="btn" id="dv-go">Arrancar duelo</button></div>`);
+  const teamOf = (uid) => teams.findIndex(t => t.members.includes(uid));
+  const paintTeams = () => {
+    const box = $('#dv-teams', el);
+    box.innerHTML = `<span>Armá los equipos: tocá a cada uno en su equipo</span>${teams.map((t, i) => `<div class="dteam">
+        <div class="row" style="gap:8px;align-items:center"><input class="input" data-tn="${i}" maxlength="40" placeholder="Equipo ${i + 1} (opcional)" value="${esc(t.name)}">${teams.length > 2 ? `<button type="button" class="link small danger" data-tx="${i}">Quitar</button>` : ''}</div>
+        <div class="chips" style="flex-wrap:wrap;margin:6px 0 0">${everyone.map(m => { const k = teamOf(m.id); return `<button type="button" class="chip ${k === i ? 'on' : ''} ${k >= 0 && k !== i ? 'other' : ''}" data-tp="${i}" data-u="${m.id}">${esc(m.nick)}${m.is_me ? ' (vos)' : ''}</button>`; }).join('')}</div></div>`).join('')}
+      ${teams.length < 6 ? '<button type="button" class="link small" id="dv-tadd">+ Otro equipo</button>' : ''}
+      <div class="hint">Ej: truco de a 4, dos equipos de 2. Cada equipo suma como uno solo.</div>`;
+    box.querySelectorAll('[data-tp]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.tp, u = b.dataset.u, k = teamOf(u);
+      if (k >= 0) teams[k].members = teams[k].members.filter(x => x !== u);
+      if (k !== i) teams[i].members.push(u);
+      paintTeams();
+    });
+    box.querySelectorAll('[data-tn]').forEach(inp => inp.oninput = () => { teams[+inp.dataset.tn].name = inp.value; });
+    box.querySelectorAll('[data-tx]').forEach(b => b.onclick = () => { teams.splice(+b.dataset.tx, 1); paintTeams(); });
+    const ta = $('#dv-tadd', box); if (ta) ta.onclick = () => { teams.push({ name: '', members: [] }); paintTeams(); };
+  };
   const paint = () => {
+    el.querySelectorAll('[data-tm2]').forEach(b => b.classList.toggle('on', (b.dataset.tm2 === '1') === teamsOn));
+    $('#dv-solo', el).style.display = teamsOn ? 'none' : ''; $('#dv-teams', el).style.display = teamsOn ? '' : 'none';
     el.querySelectorAll('[data-rv]').forEach(b => b.classList.toggle('on', picked.has(b.dataset.rv)));
     el.querySelectorAll('[data-de]').forEach(b => b.classList.toggle('on', b.dataset.de === emoji));
     el.querySelectorAll('[data-dm]').forEach(b => b.classList.toggle('on', b.dataset.dm === mode));
@@ -4341,6 +4374,11 @@ function duelCreator(G){
     el.querySelectorAll('[data-lw]').forEach(b => b.onclick = () => { lowest = b.dataset.lw === '1'; paint(); });
   };
   el.querySelectorAll('[data-rv]').forEach(b => b.onclick = () => { picked.has(b.dataset.rv) ? picked.delete(b.dataset.rv) : picked.add(b.dataset.rv); paint(); });
+  el.querySelectorAll('[data-tm2]').forEach(b => b.onclick = () => {
+    teamsOn = b.dataset.tm2 === '1';
+    if (teamsOn && !teams.some(t => t.members.length)){ const me = everyone.find(m => m.is_me); if (me) teams[0].members.push(me.id); }
+    paintTeams(); paint();
+  });
   el.querySelectorAll('[data-de]').forEach(b => b.onclick = () => { emoji = b.dataset.de; paint(); });
   el.querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { mode = b.dataset.dm; target = null; tally = false; paint(); });
   el.querySelectorAll('[data-du]').forEach(b => b.onclick = () => { until = b.dataset.du === 'si' ? ($('#dv-end', el).value || '') : null; paint(); if (until !== null) $('#dv-end', el).focus(); });
@@ -4355,14 +4393,16 @@ function duelCreator(G){
   paint();
   $('#dv-go', el).onclick = async (e) => {
     const a = $('#dv-a', el).value.trim();
-    if (!picked.size){ toast('Elegí contra quién'); return; }
+    const full = teams.filter(t => t.members.length);
+    if (teamsOn ? full.length < 2 : !picked.size){ toast(teamsOn ? 'Armá al menos dos equipos con alguien adentro' : 'Elegí contra quién'); return; }
     if (!a){ toast('Poné de qué es el duelo'); return; }
     const end = until !== null ? $('#dv-end', el).value : null;
     if (until !== null && !end){ toast('Elegí la fecha de fin'); return; }
     e.target.disabled = true;
     try {
-      await rpc('api_duel_create', { ...P(), p_group: G.group.id, p_players: [...picked], p_activity: a, p_emoji: emoji,
-        p_mode: mode, p_target: mode === 'partidos' ? null : target, p_tally: mode === 'puntos' && tally, p_ends_on: end, p_lowest: mode === 'rondas' && lowest });
+      const common = { p_activity: a, p_emoji: emoji, p_mode: mode, p_target: mode === 'partidos' ? null : target, p_tally: mode === 'puntos' && tally, p_ends_on: end, p_lowest: mode === 'rondas' && lowest };
+      if (teamsOn) await rpc('api_duel_create_teams', { ...P(), p_group: G.group.id, p_teams: full.map(t => ({ name: t.name.trim(), members: t.members })), ...common });
+      else await rpc('api_duel_create', { ...P(), p_group: G.group.id, p_players: [...picked], ...common });
       await loadDuels(G.group.id); closeSheet(); renderGrupo(); toast('¡Duelo armado! ⚔️');
     } catch(err){ toast(err.message); e.target.disabled = false; }
   };
